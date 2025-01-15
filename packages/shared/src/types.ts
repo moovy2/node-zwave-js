@@ -7,29 +7,41 @@ export type DeepPartial<T> = { [P in keyof T]+?: DeepPartial<T[P]> };
 
 export type JSONObject = Record<string, any>;
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export type Constructor<T = {}> = new (...args: any[]) => T;
+export type Constructor<T = object> = new (...args: any[]) => T;
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export type TypedClassDecorator<TTarget extends Object> = <
+export type TypedClassDecorator<
+	Class extends abstract new (...args: any) => any,
+> = (
+	target: Class,
+	context: ClassDecoratorContext<Class>,
+) => Class | void;
+
+export type TypedPropertyDecorator<TTarget extends object> = <
 	T extends TTarget,
-	TConstructor extends new (...args: any[]) => T,
 >(
-	apiClass: TConstructor,
-) => TConstructor | void;
+	target: T,
+	propertyKey: string | symbol,
+) => void;
 
 export type UnionToIntersection<T> = (
 	T extends any ? (x: T) => any : never
-) extends (x: infer R) => any
-	? R
+) extends (x: infer R) => any ? R
 	: never;
 
-export type MethodsNamesOf<T> = {
-	[K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
-}[keyof T];
-
 export type OnlyMethods<T> = {
-	[K in MethodsNamesOf<T>]: T[K];
+	[K in keyof T]: T[K] extends (...args: any[]) => any ? T[K] : never;
 };
+export type MethodsNamesOf<T> = OnlyMethods<T>[keyof T];
 
 export type IsAny<T> = 0 extends 1 & T ? true : false;
+
+// expands object types recursively
+// dprint-ignore
+export type Expand<T> =
+	// Expand object types
+	T extends object
+		? T extends infer O
+			? { [K in keyof O]: O[K] }
+			: never
+		: // Fallback to the type itself if no match
+		  T;

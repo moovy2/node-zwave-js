@@ -18,8 +18,8 @@
 			"#": "1",
 			"label": "Latch Hold Time",
 			"description": "Defines how long the latch is kept open.",
-			"unit": "s",
 			"valueSize": 1,
+			"unit": "seconds",
 			"minValue": 1,
 			"maxValue": 20,
 			"defaultValue": 3
@@ -29,8 +29,6 @@
 			"label": "Latch Torque",
 			"description": "Defines the torque of the latch.",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 3,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
@@ -53,8 +51,6 @@
 			"label": "Acoustic Feedback",
 			"description": "Defines Acoustic Feedback signals. Button-, Low-Battery-, Error- and Alarm-Signals can not be adjusted.",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 5,
 			"defaultValue": 3,
 			"allowManualEntry": false,
 			"options": [
@@ -71,7 +67,7 @@
 					"value": 3
 				},
 				{
-					"label": "When reaching the position LOCKED",
+					"label": "When reaching the position locked",
 					"value": 4
 				},
 				{
@@ -85,8 +81,6 @@
 			"label": "Travel Time",
 			"description": "This parameter defines the travel path of the Lock.",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 3,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -95,11 +89,11 @@
 					"value": 1
 				},
 				{
-					"label": "Multiple turns for one Open/Close action",
+					"label": "Multiple turns for one open/close action",
 					"value": 2
 				},
 				{
-					"label": "Travel from window-tilted position is turned on (ABUS FCA3000)",
+					"label": "Travel from window-tilted position is turned on (Abus FCA3000)",
 					"value": 3
 				}
 			]
@@ -109,25 +103,23 @@
 			"label": "Touch Panel Settings",
 			"description": "This parameter defines Touch Panel settings.",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 4,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Touch Panel is active",
+					"label": "Touch panel is active",
 					"value": 1
 				},
 				{
-					"label": "Only Touch Panel Control Buttons are active",
+					"label": "Only touch panel control buttons are active",
 					"value": 2
 				},
 				{
-					"label": "Touch Panel is inactive",
+					"label": "Touch panel is inactive",
 					"value": 3
 				},
 				{
-					"label": "Touch Panel Trap is inactive",
+					"label": "Touch panel trap is inactive",
 					"value": 4
 				}
 			]
@@ -137,8 +129,6 @@
 			"label": "Motor Force",
 			"description": "This parameter defines the motor force, when turning the lock.",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 2,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -154,25 +144,22 @@
 		},
 		{
 			"#": "250",
-			"label": "Lock status",
+			"label": "Lock Status",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
-			"unsigned": true,
 			"defaultValue": 0,
 			"readOnly": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "unknown",
+					"label": "Unknown",
 					"value": 0
 				},
 				{
-					"label": "open",
+					"label": "Open",
 					"value": 1
 				},
 				{
-					"label": "unlocked",
+					"label": "Unlocked",
 					"value": 2
 				},
 				{
@@ -184,18 +171,18 @@
 					"value": 4
 				},
 				{
-					"label": "locked (end stop)",
+					"label": "Locked (End stop)",
 					"value": 5
 				},
 				{
-					"label": "multiple interlocked",
+					"label": "Multiple interlocked",
 					"value": 6
 				}
 			]
 		},
 		{
 			"#": "251",
-			"label": "Drive cycles Trap",
+			"label": "Drive Cycles Trap",
 			"description": "Counter, how often the trap was activated.",
 			"valueSize": 4,
 			"minValue": 0,
@@ -206,7 +193,7 @@
 		},
 		{
 			"#": "252",
-			"label": "Driving cycles unlocked",
+			"label": "Driving Cycles Unlocked",
 			"description": "Counter, how often it has been unlocked.",
 			"valueSize": 4,
 			"minValue": 0,
@@ -217,7 +204,7 @@
 		},
 		{
 			"#": "253",
-			"label": "Driving cycles interlocked",
+			"label": "Driving Cycles Interlocked",
 			"description": "Counter, how often it has been interlocked.",
 			"valueSize": 4,
 			"minValue": 0,
@@ -233,8 +220,8 @@
 			"valueSize": 2,
 			"minValue": 0,
 			"maxValue": 65535,
-			"unsigned": true,
 			"defaultValue": 0,
+			"unsigned": true,
 			"readOnly": true,
 			"allowManualEntry": false
 		}

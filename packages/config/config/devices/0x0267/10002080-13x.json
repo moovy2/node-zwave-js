@@ -34,6 +34,10 @@
 		},
 		{
 			"productType": "0x0004",
+			"productId": "0x0164"
+		},
+		{
+			"productType": "0x0004",
 			"productId": "0x0177"
 		}
 	],
@@ -47,18 +51,16 @@
 			"label": "Association LED",
 			"description": "Activates the Central LED.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
 			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Turns the LED OFF (default)",
+					"label": "Turns the LED off",
 					"value": 0
 				},
 				{
-					"label": "Turns the LED ON",
+					"label": "Turns the LED on",
 					"value": 255
 				}
 			]
@@ -67,14 +69,12 @@
 			"#": "4",
 			"label": "Up Time",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 120,
 			"defaultValue": 60,
 			"readOnly": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Sets the UP time in seconds",
+					"label": "Sets the up time in seconds",
 					"value": 1
 				},
 				{
@@ -87,13 +87,11 @@
 			"#": "5",
 			"label": "Down Time",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 120,
 			"defaultValue": 60,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Sets the DOWN time in seconds",
+					"label": "Sets the down time in seconds",
 					"value": 1
 				},
 				{
@@ -117,18 +115,16 @@
 			"label": "Behavior of LED in Repose",
 			"description": "Configuration of Main LED as identification at 20%.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
 			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "LED OFF",
+					"label": "LED off",
 					"value": 0
 				},
 				{
-					"label": "LED ON at 20% of maximum level",
+					"label": "LED on at 20% of maximum level",
 					"value": 255
 				}
 			]
@@ -138,18 +134,16 @@
 			"label": "Lock Input",
 			"description": "Unlock/lock the direct control of load.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
 			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Unlock the direct control of load.",
+					"label": "Unlock the direct control of load",
 					"value": 0
 				},
 				{
-					"label": "Lock the direct control of load.",
+					"label": "Lock the direct control of load",
 					"value": 255
 				}
 			]
@@ -158,8 +152,6 @@
 			"#": "21[0xff00]",
 			"label": "Blind State: Direction",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
 			"readOnly": true,
 			"allowManualEntry": false,
@@ -191,39 +183,35 @@
 			"#": "23",
 			"label": "Calibration Required",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
 			"unsigned": true,
 			"readOnly": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Calibration is not required.",
+					"label": "Calibration is not required",
 					"value": 0
 				},
 				{
-					"label": "It is necessary to calibrate the device.",
+					"label": "It is necessary to calibrate the device",
 					"value": 255
 				}
 			]
 		},
 		{
 			"#": "27",
-			"label": "Lock long press",
+			"label": "Lock Long Press",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
 			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Long press works as default.",
+					"label": "Long press works as default",
 					"value": 0
 				},
 				{
-					"label": "Long press works as overview.",
+					"label": "Long press works as overview",
 					"value": 255
 				}
 			]

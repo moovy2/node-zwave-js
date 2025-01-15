@@ -16,17 +16,10 @@ async sendEncapsulated(
 ### `getNonce`
 
 ```ts
-async getNonce(
-	options: {
-		/** Whether the command should be sent as a standalone transaction. Default: false */
-		standalone?: boolean;
-		/** Whether the received nonce should be stored as "free". Default: false */
-		storeAsFreeNonce?: boolean;
-	} = {},
-): Promise<Buffer | undefined>;
+async getNonce(): Promise<Uint8Array | undefined>;
 ```
 
-Requests a new nonce for Security CC encapsulation.
+Requests a new nonce for Security CC encapsulation which is not directly linked to a specific command.
 
 ### `sendNonce`
 
@@ -43,6 +36,12 @@ The return value indicates whether a nonce was successfully sent.
 async getSecurityScheme(): Promise<[0]>;
 ```
 
+### `reportSecurityScheme`
+
+```ts
+async reportSecurityScheme(encapsulated: boolean): Promise<void>;
+```
+
 ### `inheritSecurityScheme`
 
 ```ts
@@ -52,11 +51,26 @@ async inheritSecurityScheme(): Promise<void>;
 ### `setNetworkKey`
 
 ```ts
-async setNetworkKey(networkKey: Buffer): Promise<void>;
+async setNetworkKey(networkKey: Uint8Array): Promise<void>;
+```
+
+### `verifyNetworkKey`
+
+```ts
+async verifyNetworkKey(): Promise<void>;
 ```
 
 ### `getSupportedCommands`
 
 ```ts
 async getSupportedCommands(): Promise<Pick<SecurityCCCommandsSupportedReport, "supportedCCs" | "controlledCCs"> | undefined>;
+```
+
+### `reportSupportedCommands`
+
+```ts
+async reportSupportedCommands(
+	supportedCCs: CommandClasses[],
+	controlledCCs: CommandClasses[],
+): Promise<void>;
 ```

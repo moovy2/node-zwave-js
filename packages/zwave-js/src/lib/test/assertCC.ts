@@ -1,12 +1,12 @@
-import { entries } from "alcalzone-shared/objects";
-import type { CommandClass, Constructable } from "../commandclass/CommandClass";
-import { SendDataBridgeRequest } from "../controller/SendDataBridgeMessages";
-import { SendDataRequest } from "../controller/SendDataMessages";
+import type { CCConstructor, CommandClass } from "@zwave-js/cc";
+import { SendDataBridgeRequest } from "@zwave-js/serial/serialapi";
+import { SendDataRequest } from "@zwave-js/serial/serialapi";
+import { type ExpectStatic } from "vitest";
 
-/** Performs assertions on a sendMessage call argument that's supposed to be a CC */
 export function assertCC<
-	TConst extends Constructable<CommandClass> = Constructable<CommandClass>,
+	TConst extends CCConstructor<CommandClass> = CCConstructor<CommandClass>,
 >(
+	expect: ExpectStatic,
 	callArg: any,
 	options: {
 		nodeId?: number;
@@ -25,7 +25,7 @@ export function assertCC<
 	const command = request.command;
 	expect(command).toBeInstanceOf(options.cc);
 	if (options.ccValues) {
-		for (const [prop, val] of entries(options.ccValues)) {
+		for (const [prop, val] of Object.entries(options.ccValues)) {
 			expect((command as any)[prop]).toBe(val);
 		}
 	}

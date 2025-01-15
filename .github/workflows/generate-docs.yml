@@ -6,47 +6,57 @@ on:
     branches:
       - master
   pull_request: {}
+  merge_group:
+    types: [checks_requested]
+
+# Cancel previous PR/branch runs when a new commit is pushed
+concurrency:
+  group: 'generate-docs-${{ github.ref }}'
+  cancel-in-progress: true
 
 jobs:
   # This job checks if the docs can be generated and produce changes
   # If they do, a PR will be created with the changes
   check-and-update:
+    # Don't run in forks
+    if: github.repository == 'zwave-js/node-zwave-js'
+
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [14.x] # This should be LTS
-
-    outputs:
-      CHANGES: ${{ steps.changes.outputs.CHANGES }}
+        node-version: [18] # This should be LTS
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2
+    - name: Prepare environment
+      uses: ./.github/actions/prepare-env
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Install dependencies
-      run: yarn install --immutable
-
+    # FIXME: Check if this build step is still needed
     - name: Compile TypeScript code
       run: yarn run build
 
     - name: Generate documentation
       run: yarn run docs:generate
 
+    - name: Generate API report
+      run: yarn run accept-api
+
     # Trigger this step only when pushing to master
     - name: Create or update PR
       if: |
         github.event_name == 'push' && 
         github.ref == 'refs/heads/master'
-      uses: ./.github/actions/generateTypedDocs
+      uses: actions/github-script@v7
       with:
-        githubToken: ${{ secrets.BOT_TOKEN }}
-      env:
-        CI: true
+        github-token: ${{secrets.BOT_TOKEN}}
+        result-encoding: string
+        script: |
+          const main = require(`${process.env.GITHUB_WORKSPACE}/.github/action-scripts/generateTypedDocs.cjs`);
+          return main({github, context});

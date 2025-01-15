@@ -16,5 +16,5 @@ async get(): Promise<Pick<ThermostatSetbackCCReport, "setbackType" | "setbackSta
 async set(
 	setbackType: SetbackType,
 	setbackState: SetbackState,
-): Promise<void>;
+): Promise<SupervisionResult | undefined>;
 ```

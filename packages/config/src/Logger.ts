@@ -1,14 +1,13 @@
 import {
-	getDirectionPrefix,
-	LogContext,
-	ZWaveLogContainer,
+	type ZWaveLogContainer,
 	ZWaveLoggerBase,
+	getDirectionPrefix,
 } from "@zwave-js/core";
-
-export const CONFIG_LABEL = "CONFIG";
-const CONFIG_LOGLEVEL = "debug";
-
-export type ConfigLogContext = LogContext<"config">;
+import {
+	CONFIG_LABEL,
+	CONFIG_LOGLEVEL,
+	type ConfigLogContext,
+} from "./Logger_safe.js";
 
 export class ConfigLogger extends ZWaveLoggerBase<ConfigLogContext> {
 	constructor(loggers: ZWaveLogContainer) {

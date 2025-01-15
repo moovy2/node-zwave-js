@@ -19,43 +19,54 @@
 			"#": "2",
 			"label": "State After Power Outage",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Prior state",
+					"label": "On",
 					"value": 0
 				},
 				{
-					"label": "Force on",
+					"label": "Previous state",
 					"value": 1
-				},
-				{
-					"label": "Force off",
-					"value": 2
 				}
 			]
 		},
 		{
-			"#": "51",
-			"label": "Color Temperature (Warm White)",
-			"valueSize": 2,
-			"minValue": 2700,
-			"maxValue": 4999,
-			"defaultValue": 2700,
-			"unsigned": true
+			"#": "80",
+			"label": "Notifications to Associated Devices",
+			"description": "What notifications should be sent to associated devices when the state of the LED bulb is changed",
+			"valueSize": 1,
+			"defaultValue": 1,
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Disable",
+					"value": 0
+				},
+				{
+					"label": "Multilevel Switch Report",
+					"value": 1
+				}
+			]
 		},
 		{
-			"#": "52",
+			"#": "81",
+			"label": "Color Temperature (Warm White)",
+			"valueSize": 2,
+			"unit": "K",
+			"minValue": 2700,
+			"maxValue": 4999,
+			"defaultValue": 2700
+		},
+		{
+			"#": "82",
 			"label": "Color Temperature (Cool White)",
 			"valueSize": 2,
+			"unit": "K",
 			"minValue": 5000,
 			"maxValue": 6500,
-			"defaultValue": 5000,
-			"unsigned": true
+			"defaultValue": 6500
 		}
 	],
 	"metadata": {

@@ -1,213 +1,327 @@
-import { JsonlDB, JsonlDBOptions } from "@alcalzone/jsonl-db";
-import * as Sentry from "@sentry/node";
-import { ConfigManager, externalConfigDir } from "@zwave-js/config";
+import { type JsonlDBOptions } from "@alcalzone/jsonl-db";
 import {
-	CommandClasses,
-	deserializeCacheValue,
-	Duration,
-	highResTimestamp,
-	isZWaveError,
-	LogConfig,
-	SecurityClass,
-	securityClassIsS2,
-	SecurityManager,
-	SecurityManager2,
-	serializeCacheValue,
-	timespan,
-	ValueMetadata,
-	ZWaveError,
-	ZWaveErrorCodes,
-	ZWaveLogContainer,
-} from "@zwave-js/core";
-import {
-	MessageHeaders,
-	ZWaveSerialPort,
-	ZWaveSerialPortBase,
-	ZWaveSocket,
-} from "@zwave-js/serial";
-import {
-	DeepPartial,
-	getErrorMessage,
-	isDocker,
-	mergeDeep,
-	num2hex,
-	pick,
-	stringify,
-	TypedEventEmitter,
-} from "@zwave-js/shared";
-import { wait } from "alcalzone-shared/async";
-import {
-	createDeferredPromise,
-	DeferredPromise,
-} from "alcalzone-shared/deferred-promise";
-import { isArray, isObject } from "alcalzone-shared/typeguards";
-import { randomBytes } from "crypto";
-import type { EventEmitter } from "events";
-import fsExtra from "fs-extra";
-import path from "path";
-import SerialPort from "serialport";
-import { URL } from "url";
-import * as util from "util";
-import { interpret } from "xstate";
-import {
-	FirmwareUpdateStatus,
+	type CCAPIHost,
+	type CCEncodingContext,
+	type CCParsingContext,
+	CRC16CC,
+	CRC16CCCommandEncapsulation,
+	CommandClass,
+	type FirmwareUpdateResult,
+	type InterviewContext,
+	type InterviewOptions,
+	InvalidCC,
+	KEXFailType,
+	MultiChannelCC,
+	NoOperationCC,
+	type PersistValuesContext,
+	type Powerlevel,
+	type RefreshValueTimeouts,
+	type RefreshValuesContext,
+	type SchedulePollOptions,
 	Security2CC,
+	Security2CCCommandsSupportedGet,
+	Security2CCCommandsSupportedReport,
 	Security2CCMessageEncapsulation,
 	Security2CCNonceReport,
-} from "../commandclass";
-import {
-	assertValidCCs,
-	CommandClass,
-	getImplementedVersion,
-	InvalidCC,
-} from "../commandclass/CommandClass";
-import { DeviceResetLocallyCCNotification } from "../commandclass/DeviceResetLocallyCC";
-import {
-	isEncapsulatingCommandClass,
-	isMultiEncapsulatingCommandClass,
-} from "../commandclass/EncapsulatingCommandClass";
-import {
-	ICommandClassContainer,
-	isCommandClassContainer,
-} from "../commandclass/ICommandClassContainer";
-import { MultiChannelCC } from "../commandclass/MultiChannelCC";
-import { messageIsPing } from "../commandclass/NoOperationCC";
-import { KEXFailType } from "../commandclass/Security2/shared";
-import {
+	Security2Command,
 	SecurityCC,
+	SecurityCCCommandEncapsulation,
 	SecurityCCCommandEncapsulationNonceGet,
-} from "../commandclass/SecurityCC";
-import {
+	SecurityCCCommandsSupportedGet,
+	SecurityCCCommandsSupportedReport,
+	SecurityCommand,
 	SupervisionCC,
-	SupervisionCCGet,
+	type SupervisionCCGet,
 	SupervisionCCReport,
-	SupervisionResult,
-	SupervisionStatus,
-} from "../commandclass/SupervisionCC";
-import {
-	isTransportServiceEncapsulation,
+	TransportServiceCC,
 	TransportServiceCCFirstSegment,
 	TransportServiceCCSegmentComplete,
 	TransportServiceCCSegmentRequest,
 	TransportServiceCCSegmentWait,
-	TransportServiceCCSubsequentSegment,
+	type TransportServiceCCSubsequentSegment,
 	TransportServiceTimeouts,
-} from "../commandclass/TransportServiceCC";
-import {
-	getWakeUpIntervalValueId,
+	type UserPreferences,
+	VersionCommand,
 	WakeUpCCNoMoreInformation,
-} from "../commandclass/WakeUpCC";
-import { ApplicationCommandRequest } from "../controller/ApplicationCommandRequest";
+	WakeUpCCValues,
+	type ZWaveProtocolCC,
+	getImplementedVersion,
+	isEncapsulatingCommandClass,
+	isMultiEncapsulatingCommandClass,
+	isTransportServiceEncapsulation,
+} from "@zwave-js/cc";
+import { ConfigManager, type DeviceConfig } from "@zwave-js/config";
 import {
-	ApplicationUpdateRequest,
-	ApplicationUpdateRequestNodeInfoReceived,
-} from "../controller/ApplicationUpdateRequest";
-import { BridgeApplicationCommandRequest } from "../controller/BridgeApplicationCommandRequest";
-import { ZWaveController } from "../controller/Controller";
+	type CCId,
+	CommandClasses,
+	ControllerLogger,
+	ControllerRole,
+	ControllerStatus,
+	Duration,
+	EncapsulationFlags,
+	type HostIDs,
+	type KeyPair,
+	type LogConfig,
+	type LogNodeOptions,
+	MAX_SUPERVISION_SESSION_ID,
+	MAX_TRANSPORT_SERVICE_SESSION_ID,
+	MPANState,
+	type MaybeNotKnown,
+	MessagePriority,
+	type MessageRecord,
+	type MulticastDestination,
+	NUM_NODEMASK_BYTES,
+	NodeIDType,
+	RFRegion,
+	SPANState,
+	SecurityClass,
+	SecurityManager,
+	SecurityManager2,
+	type SendCommandOptions,
+	type SendCommandReturnType,
+	type SendMessageOptions,
+	type SinglecastCC,
+	type SupervisionResult,
+	SupervisionStatus,
+	type SupervisionUpdateHandler,
+	TransactionState,
+	TransmitOptions,
+	TransmitStatus,
+	type ValueDB,
+	type ValueID,
+	type ValueMetadata,
+	ZWaveError,
+	ZWaveErrorCodes,
+	ZWaveLogContainer,
+	deserializeCacheValue,
+	extractRawECDHPrivateKeySync,
+	generateECDHKeyPairSync,
+	getCCName,
+	isEncapsulationCC,
+	isLongRangeNodeId,
+	isMissingControllerACK,
+	isMissingControllerCallback,
+	isMissingControllerResponse,
+	isZWaveError,
+	keyPairFromRawECDHPrivateKeySync,
+	messageRecordToLines,
+	randomBytes,
+	securityClassIsS2,
+	securityClassOrder,
+	serializeCacheValue,
+	stripUndefined,
+	timespan,
+	wasControllerReset,
+} from "@zwave-js/core";
+import {
+	type BootloaderChunk,
+	BootloaderChunkType,
+	type EnumeratedPort,
+	FunctionType,
+	type HasNodeId,
+	Message,
+	type MessageEncodingContext,
+	MessageHeaders,
+	type MessageParsingContext,
+	MessageType,
+	type SuccessIndicator,
+	XModemMessageHeaders,
+	type ZWaveSerialBindingFactory,
+	ZWaveSerialFrameType,
+	ZWaveSerialMode,
+	type ZWaveSerialPortImplementation,
+	type ZWaveSerialStream,
+	ZWaveSerialStreamFactory,
+	getDefaultPriority,
+	hasNodeId,
+	isSuccessIndicator,
+	isZWaveSerialBindingFactory,
+	isZWaveSerialPortImplementation,
+	wrapLegacySerialBinding,
+} from "@zwave-js/serial";
+import { ApplicationUpdateRequest } from "@zwave-js/serial/serialapi";
+import {
+	SerialAPIStartedRequest,
+	SerialAPIWakeUpReason,
+} from "@zwave-js/serial/serialapi";
+import { GetControllerVersionRequest } from "@zwave-js/serial/serialapi";
+import { SoftResetRequest } from "@zwave-js/serial/serialapi";
 import {
 	SendDataBridgeRequest,
 	SendDataMulticastBridgeRequest,
-} from "../controller/SendDataBridgeMessages";
+} from "@zwave-js/serial/serialapi";
 import {
 	MAX_SEND_ATTEMPTS,
 	SendDataAbort,
 	SendDataMulticastRequest,
 	SendDataRequest,
-} from "../controller/SendDataMessages";
+} from "@zwave-js/serial/serialapi";
 import {
+	type SendDataMessage,
+	hasTXReport,
 	isSendData,
 	isSendDataSinglecast,
-	SendDataMessage,
-	TransmitOptions,
-} from "../controller/SendDataShared";
-import { SoftResetRequest } from "../controller/SoftResetRequest";
-import { ControllerLogger } from "../log/Controller";
-import { DriverLogger } from "../log/Driver";
+	isSendDataTransmitReport,
+	isTransmitReport,
+} from "@zwave-js/serial/serialapi";
 import {
-	FunctionType,
-	MessagePriority,
-	MessageType,
-} from "../message/Constants";
-import { getDefaultPriority, Message } from "../message/Message";
-import { isNodeQuery } from "../node/INodeQuery";
-import type { ZWaveNode } from "../node/Node";
-import { InterviewStage, NodeStatus } from "../node/Types";
-import { reportMissingDeviceConfig } from "../telemetry/deviceConfig";
+	SendTestFrameRequest,
+	SendTestFrameTransmitReport,
+} from "@zwave-js/serial/serialapi";
 import {
-	AppInfo,
+	type CommandRequest,
+	type ContainsCC,
+	containsCC,
+	containsSerializedCC,
+	isCommandRequest,
+} from "@zwave-js/serial/serialapi";
+import {
+	AsyncQueue,
+	Bytes,
+	type ThrowingMap,
+	TypedEventTarget,
+	areUint8ArraysEqual,
+	buffer2hex,
+	cloneDeep,
+	createWrappingCounter,
+	getErrorMessage,
+	isAbortError,
+	isUint8Array,
+	mergeDeep,
+	noop,
+	num2hex,
+	pick,
+} from "@zwave-js/shared";
+import {
+	type Database,
+	type ReadFile,
+	type ReadFileSystemInfo,
+} from "@zwave-js/shared/bindings";
+import { distinct } from "alcalzone-shared/arrays";
+import { wait } from "alcalzone-shared/async";
+import {
+	type DeferredPromise,
+	createDeferredPromise,
+} from "alcalzone-shared/deferred-promise";
+import { isArray, isObject } from "alcalzone-shared/typeguards";
+import * as util from "node:util";
+import path from "pathe";
+import { PACKAGE_NAME, PACKAGE_VERSION } from "../_version.js";
+import { ZWaveController } from "../controller/Controller.js";
+import { InclusionState, RemoveNodeReason } from "../controller/Inclusion.js";
+import { DriverLogger } from "../log/Driver.js";
+import type { Endpoint } from "../node/Endpoint.js";
+import type { ZWaveNode } from "../node/Node.js";
+import {
+	InterviewStage,
+	NodeStatus,
+	type ZWaveNodeEventCallbacks,
+	type ZWaveNotificationCallback,
+	zWaveNodeEvents,
+} from "../node/_Types.js";
+import { type ZWaveNodeBase } from "../node/mixins/00_Base.js";
+import { type NodeWakeup } from "../node/mixins/30_Wakeup.js";
+import { type NodeValues } from "../node/mixins/40_Values.js";
+import { type NodeSchedulePoll } from "../node/mixins/60_ScheduledPoll.js";
+import { reportMissingDeviceConfig } from "../telemetry/deviceConfig.js";
+import {
+	type AppInfo,
 	compileStatistics,
 	sendStatistics,
-} from "../telemetry/statistics";
+} from "../telemetry/statistics.js";
+import { Bootloader } from "./Bootloader.js";
+import { createMessageGenerator } from "./MessageGenerators.js";
 import {
-	createSendThreadMachine,
-	SendThreadInterpreter,
-	TransactionReducer,
-	TransactionReducerResult,
-} from "./SendThreadMachine";
-import { throttlePresets } from "./ThrottlePresets";
-import { Transaction } from "./Transaction";
+	cacheKeys,
+	deserializeNetworkCacheValue,
+	migrateLegacyNetworkCache,
+	serializeNetworkCacheValue,
+} from "./NetworkCache.js";
+import { type SerialAPIQueueItem, TransactionQueue } from "./Queue.js";
 import {
+	type SerialAPICommandMachineInput,
+	createSerialAPICommandMachine,
+} from "./SerialAPICommandMachine.js";
+import {
+	type TransactionReducer,
+	type TransactionReducerResult,
+	createMessageDroppedUnexpectedError,
+	serialAPICommandErrorToZWaveError,
+} from "./StateMachineShared.js";
+import { TaskScheduler } from "./Task.js";
+import { throttlePresets } from "./ThrottlePresets.js";
+import { Transaction } from "./Transaction.js";
+import {
+	type TransportServiceRXMachine,
+	type TransportServiceRXMachineInput,
 	createTransportServiceRXMachine,
-	TransportServiceRXInterpreter,
-} from "./TransportServiceMachine";
-import {
-	checkForConfigUpdates,
-	installConfigUpdate,
-	installConfigUpdateInDocker,
-} from "./UpdateConfig";
-import type { ZWaveOptions } from "./ZWaveOptions";
+} from "./TransportServiceMachine.js";
+import { checkForConfigUpdates, installConfigUpdate } from "./UpdateConfig.js";
+import { mergeUserAgent, userAgentComponentsToString } from "./UserAgent.js";
+import type {
+	EditableZWaveOptions,
+	PartialZWaveOptions,
+	ZWaveOptions,
+} from "./ZWaveOptions.js";
+import { discoverRemoteSerialPorts } from "./mDNSDiscovery.js";
 
-const packageJsonPath = require.resolve("zwave-js/package.json");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const packageJson = require(packageJsonPath);
-const libraryRootDir = path.dirname(packageJsonPath);
-const libVersion: string = packageJson.version;
+export const libVersion: string = PACKAGE_VERSION;
+export const libName: string = PACKAGE_NAME;
 
 // This is made with cfonts:
 const libNameString = `
-███████╗ ██╗    ██╗  █████╗  ██╗   ██╗ ███████╗             ██╗ ███████╗
-╚══███╔╝ ██║    ██║ ██╔══██╗ ██║   ██║ ██╔════╝             ██║ ██╔════╝
-  ███╔╝  ██║ █╗ ██║ ███████║ ██║   ██║ █████╗   █████╗      ██║ ███████╗
- ███╔╝   ██║███╗██║ ██╔══██║ ╚██╗ ██╔╝ ██╔══╝   ╚════╝ ██   ██║ ╚════██║
-███████╗ ╚███╔███╔╝ ██║  ██║  ╚████╔╝  ███████╗        ╚█████╔╝ ███████║
-╚══════╝  ╚══╝╚══╝  ╚═╝  ╚═╝   ╚═══╝   ╚══════╝         ╚════╝  ╚══════╝
+███████╗        ██╗    ██╗  █████╗  ██╗   ██╗ ███████╗          ██╗ ███████╗
+╚══███╔╝        ██║    ██║ ██╔══██╗ ██║   ██║ ██╔════╝          ██║ ██╔════╝
+  ███╔╝  █████╗ ██║ █╗ ██║ ███████║ ██║   ██║ █████╗            ██║ ███████╗
+ ███╔╝   ╚════╝ ██║███╗██║ ██╔══██║ ╚██╗ ██╔╝ ██╔══╝       ██   ██║ ╚════██║
+███████╗        ╚███╔███╔╝ ██║  ██║  ╚████╔╝  ███████╗     ╚█████╔╝ ███████║
+╚══════╝         ╚══╝╚══╝  ╚═╝  ╚═╝   ╚═══╝   ╚══════╝      ╚════╝  ╚══════╝
 `;
 
 const defaultOptions: ZWaveOptions = {
 	timeouts: {
 		ack: 1000,
 		byte: 150,
-		response: 1600,
-		report: 10000,
+		// Ideally we'd want to have this as low as possible, but some
+		// 500 series controllers can take several seconds to respond sometimes.
+		response: 10000,
+		report: 1000, // ReportTime timeout SHOULD be set to CommandTime + 1 second
 		nonce: 5000,
-		sendDataCallback: 65000, // as defined in INS13954
+		sendDataAbort: 20000, // If a controller takes over 15s to reach a node, it's probably not going to happen
+		sendDataCallback: 30000, // INS13954 defines this to be 65000 ms, but waiting that long causes issues with reporting devices
+		sendToSleep: 250, // The default should be enough time for applications to react to devices waking up
+		retryJammed: 1000,
 		refreshValue: 5000, // Default should handle most slow devices until we have a better solution
+		refreshValueAfterTransition: 1000, // To account for delays in the device
+		serialAPIStarted: 5000,
 	},
 	attempts: {
 		openSerialPort: 10,
 		controller: 3,
 		sendData: 3,
-		retryAfterTransmitReport: false,
+		sendDataJammed: 5,
 		nodeInterview: 5,
 	},
-	preserveUnknownValues: false,
 	disableOptimisticValueUpdate: false,
-	// By default enable soft reset unless the env variable is set
-	enableSoftReset: !process.env.ZWAVEJS_DISABLE_SOFT_RESET,
+	features: {
+		// By default enable soft reset unless the env variable is set
+		softReset: !process.env.ZWAVEJS_DISABLE_SOFT_RESET,
+		// By default enable the unresponsive controller recovery unless the env variable is set
+		unresponsiveControllerRecovery: !process.env
+			.ZWAVEJS_DISABLE_UNRESPONSIVE_CONTROLLER_RECOVERY,
+		// By default enable the watchdog, unless the env variable is set
+		watchdog: !process.env.ZWAVEJS_DISABLE_WATCHDOG,
+	},
 	interview: {
-		skipInterview: false,
 		queryAllUserCodes: false,
 	},
 	storage: {
-		driver: fsExtra,
-		cacheDir: path.resolve(libraryRootDir, "cache"),
+		cacheDir: path.join(process.cwd(), "cache"),
 		lockDir: process.env.ZWAVEJS_LOCK_DIRECTORY,
 		throttle: "normal",
 	},
 	preferences: {
-		scales: {
-			temperature: "Celsius",
-		},
+		scales: {},
 	},
 };
 
@@ -225,15 +339,15 @@ function checkOptions(options: ZWaveOptions): void {
 			ZWaveErrorCodes.Driver_InvalidOptions,
 		);
 	}
-	if (options.timeouts.response < 500 || options.timeouts.response > 5000) {
+	if (options.timeouts.response < 500 || options.timeouts.response > 60000) {
 		throw new ZWaveError(
-			`The Response timeout must be between 500 and 5000 milliseconds!`,
+			`The Response timeout must be between 500 and 60000 milliseconds!`,
 			ZWaveErrorCodes.Driver_InvalidOptions,
 		);
 	}
-	if (options.timeouts.report < 1000 || options.timeouts.report > 40000) {
+	if (options.timeouts.report < 500 || options.timeouts.report > 10000) {
 		throw new ZWaveError(
-			`The Report timeout must be between 1000 and 40000 milliseconds!`,
+			`The Report timeout must be between 500 and 10000 milliseconds!`,
 			ZWaveErrorCodes.Driver_InvalidOptions,
 		);
 	}
@@ -243,19 +357,50 @@ function checkOptions(options: ZWaveOptions): void {
 			ZWaveErrorCodes.Driver_InvalidOptions,
 		);
 	}
+	if (
+		options.timeouts.retryJammed < 10 || options.timeouts.retryJammed > 5000
+	) {
+		throw new ZWaveError(
+			`The timeout for retrying while jammed must be between 10 and 5000 milliseconds!`,
+			ZWaveErrorCodes.Driver_InvalidOptions,
+		);
+	}
+	if (
+		options.timeouts.sendToSleep < 10 || options.timeouts.sendToSleep > 5000
+	) {
+		throw new ZWaveError(
+			`The Send To Sleep timeout must be between 10 and 5000 milliseconds!`,
+			ZWaveErrorCodes.Driver_InvalidOptions,
+		);
+	}
 	if (options.timeouts.sendDataCallback < 10000) {
 		throw new ZWaveError(
 			`The Send Data Callback timeout must be at least 10000 milliseconds!`,
 			ZWaveErrorCodes.Driver_InvalidOptions,
 		);
 	}
+	if (
+		options.timeouts.sendDataAbort < 5000
+		|| options.timeouts.sendDataAbort
+			> options.timeouts.sendDataCallback - 5000
+	) {
+		throw new ZWaveError(
+			`The Send Data Abort Callback timeout must be between 5000 and ${
+				options.timeouts.sendDataCallback - 5000
+			} milliseconds!`,
+			ZWaveErrorCodes.Driver_InvalidOptions,
+		);
+	}
+	if (
+		options.timeouts.serialAPIStarted < 1000
+		|| options.timeouts.serialAPIStarted > 30000
+	) {
+		throw new ZWaveError(
+			`The Serial API started timeout must be between 1000 and 30000 milliseconds!`,
+			ZWaveErrorCodes.Driver_InvalidOptions,
+		);
+	}
 	if (options.securityKeys != undefined) {
-		if (options.networkKey != undefined) {
-			throw new ZWaveError(
-				`The deprecated networkKey option may not be used together with the new securityKeys option!`,
-				ZWaveErrorCodes.Driver_InvalidOptions,
-			);
-		}
 		const keys = Object.entries(options.securityKeys);
 		for (let i = 0; i < keys.length; i++) {
 			const [secClass, key] = keys[i];
@@ -265,19 +410,12 @@ function checkOptions(options: ZWaveOptions): void {
 					ZWaveErrorCodes.Driver_InvalidOptions,
 				);
 			}
-			if (keys.findIndex(([, k]) => k.equals(key)) !== i) {
+			if (keys.findIndex(([, k]) => areUint8ArraysEqual(k, key)) !== i) {
 				throw new ZWaveError(
 					`The security key for class ${secClass} was used multiple times!`,
 					ZWaveErrorCodes.Driver_InvalidOptions,
 				);
 			}
-		}
-	} else if (options.networkKey != undefined) {
-		if (options.networkKey.length !== 16) {
-			throw new ZWaveError(
-				`The network key must be a buffer with length 16!`,
-				ZWaveErrorCodes.Driver_InvalidOptions,
-			);
 		}
 	}
 	if (options.attempts.controller < 1 || options.attempts.controller > 3) {
@@ -287,8 +425,8 @@ function checkOptions(options: ZWaveOptions): void {
 		);
 	}
 	if (
-		options.attempts.sendData < 1 ||
-		options.attempts.sendData > MAX_SEND_ATTEMPTS
+		options.attempts.sendData < 1
+		|| options.attempts.sendData > MAX_SEND_ATTEMPTS
 	) {
 		throw new ZWaveError(
 			`The SendData attempts must be between 1 and ${MAX_SEND_ATTEMPTS}!`,
@@ -296,13 +434,93 @@ function checkOptions(options: ZWaveOptions): void {
 		);
 	}
 	if (
-		options.attempts.nodeInterview < 1 ||
-		options.attempts.nodeInterview > 10
+		options.attempts.sendDataJammed < 1
+		|| options.attempts.sendDataJammed > 10
+	) {
+		throw new ZWaveError(
+			`The SendData attempts while jammed must be between 1 and 10!`,
+			ZWaveErrorCodes.Driver_InvalidOptions,
+		);
+	}
+	if (
+		options.attempts.nodeInterview < 1
+		|| options.attempts.nodeInterview > 10
 	) {
 		throw new ZWaveError(
 			`The Node interview attempts must be between 1 and 10!`,
 			ZWaveErrorCodes.Driver_InvalidOptions,
 		);
+	}
+
+	if (options.inclusionUserCallbacks) {
+		if (!isObject(options.inclusionUserCallbacks)) {
+			throw new ZWaveError(
+				`The inclusionUserCallbacks must be an object!`,
+				ZWaveErrorCodes.Driver_InvalidOptions,
+			);
+		} else if (
+			typeof options.inclusionUserCallbacks.grantSecurityClasses
+				!== "function"
+			|| typeof options.inclusionUserCallbacks.validateDSKAndEnterPIN
+				!== "function"
+			|| typeof options.inclusionUserCallbacks.abort !== "function"
+		) {
+			throw new ZWaveError(
+				`The inclusionUserCallbacks must contain the following functions: grantSecurityClasses, validateDSKAndEnterPIN, abort!`,
+				ZWaveErrorCodes.Driver_InvalidOptions,
+			);
+		}
+	}
+
+	if (options.joinNetworkUserCallbacks) {
+		if (!isObject(options.joinNetworkUserCallbacks)) {
+			throw new ZWaveError(
+				`The joinNetworkUserCallbacks must be an object!`,
+				ZWaveErrorCodes.Driver_InvalidOptions,
+			);
+		} else if (
+			typeof options.joinNetworkUserCallbacks.showDSK
+				!== "function"
+			|| typeof options.joinNetworkUserCallbacks.done
+				!== "function"
+		) {
+			throw new ZWaveError(
+				`The joinNetworkUserCallbacks must contain the following functions: showDSK, done!`,
+				ZWaveErrorCodes.Driver_InvalidOptions,
+			);
+		}
+	}
+
+	if (options.rf != undefined) {
+		if (options.rf.region != undefined) {
+			if (
+				typeof options.rf.region !== "number"
+				|| !(options.rf.region in RFRegion)
+				|| options.rf.region === RFRegion.Unknown
+			) {
+				throw new ZWaveError(
+					`${options.rf.region} is not a valid RF region!`,
+					ZWaveErrorCodes.Driver_InvalidOptions,
+				);
+			}
+		}
+
+		if (options.rf.txPower != undefined) {
+			if (!isObject(options.rf.txPower)) {
+				throw new ZWaveError(
+					`rf.txPower must be an object!`,
+					ZWaveErrorCodes.Driver_InvalidOptions,
+				);
+			} else if (
+				typeof options.rf.txPower.powerlevel !== "number"
+				|| typeof options.rf.txPower.measured0dBm !== "number"
+			) {
+				throw new ZWaveError(
+					`rf.txPower must contain the following numeric properties: powerlevel, measured0dBm!`,
+					ZWaveErrorCodes.Driver_InvalidOptions,
+				);
+			}
+		}
 	}
 }
 
@@ -318,73 +536,22 @@ interface RequestHandlerEntry<T extends Message = Message> {
 	oneTime: boolean;
 }
 
-interface AwaitedMessageEntry {
-	promise: DeferredPromise<Message>;
+interface AwaitedThing<T> {
+	handler: (thing: T) => void;
 	timeout?: NodeJS.Timeout;
-	predicate: (msg: Message) => boolean;
+	predicate: (msg: T) => boolean;
+	refreshPredicate?: (msg: T) => boolean;
 }
 
-interface AwaitedCommandEntry {
-	promise: DeferredPromise<CommandClass>;
-	timeout?: NodeJS.Timeout;
-	predicate: (cc: CommandClass) => boolean;
-}
-
-export interface SendMessageOptions {
-	/** The priority of the message to send. If none is given, the defined default priority of the message class will be used. */
-	priority?: MessagePriority;
-	/** If an exception should be thrown when the message to send is not supported. Setting this to false is is useful if the capabilities haven't been determined yet. Default: true */
-	supportCheck?: boolean;
-	/**
-	 * Whether the driver should update the node status to asleep or dead when a transaction is not acknowledged (repeatedly).
-	 * Setting this to false will cause the simply transaction to be rejected on failure.
-	 * Default: true
-	 */
-	changeNodeStatusOnMissingACK?: boolean;
-	/** Sets the number of milliseconds after which a message expires. When the expiration timer elapses, the promise is rejected with the error code `Controller_MessageExpired`. */
-	expire?: number;
-	/**
-	 * Internal information used to identify or mark this transaction
-	 * @internal
-	 */
-	tag?: any;
-	/**
-	 * Whether the send thread MUST be paused after this message was handled
-	 * @internal
-	 */
-	pauseSendThread?: boolean;
-	/** If a Wake Up On Demand should be requested for the target node. */
-	requestWakeUpOnDemand?: boolean;
-}
-
-export interface SendCommandOptions extends SendMessageOptions {
-	/** How many times the driver should try to send the message. Defaults to the configured Driver option */
-	maxSendAttempts?: number;
-	/** Whether the driver should automatically handle the encapsulation. Default: true */
-	autoEncapsulate?: boolean;
-	/** Overwrite the default transmit options */
-	transmitOptions?: TransmitOptions;
-}
-
-export type SupervisionUpdateHandler = (
-	status: SupervisionStatus,
-	remainingDuration?: Duration,
-) => void;
-
-export type SendSupervisedCommandOptions = SendCommandOptions &
-	(
-		| {
-				requestStatusUpdates: false;
-		  }
-		| {
-				requestStatusUpdates: true;
-				onUpdate: SupervisionUpdateHandler;
-		  }
-	);
+type AwaitedMessageHeader = AwaitedThing<MessageHeaders>;
+type AwaitedMessageEntry = AwaitedThing<Message>;
+type AwaitedCommandEntry = AwaitedThing<CCId>;
+export type AwaitedBootloaderChunkEntry = AwaitedThing<BootloaderChunk>;
 
 interface TransportServiceSession {
 	fragmentSize: number;
-	interpreter: TransportServiceRXInterpreter;
+	machine: TransportServiceRXMachine;
+	timeout?: NodeJS.Timeout;
 }
 
 interface Sessions {
@@ -394,9 +561,87 @@ interface Sessions {
 	supervision: Map<number, SupervisionUpdateHandler>;
 }
 
+// Used to add all node events to the driver event callbacks, but prefixed with "node "
+type PrefixedNodeEvents = {
+	[
+		K in keyof ZWaveNodeEventCallbacks as K extends string ? `node ${K}`
+			: never
+	]: ZWaveNodeEventCallbacks[K];
+};
+
+const enum ControllerRecoveryPhase {
+	None,
+	ACKTimeout,
+	ACKTimeoutAfterReset,
+	CallbackTimeout,
+	CallbackTimeoutAfterReset,
+	Jammed,
+	JammedAfterReset,
+}
+
+function messageIsPing<T extends Message>(
+	msg: T,
+): msg is T & ContainsCC<NoOperationCC> {
+	return containsCC(msg) && msg.command instanceof NoOperationCC;
+}
+
+function assertValidCCs(container: ContainsCC): void {
+	if (container.command instanceof InvalidCC) {
+		if (typeof container.command.reason === "number") {
+			throw new ZWaveError(
+				"The message payload failed validation!",
+				container.command.reason,
+			);
+		} else {
+			throw new ZWaveError(
+				"The message payload is invalid!",
+				ZWaveErrorCodes.PacketFormat_InvalidPayload,
+				container.command.reason,
+			);
+		}
+	} else if (containsCC(container.command)) {
+		assertValidCCs(container.command);
+	}
+}
+
+function wrapLegacyFSDriverForCacheMigrationOnly(
+	legacy: import("@zwave-js/core/traits").FileSystem,
+): ReadFileSystemInfo & ReadFile {
+	// This usage only needs readFile and checking if a file exists
+	// Every other usage will throw!
+	return {
+		async readFile(path) {
+			const text = await legacy.readFile(path, "utf8");
+			return Bytes.from(text, "utf8");
+		},
+		async stat(path) {
+			if (await legacy.pathExists(path)) {
+				return {
+					isDirectory() {
+						return false;
+					},
+					isFile() {
+						return true;
+					},
+					mtime: new Date(),
+					size: 0,
+				};
+			} else {
+				throw new Error("File not found");
+			}
+		},
+		readDir(_path) {
+			return Promise.reject(
+				new Error("Not implemented for the legacy FS driver"),
+			);
+		},
+	};
+}
+
 // Strongly type the event emitter events
-export interface DriverEventCallbacks {
+export interface DriverEventCallbacks extends PrefixedNodeEvents {
 	"driver ready": () => void;
+	"bootloader ready": () => void;
 	"all nodes ready": () => void;
 	error: (err: Error) => void;
 }
@@ -409,18 +654,222 @@ export type DriverEvents = Extract<keyof DriverEventCallbacks, string>;
  * Any action you want to perform on the Z-Wave network must go through a driver
  * instance or its associated nodes.
  */
-export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
+export class Driver extends TypedEventTarget<DriverEventCallbacks>
+	implements
+		CCAPIHost,
+		InterviewContext,
+		RefreshValuesContext,
+		PersistValuesContext
+{
+	public constructor(
+		private port:
+			| string
+			// eslint-disable-next-line @typescript-eslint/no-deprecated
+			| ZWaveSerialPortImplementation
+			| ZWaveSerialBindingFactory,
+		...optionsAndPresets: (PartialZWaveOptions | undefined)[]
+	) {
+		super();
+
+		// Ensure the given serial port is valid
+		if (
+			typeof port !== "string"
+			&& !isZWaveSerialPortImplementation(port)
+			&& !isZWaveSerialBindingFactory(port)
+		) {
+			throw new ZWaveError(
+				`The port must be a string or a valid custom serial port implementation!`,
+				ZWaveErrorCodes.Driver_InvalidOptions,
+			);
+		}
+
+		// Deep-Merge all given options/presets
+		const definedOptionsAndPresets = optionsAndPresets.filter(
+			(o): o is PartialZWaveOptions => !!o,
+		);
+		let mergedOptions: PartialZWaveOptions = {};
+		for (const preset of definedOptionsAndPresets) {
+			mergedOptions = mergeDeep(mergedOptions, preset, true);
+		}
+		// Finally apply the defaults, without overwriting any existing settings
+		this._options = mergeDeep(
+			mergedOptions,
+			cloneDeep(defaultOptions),
+		) as ZWaveOptions;
+
+		// And make sure they contain valid values
+		checkOptions(this._options);
+		if (this._options.userAgent) {
+			if (!isObject(this._options.userAgent)) {
+				throw new ZWaveError(
+					`The userAgent property must be an object!`,
+					ZWaveErrorCodes.Driver_InvalidOptions,
+				);
+			}
+
+			this.updateUserAgent(this._options.userAgent);
+		}
+
+		// Initialize logging
+		this._logContainer = new ZWaveLogContainer(this._options.logConfig);
+		this._driverLog = new DriverLogger(this, this._logContainer);
+		this._controllerLog = new ControllerLogger(this._logContainer);
+
+		// Initialize the cache
+		this.cacheDir = this._options.storage.cacheDir;
+
+		// Initialize config manager
+		this.configManager = new ConfigManager({
+			logContainer: this._logContainer,
+			deviceConfigPriorityDir:
+				this._options.storage.deviceConfigPriorityDir,
+			deviceConfigExternalDir:
+				this._options.storage.deviceConfigExternalDir,
+		});
+
+		const self = this;
+		this.messageEncodingContext = {
+			getHighestSecurityClass: (nodeId) =>
+				this.getHighestSecurityClass(nodeId),
+			hasSecurityClass: (nodeId, securityClass) =>
+				this.hasSecurityClass(nodeId, securityClass),
+			setSecurityClass: (nodeId, securityClass, granted) =>
+				this.setSecurityClass(nodeId, securityClass, granted),
+			getDeviceConfig: (nodeId) => this.getDeviceConfig(nodeId),
+			// These are evaluated lazily, so we cannot spread messageParsingContext unfortunately
+			get securityManager() {
+				return self.securityManager;
+			},
+			get securityManager2() {
+				return self.securityManager2;
+			},
+			get securityManagerLR() {
+				return self.securityManagerLR;
+			},
+			getSupportedCCVersion: (cc, nodeId, endpointIndex) =>
+				this.getSupportedCCVersion(cc, nodeId, endpointIndex),
+		};
+
+		this.immediateQueue = new TransactionQueue({
+			name: "immediate",
+			mayStartNextTransaction: (t) => {
+				// While the controller is unresponsive, only soft resetting is allowed.
+				// Since we use GetControllerVersionRequest to check if the controller responds after soft-reset,
+				// allow that too.
+				if (this.controller.status === ControllerStatus.Unresponsive) {
+					return t.message instanceof SoftResetRequest
+						|| t.message instanceof GetControllerVersionRequest;
+				}
+
+				// While the controller is jammed, only soft resetting is allowed
+				if (this.controller.status === ControllerStatus.Jammed) {
+					return t.message instanceof SoftResetRequest;
+				}
+
+				// All other messages on the immediate queue may always be sent as long as the controller is ready to send
+				return !this.queuePaused
+					&& this.controller.status === ControllerStatus.Ready;
+			},
+		});
+		this.queue = new TransactionQueue({
+			name: "normal",
+			mayStartNextTransaction: (t) => this.mayStartTransaction(t),
+		});
+		this.serialAPIQueue = new AsyncQueue();
+		this._queueIdle = false;
+
+		this._scheduler = new TaskScheduler();
+	}
+
+	private serialFactory: ZWaveSerialStreamFactory | undefined;
 	/** The serial port instance */
-	private serial: ZWaveSerialPortBase | undefined;
-	/** An instance of the Send Thread state machine */
-	private sendThread: SendThreadInterpreter;
+	private serial: ZWaveSerialStream | undefined;
+
+	private messageEncodingContext: Omit<
+		MessageEncodingContext,
+		keyof HostIDs | "nodeIdType"
+	>;
+
+	private getEncodingContext(): MessageEncodingContext & CCEncodingContext {
+		return {
+			...this.messageEncodingContext,
+			ownNodeId: this.controller.ownNodeId!,
+			homeId: this.controller.homeId!,
+			nodeIdType: this._controller?.nodeIdType ?? NodeIDType.Short,
+		};
+	}
+
+	private getMessageParsingContext(): MessageParsingContext {
+		return {
+			getDeviceConfig: (nodeId) => this.getDeviceConfig(nodeId),
+			sdkVersion: this._controller?.sdkVersion,
+			requestStorage: this._requestStorage,
+			ownNodeId: this.controller.ownNodeId!,
+			homeId: this.controller.homeId!,
+			nodeIdType: this._controller?.nodeIdType ?? NodeIDType.Short,
+		};
+	}
+
+	private getCCParsingContext(): Omit<
+		CCParsingContext,
+		"sourceNodeId" | "frameType"
+	> {
+		return {
+			...this.messageEncodingContext,
+			ownNodeId: this.controller.ownNodeId!,
+			homeId: this.controller.homeId!,
+		};
+	}
+
+	// We have multiple queues to achieve multiple "layers" of communication priority:
+	// The default queue for most messages
+	private queue: TransactionQueue;
+	// An immediate queue for handling queries that need to be handled ASAP, e.g. Nonce Get
+	private immediateQueue: TransactionQueue;
+	// And all of them feed into the serial API queue, which contains commands that will be sent ASAP
+	private serialAPIQueue: AsyncQueue<SerialAPIQueueItem>;
+
+	/** Gives access to the transaction queues, ordered by priority */
+	private get queues(): TransactionQueue[] {
+		return [this.immediateQueue, this.queue];
+	}
+
+	private _scheduler: TaskScheduler;
+	public get scheduler(): TaskScheduler {
+		return this._scheduler;
+	}
+
+	private queuePaused = false;
+	/** Used to immediately abort ongoing Serial API commands */
+	private abortSerialAPICommand: DeferredPromise<Error> | undefined;
+
+	// Keep track of which queues are currently busy
+	private _queuesBusyFlags = 0;
+	private _queueIdle: boolean;
+	/** Whether the queue is currently idle */
+	public get queueIdle(): boolean {
+		return this._queueIdle;
+	}
+	private set queueIdle(value: boolean) {
+		if (this._queueIdle !== value) {
+			this.driverLog.print(
+				value ? "all queues idle" : "one or more queues busy",
+			);
+			this._queueIdle = value;
+			this.handleQueueIdleChange(value);
+		}
+	}
 
 	/** A map of handlers for all sorts of requests */
 	private requestHandlers = new Map<FunctionType, RequestHandlerEntry[]>();
-	/** A map of awaited messages */
+	/** A list of awaited message headers */
+	private awaitedMessageHeaders: AwaitedMessageHeader[] = [];
+	/** A list of awaited messages */
 	private awaitedMessages: AwaitedMessageEntry[] = [];
-	/** A map of awaited commands */
+	/** A list of awaited commands */
 	private awaitedCommands: AwaitedCommandEntry[] = [];
+	/** A list of awaited chunks from the bootloader */
+	private awaitedBootloaderChunks: AwaitedBootloaderChunkEntry[] = [];
 
 	/** A map of Node ID -> ongoing sessions */
 	private nodeSessions = new Map<number, Sessions>();
@@ -434,25 +883,48 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		return this.nodeSessions.get(nodeId)!;
 	}
 
+	private _requestStorage: Map<FunctionType, Record<string, unknown>> =
+		new Map();
+	/**
+	 * @internal
+	 * Stores data from Serial API command requests to be used by their responses
+	 */
+	public get requestStorage(): Map<FunctionType, Record<string, unknown>> {
+		return this._requestStorage;
+	}
+
 	public readonly cacheDir: string;
 
-	private _valueDB: JsonlDB | undefined;
+	private _valueDB: Database<unknown> | undefined;
 	/** @internal */
-	public get valueDB(): JsonlDB | undefined {
+	public get valueDB(): Database<unknown> | undefined {
 		return this._valueDB;
 	}
-	private _metadataDB: JsonlDB<ValueMetadata> | undefined;
+	private _metadataDB: Database<ValueMetadata> | undefined;
 	/** @internal */
-	public get metadataDB(): JsonlDB<ValueMetadata> | undefined {
+	public get metadataDB(): Database<ValueMetadata> | undefined {
 		return this._metadataDB;
+	}
+	private _networkCache: Database<any> | undefined;
+	/** @internal */
+	public get networkCache(): Database<any> {
+		if (this._networkCache == undefined) {
+			throw new ZWaveError(
+				"The network cache was not yet initialized!",
+				ZWaveErrorCodes.Driver_NotReady,
+			);
+		}
+		return this._networkCache;
 	}
 
 	public readonly configManager: ConfigManager;
 	public get configVersion(): string {
 		return (
-			this.configManager?.configVersion ??
-			packageJson?.dependencies?.["@zwave-js/config"] ??
-			libVersion
+			this.configManager?.configVersion
+				// eslint-disable-next-line @typescript-eslint/no-require-imports
+				?? require("zwave-js/package.json")?.dependencies
+					?.["@zwave-js/config"]
+				?? libVersion
 		);
 	}
 
@@ -469,6 +941,17 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		return this._controllerLog;
 	}
 
+	public logNode(
+		nodeId: number,
+		message: string,
+		level?: LogNodeOptions["level"],
+	): void;
+	public logNode(nodeId: number, options: LogNodeOptions): void;
+	public logNode(...args: any[]): void {
+		// @ts-expect-error
+		this._controllerLog.logNode(...args);
+	}
+
 	private _controller: ZWaveController | undefined;
 	/** Encapsulates information about the Z-Wave controller and provides access to its nodes */
 	public get controller(): ZWaveController {
@@ -481,162 +964,203 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		return this._controller;
 	}
 
-	private _securityManager: SecurityManager | undefined;
+	/** While in bootloader mode, this encapsulates information about the bootloader and its state */
+	private _bootloader: Bootloader | undefined;
 	/** @internal */
+	public get bootloader(): Bootloader {
+		if (this._bootloader == undefined) {
+			throw new ZWaveError(
+				"The controller is not in bootloader mode!",
+				ZWaveErrorCodes.Driver_NotReady,
+			);
+		}
+		return this._bootloader;
+	}
+
+	public isInBootloader(): boolean {
+		return this._bootloader != undefined;
+	}
+
+	private _recoveryPhase: ControllerRecoveryPhase =
+		ControllerRecoveryPhase.None;
+
+	private _securityManager: SecurityManager | undefined;
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
 	public get securityManager(): SecurityManager | undefined {
 		return this._securityManager;
 	}
 
 	private _securityManager2: SecurityManager2 | undefined;
-	/** @internal */
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
 	public get securityManager2(): SecurityManager2 | undefined {
 		return this._securityManager2;
 	}
 
-	public constructor(
-		private port: string,
-		options?: DeepPartial<ZWaveOptions>,
-	) {
-		super();
+	private _securityManagerLR: SecurityManager2 | undefined;
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
+	public get securityManagerLR(): SecurityManager2 | undefined {
+		return this._securityManagerLR;
+	}
 
-		// merge given options with defaults
-		this.options = mergeDeep(options, defaultOptions) as ZWaveOptions;
-		// And make sure they contain valid values
-		checkOptions(this.options);
+	/** @internal */
+	public getSecurityManager2(
+		destination: number | MulticastDestination,
+	): SecurityManager2 | undefined {
+		const nodeId = isArray(destination) ? destination[0] : destination;
+		const isLongRange = isLongRangeNodeId(nodeId);
+		return isLongRange ? this.securityManagerLR : this.securityManager2;
+	}
 
-		// register some cleanup handlers in case the program doesn't get closed cleanly
-		this._cleanupHandler = this._cleanupHandler.bind(this);
-		process.on("exit", this._cleanupHandler);
-		process.on("SIGINT", this._cleanupHandler);
-		process.on("uncaughtException", this._cleanupHandler);
+	private _learnModeAuthenticatedKeyPair: KeyPair | undefined;
+	/** @internal */
+	public getLearnModeAuthenticatedKeyPair(): KeyPair {
+		if (this._learnModeAuthenticatedKeyPair == undefined) {
+			// Try restoring from cache
+			const privateKey = this.cacheGet<Uint8Array>(
+				cacheKeys.controller.privateKey,
+			);
+			if (privateKey) {
+				this._learnModeAuthenticatedKeyPair =
+					keyPairFromRawECDHPrivateKeySync(privateKey);
+			} else {
+				// Not found in cache, create a new one and cache it
+				this._learnModeAuthenticatedKeyPair = generateECDHKeyPairSync();
+				this.cacheSet(
+					cacheKeys.controller.privateKey,
+					extractRawECDHPrivateKeySync(
+						this._learnModeAuthenticatedKeyPair.privateKey,
+					),
+				);
+			}
+		}
+		return this._learnModeAuthenticatedKeyPair;
+	}
 
-		// Initialize logging
-		this._logContainer = new ZWaveLogContainer(this.options.logConfig);
-		this._driverLog = new DriverLogger(this._logContainer);
-		this._controllerLog = new ControllerLogger(this._logContainer);
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications. Use `controller.homeId` instead!
+	 */
+	public get homeId(): number {
+		// This is needed for the ZWaveHost interface
+		return this.controller.homeId!;
+	}
 
-		// Initialize the cache
-		this.cacheDir = this.options.storage.cacheDir;
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications. Use `controller.ownNodeId` instead!
+	 */
+	public get ownNodeId(): number {
+		// This is needed for the ZWaveHost interface
+		return this.controller.ownNodeId!;
+	}
 
-		// Initialize config manager
-		this.configManager = new ConfigManager({
-			logContainer: this._logContainer,
-			deviceConfigPriorityDir:
-				this.options.storage.deviceConfigPriorityDir,
-		});
+	/** @internal Used for compatibility with the CCAPIHost interface */
+	public getNode(nodeId: number): ZWaveNode | undefined {
+		return this.controller.nodes.get(nodeId);
+	}
 
-		// And initialize but don't start the send thread machine
-		const sendThreadMachine = createSendThreadMachine(
-			{
-				sendData: this.writeSerial.bind(this),
-				createSendDataAbort: () => new SendDataAbort(this),
-				notifyUnsolicited: (msg) => {
-					void this.handleUnsolicitedMessage(msg);
-				},
-				notifyRetry: (
-					command,
-					lastError,
-					message,
-					attempts,
-					maxAttempts,
-					delay,
-				) => {
-					if (command === "SendData") {
-						this.controllerLog.logNode(
-							message.getNodeId() ?? 255,
-							`did not respond after ${attempts}/${maxAttempts} attempts. Scheduling next try in ${delay} ms.`,
-							"warn",
-						);
-					} else {
-						// Translate the error into a better one
-						let errorReason: string;
-						switch (lastError) {
-							case "response timeout":
-								errorReason = "No response from controller";
-								this._controller?.incrementStatistics(
-									"timeoutResponse",
-								);
-								break;
-							case "callback timeout":
-								errorReason = "No callback from controller";
-								this._controller?.incrementStatistics(
-									"timeoutCallback",
-								);
-								break;
-							case "response NOK":
-								errorReason =
-									"The controller response indicated failure";
-								break;
-							case "callback NOK":
-								errorReason =
-									"The controller callback indicated failure";
-								break;
-							case "ACK timeout":
-								this._controller?.incrementStatistics(
-									"timeoutACK",
-								);
-							// fall through
-							case "CAN":
-							case "NAK":
-							default:
-								errorReason =
-									"Failed to execute controller command";
-								break;
-						}
-						this.controllerLog.print(
-							`${errorReason} after ${attempts}/${maxAttempts} attempts. Scheduling next try in ${delay} ms.`,
-							"warn",
-						);
-					}
-				},
-				timestamp: highResTimestamp,
-				rejectTransaction: (transaction, error) => {
-					// If a node failed to respond in time, it might be sleeping
-					if (this.isMissingNodeACK(transaction, error)) {
-						if (this.handleMissingNodeACK(transaction)) return;
-					}
-					transaction.promise.reject(error);
-				},
-				resolveTransaction: (transaction, result) => {
-					transaction.promise.resolve(result);
-				},
-				logOutgoingMessage: (msg: Message) => {
-					this.driverLog.logMessage(msg, {
-						direction: "outbound",
-					});
-					if (process.env.NODE_ENV !== "test") {
-						// Enrich error data in case something goes wrong
-						Sentry.addBreadcrumb({
-							category: "message",
-							timestamp: Date.now() / 1000,
-							type: "debug",
-							data: {
-								direction: "outbound",
-								msgType: msg.type,
-								functionType: msg.functionType,
-								name: msg.constructor.name,
-								nodeId: msg.getNodeId(),
-								...msg.toLogEntry(),
-							},
-						});
-					}
-				},
-				log: this.driverLog.print.bind(this.driverLog),
-			},
-			pick(this.options, ["timeouts", "attempts"]),
-		);
-		this.sendThread = interpret(sendThreadMachine);
-		// this.sendThread.onTransition((state) => {
-		// 	if (state.changed)
-		// 		this.driverLog.print(
-		// 			`send thread state: ${state.toStrings().slice(-1)[0]}`,
-		// 			"verbose",
-		// 		);
-		// });
+	/** @internal Used for compatibility with the CCAPIHost interface */
+	public getNodeOrThrow(nodeId: number): ZWaveNode {
+		return this.controller.nodes.getOrThrow(nodeId);
+	}
+
+	/** @internal Used for compatibility with the CCAPIHost interface */
+	public getAllNodes(): ZWaveNode[] {
+		return [...this.controller.nodes.values()];
+	}
+
+	public tryGetNode(msg: Message): ZWaveNode | undefined {
+		const nodeId = msg.getNodeId();
+		if (nodeId != undefined) return this.controller.nodes.get(nodeId);
+	}
+
+	public tryGetEndpoint(cc: CommandClass): Endpoint | undefined {
+		if (cc.isSinglecast()) {
+			return this.controller.nodes
+				.get(cc.nodeId)
+				?.getEndpoint(cc.endpointIndex);
+		}
+	}
+
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
+	public getValueDB(nodeId: number): ValueDB {
+		// This is needed for the ZWaveHost interface
+		const node = this.controller.nodes.getOrThrow(nodeId);
+		return node.valueDB;
+	}
+
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
+	public tryGetValueDB(nodeId: number): ValueDB | undefined {
+		// This is needed for the ZWaveHost interface
+		const node = this.controller.nodes.get(nodeId);
+		return node?.valueDB;
+	}
+
+	public getDeviceConfig(nodeId: number): DeviceConfig | undefined {
+		// This is needed for the ZWaveHost interface
+		return this.controller.nodes.get(nodeId)?.deviceConfig;
+	}
+
+	public lookupManufacturer(manufacturerId: number): string | undefined {
+		return this.configManager.lookupManufacturer(manufacturerId);
+	}
+
+	public getHighestSecurityClass(
+		nodeId: number,
+	): MaybeNotKnown<SecurityClass> {
+		// This is needed for the ZWaveHost interface
+		const node = this.controller.nodes.getOrThrow(nodeId);
+		return node.getHighestSecurityClass();
+	}
+
+	public hasSecurityClass(
+		nodeId: number,
+		securityClass: SecurityClass,
+	): MaybeNotKnown<boolean> {
+		// This is needed for the ZWaveHost interface
+		const node = this.controller.nodes.getOrThrow(nodeId);
+		return node.hasSecurityClass(securityClass);
+	}
+
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
+	public setSecurityClass(
+		nodeId: number,
+		securityClass: SecurityClass,
+		granted: boolean,
+	): void {
+		// This is needed for the ZWaveHost interface
+		const node = this.controller.nodes.getOrThrow(nodeId);
+		node.setSecurityClass(securityClass, granted);
 	}
 
 	/** Updates the logging configuration without having to restart the driver. */
-	public updateLogConfig(config: DeepPartial<LogConfig>): void {
+	public updateLogConfig(config: Partial<LogConfig>): void {
 		this._logContainer.updateConfiguration(config);
 	}
 
@@ -649,20 +1173,143 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	public setPreferredScales(
 		scales: ZWaveOptions["preferences"]["scales"],
 	): void {
-		this.options.preferences.scales = mergeDeep(
+		this._options.preferences.scales = mergeDeep(
 			defaultOptions.preferences.scales,
 			scales,
 		);
 	}
 
-	/** Enumerates all existing serial ports */
-	public static async enumerateSerialPorts(): Promise<string[]> {
-		const ports = await SerialPort.list();
-		return ports.map((port) => port.path);
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
+	public getUserPreferences(): UserPreferences {
+		return this._options.preferences;
 	}
 
-	/** @internal */
-	public options: ZWaveOptions;
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
+	public getInterviewOptions(): InterviewOptions {
+		return this._options.interview;
+	}
+
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications
+	 */
+	public getRefreshValueTimeouts(): RefreshValueTimeouts {
+		return {
+			refreshValue: this._options.timeouts.refreshValue,
+			refreshValueAfterTransition:
+				this._options.timeouts.refreshValueAfterTransition,
+		};
+	}
+
+	/**
+	 * Enumerates all existing serial ports.
+	 * @param local Whether to include local serial ports
+	 * @param remote Whether to discover remote serial ports using an mDNS query for the `_zwave._tcp` domain
+	 */
+	public static async enumerateSerialPorts({
+		local = true,
+		remote = true,
+	}: {
+		local?: boolean;
+		remote?: boolean;
+	} = {}): Promise<string[]> {
+		const ret: (EnumeratedPort & { path: string })[] = [];
+
+		// Ideally we'd use the host bindings used by the driver, but we can't access them in a static method
+
+		const bindings =
+			(await import("@zwave-js/serial/bindings/node")).serial;
+		if (local && typeof bindings.list === "function") {
+			for (const port of await bindings.list()) {
+				if (port.type === "custom") continue;
+				ret.push(port);
+			}
+		}
+		if (remote) {
+			const ports = await discoverRemoteSerialPorts();
+			if (ports) {
+				ret.push(...ports.map((p) => ({
+					type: "socket" as const,
+					path: p.port,
+				})));
+			}
+		}
+
+		const portOrder: EnumeratedPort["type"][] = ["link", "socket", "tty"];
+
+		ret.sort((a, b) => {
+			const typeA = portOrder.indexOf(a.type);
+			const typeB = portOrder.indexOf(b.type);
+			if (typeA !== typeB) return typeA - typeB;
+			return a.path.localeCompare(b.path);
+		});
+
+		return distinct(ret.map((p) => p.path));
+	}
+
+	/** Updates a subset of the driver options on the fly */
+	public updateOptions(options: EditableZWaveOptions): void {
+		// This code is called from user code, so we need to make sure no options were passed
+		// which we are not able to update on the fly
+		const safeOptions = pick(options, [
+			"disableOptimisticValueUpdate",
+			"emitValueUpdateAfterSetValue",
+			"inclusionUserCallbacks",
+			"joinNetworkUserCallbacks",
+			"interview",
+			"preferences",
+			"vendor",
+		]);
+
+		// Create a new deep-merged copy of the options so we can check them for validity
+		// without affecting our own options. logConfig is potentially unsafe to clone, so just preserve it.
+		const { logConfig, ...rest } = this._options;
+		const newOptions = mergeDeep(
+			cloneDeep(rest),
+			safeOptions,
+			true,
+		) as ZWaveOptions;
+		newOptions.logConfig = logConfig;
+		checkOptions(newOptions);
+
+		if (options.userAgent && !isObject(options.userAgent)) {
+			throw new ZWaveError(
+				`The userAgent property must be an object!`,
+				ZWaveErrorCodes.Driver_InvalidOptions,
+			);
+		}
+
+		// All good, update the options
+		this._options = newOptions;
+
+		if (options.logConfig) {
+			this.updateLogConfig(options.logConfig);
+		}
+
+		if (options.userAgent) {
+			this.updateUserAgent(options.userAgent);
+		}
+	}
+
+	private _options: ZWaveOptions;
+	public get options(): Readonly<ZWaveOptions> {
+		return this._options;
+	}
+
+	/**
+	 * The host bindings used to access file system etc.
+	 */
+	// This is set during `start()` and should not be accessed before
+	private bindings!: Required<NonNullable<ZWaveOptions["host"]>>;
 
 	private _wasStarted: boolean = false;
 	private _isOpen: boolean = false;
@@ -679,13 +1326,16 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		if (this._wasStarted) return Promise.resolve();
 		this._wasStarted = true;
 
-		// Enforce that an error handler is attached
-		if ((this as unknown as EventEmitter).listenerCount("error") === 0) {
-			throw new ZWaveError(
-				`Before starting the driver, a handler for the "error" event must be attached.`,
-				ZWaveErrorCodes.Driver_NoErrorHandler,
-			);
-		}
+		// Populate default bindings. This has to happen asynchronously, so the driver does not have a hard dependency
+		// on Node.js internals
+		this.bindings = {
+			fs: this._options.host?.fs
+				?? (await import("@zwave-js/core/bindings/fs/node")).fs,
+			serial: this._options.host?.serial
+				?? (await import("@zwave-js/serial/bindings/node")).serial,
+			db: this._options.host?.db
+				?? (await import("@zwave-js/core/bindings/db/jsonl")).db,
+		};
 
 		const spOpenPromise = createDeferredPromise();
 
@@ -695,65 +1345,131 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		this.driverLog.print("", "info");
 
 		this.driverLog.print("starting driver...");
-		this.sendThread.start();
 
 		// Open the serial port
-		if (this.port.startsWith("tcp://")) {
-			const url = new URL(this.port);
-			this.driverLog.print(`opening serial port ${this.port}`);
-			this.serial = new ZWaveSocket(
-				{
-					host: url.hostname,
-					port: parseInt(url.port),
-				},
-				this._logContainer,
-			);
-		} else {
-			this.driverLog.print(`opening serial port ${this.port}`);
-			this.serial = new ZWaveSerialPort(this.port, this._logContainer);
-		}
-		this.serial
-			.on("data", this.serialport_onData.bind(this))
-			.on("error", (err) => {
-				if (this.isSoftResetting && !this.serial?.isOpen) {
-					// A disconnection while soft resetting is to be expected
-					return;
-				} else if (!this._isOpen) {
-					// tryOpenSerialport takes care of error handling
-					return;
-				}
-
-				const message = `Serial port errored: ${err.message}`;
-				this.driverLog.print(message, "error");
-
-				const error = new ZWaveError(
-					message,
-					ZWaveErrorCodes.Driver_Failed,
+		let binding: ZWaveSerialBindingFactory;
+		if (typeof this.port === "string") {
+			if (
+				typeof this.bindings.serial.createFactoryByPath === "function"
+			) {
+				this.driverLog.print(`opening serial port ${this.port}`);
+				binding = await this.bindings.serial.createFactoryByPath(
+					this.port,
 				);
-				this.emit("error", error);
-
+			} else {
+				spOpenPromise.reject(
+					new ZWaveError(
+						"This platform does not support creating a serial connection by path",
+						ZWaveErrorCodes.Driver_Failed,
+					),
+				);
 				void this.destroy();
-			});
-		// If the port is already open, close it first
-		if (this.serial.isOpen) await this.serial.close();
+				return;
+			}
+		} else if (isZWaveSerialPortImplementation(this.port)) {
+			this.driverLog.print(
+				"opening serial port using the provided custom implementation",
+			);
+			this.driverLog.print(
+				"This is deprecated! Switch to the factory pattern instead.",
+				"warn",
+			);
+			binding = wrapLegacySerialBinding(this.port);
+		} else {
+			this.driverLog.print(
+				"opening serial port using the provided custom factory",
+			);
+			binding = this.port;
+		}
+		this.serialFactory = new ZWaveSerialStreamFactory(
+			binding,
+			this._logContainer,
+		);
 
 		// IMPORTANT: Test code expects the open promise to be created and returned synchronously
-		// Everything async (inluding opening the serial port) must happen in the setImmediate callback
+		// Everything async (including opening the serial port) must happen in the setImmediate callback
 
 		// asynchronously open the serial port
 		setImmediate(async () => {
-			if (!(await this.tryOpenSerialport(spOpenPromise))) return;
+			try {
+				await this.openSerialport();
+			} catch (e) {
+				spOpenPromise.reject(e as Error);
+				void this.destroy();
+				return;
+			}
+
 			this.driverLog.print("serial port opened");
 			this._isOpen = true;
 			spOpenPromise.resolve();
 
+			// Start draining the queues
+			for (const queue of this.queues) {
+				void this.drainTransactionQueue(queue);
+			}
+
+			// Start the serial API queue
+			void this.drainSerialAPIQueue();
+
+			// Start the task scheduler
+			this._scheduler.start();
+
+			if (
+				typeof this._options.testingHooks?.onSerialPortOpen
+					=== "function"
+			) {
+				await this._options.testingHooks.onSerialPortOpen(this.serial!);
+			}
+
 			// Perform initialization sequence
 			await this.writeHeader(MessageHeaders.NAK);
-			await this.trySoftReset();
+			// Per the specs, this should be followed by a soft-reset but we need to be able
+			// to handle sticks that don't support the soft reset command. Therefore we do it
+			// after opening the value DBs
+
+			if (!this._options.testingHooks?.skipBootloaderCheck) {
+				// After an incomplete firmware upgrade, we might be stuck in the bootloader
+				// Therefore wait a short amount of time to see if the serialport detects bootloader mode.
+				// If we are, the bootloader will reply with its menu.
+				await wait(1000);
+				if (this._bootloader) {
+					this.driverLog.print(
+						"Controller is in bootloader, attempting to recover...",
+						"warn",
+					);
+					await this.leaveBootloaderInternal();
+
+					// Wait a short time again. If we're in bootloader mode again, we're stuck
+					await wait(1000);
+					if (this._bootloader) {
+						if (this._options.allowBootloaderOnly) {
+							this.driverLog.print(
+								"Failed to recover from bootloader. Staying in bootloader mode as requested.",
+								"warn",
+							);
+							// Needed for the OTW feature to be available
+							this._controller = new ZWaveController(this, true);
+							this.emit("bootloader ready");
+						} else {
+							void this.destroyWithMessage(
+								"Failed to recover from bootloader. Please flash a new firmware to continue...",
+							);
+						}
+
+						return;
+					}
+				}
+			}
 
 			// Try to create the cache directory. This can fail, in which case we should expose a good error message
 			try {
-				await this.options.storage.driver.ensureDir(this.cacheDir);
+				// eslint-disable-next-line @typescript-eslint/no-deprecated
+				if (this._options.storage.driver) {
+					// eslint-disable-next-line @typescript-eslint/no-deprecated
+					await this._options.storage.driver.ensureDir(this.cacheDir);
+				} else {
+					await this.bindings.fs.ensureDir(this.cacheDir);
+				}
 			} catch (e) {
 				let message: string;
 				if (
@@ -761,34 +1477,31 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 						getErrorMessage(e, true),
 					)
 				) {
-					message = `Failed to create the cache directory. When using Yarn PnP, you need to change the location with the "storage.cacheDir" driver option.`;
+					message =
+						`Failed to create the cache directory. When using Yarn PnP, you need to change the location with the "storage.cacheDir" driver option.`;
 				} else {
-					message = `Failed to create the cache directory. Please make sure that it is writable or change the location with the "storage.cacheDir" driver option.`;
+					message =
+						`Failed to create the cache directory. Please make sure that it is writable or change the location with the "storage.cacheDir" driver option.`;
 				}
-				this.driverLog.print(message, "error");
-				this.emit(
-					"error",
-					new ZWaveError(message, ZWaveErrorCodes.Driver_Failed),
-				);
-				void this.destroy();
+
+				void this.destroyWithMessage(message);
 				return;
 			}
 
 			// Load the necessary configuration
-			this.driverLog.print("loading configuration...");
-			try {
-				await this.configManager.loadAll();
-			} catch (e) {
-				const message = `Failed to load the configuration: ${getErrorMessage(
-					e,
-				)}`;
-				this.driverLog.print(message, "error");
-				this.emit(
-					"error",
-					new ZWaveError(message, ZWaveErrorCodes.Driver_Failed),
-				);
-				void this.destroy();
-				return;
+			if (this._options.testingHooks?.loadConfiguration !== false) {
+				this.driverLog.print("loading configuration...");
+				try {
+					await this.configManager.loadAll();
+				} catch (e) {
+					const message = `Failed to load the configuration: ${
+						getErrorMessage(
+							e,
+						)
+					}`;
+					void this.destroyWithMessage(message);
+					return;
+				}
 			}
 
 			this.driverLog.print("beginning interview...");
@@ -797,15 +1510,18 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 			} catch (e) {
 				let message: string;
 				if (
-					isZWaveError(e) &&
-					e.code === ZWaveErrorCodes.Controller_MessageDropped
+					isZWaveError(e)
+					&& e.code === ZWaveErrorCodes.Controller_MessageDropped
 				) {
-					message = `Failed to initialize the driver, no response from the controller. Are you sure this is a Z-Wave controller?`;
+					message =
+						`Failed to initialize the driver, no response from the controller. Are you sure this is a Z-Wave controller?`;
 				} else {
-					message = `Failed to initialize the driver: ${getErrorMessage(
-						e,
-						true,
-					)}`;
+					message = `Failed to initialize the driver: ${
+						getErrorMessage(
+							e,
+							true,
+						)
+					}`;
 				}
 				this.driverLog.print(message, "error");
 				this.emit(
@@ -824,46 +1540,159 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	private _nodesReady = new Set<number>();
 	private _nodesReadyEventEmitted: boolean = false;
 
-	private async tryOpenSerialport(
-		openPromise?: DeferredPromise<void>,
-	): Promise<boolean> {
+	private async openSerialport(): Promise<void> {
 		let lastError: unknown;
 		// After a reset, the serial port may need a few seconds until we can open it - try a few times
 		for (
 			let attempt = 1;
-			attempt <= this.options.attempts.openSerialPort;
+			attempt <= this._options.attempts.openSerialPort;
 			attempt++
 		) {
 			try {
-				await this.serial!.open();
-				return true;
+				this.serial = await this.serialFactory!.createStream();
+				// Start reading from the serial port
+				void this.handleSerialData(this.serial);
+				return;
 			} catch (e) {
 				lastError = e;
 			}
-			if (attempt < this.options.attempts.openSerialPort) {
+			if (attempt < this._options.attempts.openSerialPort) {
 				await wait(1000);
 			}
 		}
 
-		const message = `Failed to open the serial port: ${getErrorMessage(
-			lastError,
-		)}`;
+		const message = `Failed to open the serial port: ${
+			getErrorMessage(
+				lastError,
+			)
+		}`;
 		this.driverLog.print(message, "error");
 
-		const error = new ZWaveError(message, ZWaveErrorCodes.Driver_Failed);
-		if (this._isOpen || !openPromise) {
-			this.emit("error", error);
-		} else {
-			openPromise?.reject(error);
-		}
-
-		void this.destroy();
-		return false;
+		throw new ZWaveError(message, ZWaveErrorCodes.Driver_Failed);
 	}
 
 	/** Indicates whether all nodes are ready, i.e. the "all nodes ready" event has been emitted */
 	public get allNodesReady(): boolean {
 		return this._nodesReadyEventEmitted;
+	}
+
+	private getJsonlDBOptions(): JsonlDBOptions<any> {
+		const options: JsonlDBOptions<any> = {
+			ignoreReadErrors: true,
+			...throttlePresets[this._options.storage.throttle],
+		};
+		if (this._options.storage.lockDir) {
+			options.lockfile = {
+				directory: this._options.storage.lockDir,
+			};
+		}
+		return options;
+	}
+
+	private async initNetworkCache(homeId: number): Promise<void> {
+		const options = this.getJsonlDBOptions();
+
+		const networkCacheFile = path.join(
+			this.cacheDir,
+			`${homeId.toString(16)}.jsonl`,
+		);
+		this._networkCache = this.bindings.db.createInstance(networkCacheFile, {
+			...options,
+			serializer: serializeNetworkCacheValue,
+			reviver: deserializeNetworkCacheValue,
+		});
+		await this._networkCache.open();
+
+		if (process.env.NO_CACHE === "true") {
+			// Since the network cache is append-only, we need to
+			// clear it if the cache should be ignored
+			this._networkCache.clear();
+		}
+	}
+
+	private async initValueDBs(homeId: number): Promise<void> {
+		const options = this.getJsonlDBOptions();
+
+		const valueDBFile = path.join(
+			this.cacheDir,
+			`${homeId.toString(16)}.values.jsonl`,
+		);
+		this._valueDB = this.bindings.db.createInstance(valueDBFile, {
+			...options,
+			enableTimestamps: true,
+			reviver: (_key, value) => deserializeCacheValue(value),
+			serializer: (_key, value) => serializeCacheValue(value),
+		});
+		await this._valueDB.open();
+
+		const metadataDBFile = path.join(
+			this.cacheDir,
+			`${homeId.toString(16)}.metadata.jsonl`,
+		);
+		this._metadataDB = this.bindings.db.createInstance(
+			metadataDBFile,
+			options,
+		);
+		await this._metadataDB.open();
+
+		if (process.env.NO_CACHE === "true") {
+			// Since value/metadata DBs are append-only, we need to
+			// clear them if the cache should be ignored
+			this._valueDB.clear();
+			this._metadataDB.clear();
+		}
+	}
+
+	private async performCacheMigration(): Promise<void> {
+		if (
+			!this._controller
+			|| !this.controller.homeId
+			|| !this._networkCache
+			|| !this._valueDB
+		) {
+			return;
+		}
+
+		// In v9, the network cache was switched from a json file to use a Jsonl-DB
+		// Therefore the legacy cache file must be migrated to the new format
+		if (this._networkCache.size === 0) {
+			// version the cache format, so migrations in the future are easier
+			this._networkCache.set("cacheFormat", 1);
+
+			try {
+				await migrateLegacyNetworkCache(
+					this.controller.homeId,
+					this._networkCache,
+					this._valueDB,
+					// eslint-disable-next-line @typescript-eslint/no-deprecated
+					this._options.storage.driver
+						? wrapLegacyFSDriverForCacheMigrationOnly(
+							// eslint-disable-next-line @typescript-eslint/no-deprecated
+							this._options.storage.driver,
+						)
+						: this.bindings.fs,
+					this.cacheDir,
+				);
+
+				// Go through the value DB and remove all keys referencing commandClass -1, which used to be a
+				// hacky way to store non-CC specific values
+				for (const key of this._valueDB.keys()) {
+					if (-1 === key.indexOf(`,"commandClass":-1,`)) {
+						continue;
+					}
+					this._valueDB.delete(key);
+				}
+			} catch (e) {
+				const message =
+					`Migrating the legacy cache file to jsonl failed: ${
+						getErrorMessage(
+							e,
+							true,
+						)
+					}`;
+				this.driverLog.print(message, "error");
+			}
+		}
 	}
 
 	/**
@@ -875,109 +1704,312 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 			this._controller = new ZWaveController(this);
 			this._controller
 				.on("node added", this.onNodeAdded.bind(this))
-				.on("node removed", this.onNodeRemoved.bind(this));
+				.on("node removed", this.onNodeRemoved.bind(this))
+				.on(
+					"status changed",
+					this.onControllerStatusChanged.bind(this),
+				)
+				.on("network found", this.onNetworkFound.bind(this))
+				.on("network joined", this.onNetworkJoined.bind(this))
+				.on("network left", this.onNetworkLeft.bind(this));
 		}
 
-		const initValueDBs = async (): Promise<void> => {
-			// Always start the value and metadata databases
-			const options: JsonlDBOptions<any> = {
-				ignoreReadErrors: true,
-				...throttlePresets[this.options.storage.throttle],
-			};
-			if (this.options.storage.lockDir) {
-				options.lockfileDirectory = this.options.storage.lockDir;
+		if (!this._options.testingHooks?.skipControllerIdentification) {
+			// Determine what the controller can do
+			const { nodeIds } = await this.controller.queryCapabilities();
+
+			// Configure the radio
+			await this.controller.queryAndConfigureRF();
+
+			// Soft-reset the stick if possible.
+			// On 700+ series, we'll also learn about whether the stick supports
+			// Z-Wave Long Range in the current region.
+			const maySoftReset = this.maySoftReset();
+			if (this._options.features.softReset && !maySoftReset) {
+				this.driverLog.print(
+					`Soft reset is enabled through config, but this stick does not support it.`,
+					"warn",
+				);
+				this._options.features.softReset = false;
 			}
 
-			const valueDBFile = path.join(
-				this.cacheDir,
-				`${this._controller!.homeId!.toString(16)}.values.jsonl`,
-			);
-			this._valueDB = new JsonlDB(valueDBFile, {
-				...options,
-				reviver: (key, value) => deserializeCacheValue(value),
-				serializer: (key, value) => serializeCacheValue(value),
-			});
-			await this._valueDB.open();
-
-			const metadataDBFile = path.join(
-				this.cacheDir,
-				`${this._controller!.homeId!.toString(16)}.metadata.jsonl`,
-			);
-			this._metadataDB = new JsonlDB(metadataDBFile, options);
-			await this._metadataDB.open();
-
-			if (process.env.NO_CACHE === "true") {
-				// Since value/metadata DBs are append-only, we need to clear them
-				// if the cache should be ignored
-				this._valueDB.clear();
-				this._metadataDB.clear();
+			if (maySoftReset) {
+				await this.softResetInternal(false);
 			}
-		};
 
-		if (!this.options.interview.skipInterview) {
-			// Interview the controller.
-			await this._controller.interview(initValueDBs, async () => {
-				// Try to restore the network information from the cache
-				if (process.env.NO_CACHE !== "true") {
-					await this.restoreNetworkStructureFromCache();
-				}
-			});
-			// No need to initialize databases if skipInterview is true, because it is only used in some
-			// Driver unit tests that don't need access to them
-		}
+			let lrNodeIds: readonly number[] | undefined;
+			if (this.controller.supportsLongRange) {
+				// If the controller supports ZWLR, we need to query the node IDs again
+				// to get the full list of nodes
+				lrNodeIds = (await this.controller.queryLongRangeCapabilities())
+					.lrNodeIds;
+			}
 
-		// Set up the S0 security manager. We can only do that after the controller
-		// interview because we need to know the controller node id.
-		const S0Key =
-			this.options.securityKeys?.S0_Legacy ?? this.options.networkKey;
-		if (S0Key) {
-			this.driverLog.print(
-				"Network key for S0 configured, enabling S0 security manager...",
+			// If the controller supports ZWLR in the current region, switch to
+			// 16-bit node IDs. Otherwise, make sure that it is actually using 8-bit node IDs.
+			await this.controller.trySetNodeIDType(
+				this.controller.supportsLongRange
+					? NodeIDType.Long
+					: NodeIDType.Short,
 			);
-			this._securityManager = new SecurityManager({
-				networkKey: S0Key,
-				ownNodeId: this._controller.ownNodeId!,
-				nonceTimeout: this.options.timeouts.nonce,
-			});
-		} else {
-			this.driverLog.print(
-				"No network key for S0 configured, communication with secure (S0) devices won't work!",
-				"warn",
-			);
-		}
 
-		// The S2 security manager could be initialized earlier, but we do it here for consistency
-		if (
-			this.options.securityKeys &&
-			// Only set it up if we have security keys for at least one S2 security class
-			Object.keys(this.options.securityKeys).some(
-				(key) =>
-					key.startsWith("S2_") &&
-					key in SecurityClass &&
-					securityClassIsS2((SecurityClass as any)[key]),
-			)
-		) {
-			this.driverLog.print(
-				"At least one network key for S2 configured, enabling S2 security manager...",
+			// Now that we know the node ID type, we can identify the controller
+			await this.controller.identify();
+
+			// Perform additional configuration
+			await this.controller.configure();
+
+			// now that we know the home ID, we can open the databases
+			await this.initNetworkCache(this.controller.homeId!);
+			await this.initValueDBs(this.controller.homeId!);
+			await this.performCacheMigration();
+
+			// Initialize all nodes and restore the data from cache
+			await this.controller.initNodes(
+				nodeIds,
+				lrNodeIds ?? [],
+				async () => {
+					// Try to restore the network information from the cache
+					if (process.env.NO_CACHE !== "true") {
+						await this.restoreNetworkStructureFromCache();
+					}
+				},
 			);
-			this._securityManager2 = new SecurityManager2();
-			// Set up all keys
-			for (const secClass of [
-				"S2_Unauthenticated",
-				"S2_Authenticated",
-				"S2_AccessControl",
-				"S0_Legacy",
-			] as const) {
-				const key = this.options.securityKeys[secClass];
-				if (key) {
-					this._securityManager2.setKey(SecurityClass[secClass], key);
-				}
+
+			if (this.controller.role === ControllerRole.Primary) {
+				// Auto-enable smart start inclusion
+				this.controller.autoProvisionSmartStart();
 			}
 		} else {
-			this.driverLog.print(
-				"No network key for S2 configured, communication with secure (S2) devices won't work!",
-				"warn",
-			);
+			// When skipping the controller identification, set the flags to consider the controller a primary
+			this.controller["_wasRealPrimary"] = true;
+			this.controller["_isSUC"] = true;
+			this.controller["_isSISPresent"] = true;
+			this.controller["_sucNodeId"] = 1;
+		}
+
+		if (this.controller.role === ControllerRole.Primary) {
+			// Set up the S0 security manager. We can only do that after the controller
+			// interview because we need to know the controller node id.
+			const S0Key = this._options.securityKeys?.S0_Legacy;
+			if (S0Key) {
+				this.driverLog.print(
+					"Network key for S0 configured, enabling S0 security manager...",
+				);
+				this._securityManager = new SecurityManager({
+					networkKey: S0Key,
+					ownNodeId: this._controller.ownNodeId!,
+					nonceTimeout: this._options.timeouts.nonce,
+				});
+			} else {
+				this.driverLog.print(
+					"No network key for S0 configured, communication with secure (S0) devices won't work!",
+					"warn",
+				);
+			}
+
+			// The S2 security manager could be initialized earlier, but we do it here for consistency
+			if (
+				this._options.securityKeys
+				// Only set it up if we have security keys for at least one S2 security class
+				&& Object.keys(this._options.securityKeys).some(
+					(key) =>
+						key.startsWith("S2_")
+						&& key in SecurityClass
+						&& securityClassIsS2((SecurityClass as any)[key]),
+				)
+			) {
+				this.driverLog.print(
+					"At least one network key for S2 configured, enabling S2 security manager...",
+				);
+				this._securityManager2 = await SecurityManager2.create();
+				// Set up all keys
+				for (
+					const secClass of [
+						"S2_Unauthenticated",
+						"S2_Authenticated",
+						"S2_AccessControl",
+						"S0_Legacy",
+					] as const
+				) {
+					const key = this._options.securityKeys[secClass];
+					if (key) {
+						await this._securityManager2.setKeyAsync(
+							SecurityClass[secClass],
+							key,
+						);
+					}
+				}
+			} else {
+				this.driverLog.print(
+					"No network key for S2 configured, communication with secure (S2) devices won't work!",
+					"warn",
+				);
+			}
+
+			if (
+				this._options.securityKeysLongRange?.S2_AccessControl
+				|| this._options.securityKeysLongRange?.S2_Authenticated
+			) {
+				this.driverLog.print(
+					"At least one network key for Z-Wave Long Range configured, enabling security manager...",
+				);
+				this._securityManagerLR = await SecurityManager2.create();
+				if (this._options.securityKeysLongRange?.S2_AccessControl) {
+					await this._securityManagerLR.setKeyAsync(
+						SecurityClass.S2_AccessControl,
+						this._options.securityKeysLongRange.S2_AccessControl,
+					);
+				}
+				if (this._options.securityKeysLongRange?.S2_Authenticated) {
+					await this._securityManagerLR.setKeyAsync(
+						SecurityClass.S2_Authenticated,
+						this._options.securityKeysLongRange.S2_Authenticated,
+					);
+				}
+			} else {
+				this.driverLog.print(
+					"No network key for Z-Wave Long Range configured, communication won't work!",
+					"warn",
+				);
+			}
+		} else {
+			// Secondary controller - load security keys from cache.
+			// Either LR or S2+S0, not both
+			// FIXME: The fallback code duplicates the logic from the primary controller above. Find a nicer solution.
+			if (isLongRangeNodeId(this.controller.ownNodeId!)) {
+				const securityKeysLongRange = [
+					SecurityClass.S2_AccessControl,
+					SecurityClass.S2_Authenticated,
+				].map(
+					(sc) => ([
+						sc,
+						this.cacheGet<Uint8Array>(
+							cacheKeys.controller.securityKeysLongRange(sc),
+						),
+					] as [SecurityClass, Uint8Array | undefined]),
+				).filter((v): v is [SecurityClass, Uint8Array] =>
+					v[1] != undefined
+				);
+				if (securityKeysLongRange.length) {
+					this.driverLog.print(
+						"At least one network key for Z-Wave Long Range found in cache, enabling security manager...",
+					);
+					this._securityManagerLR = await SecurityManager2.create();
+					for (const [sc, key] of securityKeysLongRange) {
+						await this._securityManagerLR.setKeyAsync(sc, key);
+					}
+				} else if (
+					this._options.securityKeysLongRange?.S2_AccessControl
+					|| this._options.securityKeysLongRange?.S2_Authenticated
+				) {
+					this.driverLog.print(
+						"Fallback to configured network keys for Z-Wave Long Range, enabling security manager...",
+					);
+					this._securityManagerLR = await SecurityManager2.create();
+					if (this._options.securityKeysLongRange?.S2_AccessControl) {
+						await this._securityManagerLR.setKeyAsync(
+							SecurityClass.S2_AccessControl,
+							this._options.securityKeysLongRange
+								.S2_AccessControl,
+						);
+					}
+					if (this._options.securityKeysLongRange?.S2_Authenticated) {
+						await this._securityManagerLR.setKeyAsync(
+							SecurityClass.S2_Authenticated,
+							this._options.securityKeysLongRange
+								.S2_Authenticated,
+						);
+					}
+				} else {
+					this.driverLog.print(
+						"No network key for Z-Wave Long Range configured, communication won't work!",
+						"warn",
+					);
+				}
+			} else {
+				const s0Key = this.cacheGet<Uint8Array>(
+					cacheKeys.controller.securityKeys(SecurityClass.S0_Legacy),
+				);
+				if (s0Key) {
+					this.driverLog.print(
+						"Network key for S0 found in cache, enabling S0 security manager...",
+					);
+					this._securityManager = new SecurityManager({
+						networkKey: s0Key,
+						ownNodeId: this._controller.ownNodeId!,
+						nonceTimeout: this._options.timeouts.nonce,
+					});
+				} else if (this._options.securityKeys?.S0_Legacy) {
+					this.driverLog.print(
+						"Fallback to configured S0 network key, enabling S0 security manager...",
+					);
+					this._securityManager = new SecurityManager({
+						networkKey: this._options.securityKeys.S0_Legacy,
+						ownNodeId: this._controller.ownNodeId!,
+						nonceTimeout: this._options.timeouts.nonce,
+					});
+				} else {
+					this.driverLog.print(
+						"No network key for S0 found in cache, communication with secure (S0) devices won't work!",
+						"warn",
+					);
+				}
+				const securityKeys = securityClassOrder.map(
+					(sc) => ([
+						sc,
+						this.cacheGet<Uint8Array>(
+							cacheKeys.controller.securityKeys(sc),
+						),
+					] as [SecurityClass, Uint8Array | undefined]),
+				).filter((v): v is [SecurityClass, Uint8Array] =>
+					v[1] != undefined
+				);
+				if (securityKeys.length) {
+					this.driverLog.print(
+						"At least one network key for S2 found in cache, enabling S2 security manager...",
+					);
+					this._securityManager2 = await SecurityManager2.create();
+					for (const [sc, key] of securityKeys) {
+						await this._securityManager2.setKeyAsync(sc, key);
+					}
+				} else if (
+					this._options.securityKeys
+					&& Object.keys(this._options.securityKeys).some(
+						(key) =>
+							key.startsWith("S2_")
+							&& key in SecurityClass
+							&& securityClassIsS2((SecurityClass as any)[key]),
+					)
+				) {
+					this.driverLog.print(
+						"Fallback to configured network keys for S2, enabling S2 security manager...",
+					);
+					this._securityManager2 = await SecurityManager2.create();
+					// Set up all keys
+					for (
+						const secClass of [
+							"S2_Unauthenticated",
+							"S2_Authenticated",
+							"S2_AccessControl",
+							"S0_Legacy",
+						] as const
+					) {
+						const key = this._options.securityKeys[secClass];
+						if (key) {
+							await this._securityManager2.setKeyAsync(
+								SecurityClass[secClass],
+								key,
+							);
+						}
+					}
+				} else {
+					this.driverLog.print(
+						"No network key for S2 found in cache, communication with secure (S2) devices won't work!",
+						"warn",
+					);
+				}
+			}
 		}
 
 		// in any case we need to emit the driver ready event here
@@ -989,54 +2021,130 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		for (const node of this._controller.nodes.values()) {
 			this.addNodeEventHandlers(node);
 		}
-		// Before interviewing nodes reset our knowledge about their ready state
-		this._nodesReady.clear();
-		this._nodesReadyEventEmitted = false;
 
-		if (!this.options.interview.skipInterview) {
-			// Now interview all nodes
-			// First complete the controller interview
-			const controllerNode = this._controller.nodes.get(
-				this._controller.ownNodeId!,
-			)!;
-			await this.interviewNode(controllerNode);
+		if (this.controller.role === ControllerRole.Primary) {
+			// Before interviewing nodes reset our knowledge about their ready state
+			this._nodesReady.clear();
+			this._nodesReadyEventEmitted = false;
 
-			// Then do all the nodes in parallel
-			for (const node of this._controller.nodes.values()) {
-				if (node.id === this._controller.ownNodeId) {
-					// The controller is always alive
-					node.markAsAlive();
-					continue;
-				} else if (node.canSleep) {
-					// A node that can sleep should be assumed to be sleeping after resuming from cache
-					node.markAsAsleep();
+			if (!this._options.testingHooks?.skipNodeInterview) {
+				// Now interview all nodes
+				// First complete the controller interview
+				const controllerNode = this._controller.nodes.get(
+					this._controller.ownNodeId!,
+				)!;
+				await this.interviewNodeInternal(controllerNode);
+				// The controller node is always alive
+				controllerNode.markAsAlive();
+
+				// Then do all the nodes in parallel, but prioritize nodes that are more likely to be ready
+				const nodeInterviewOrder = [...this._controller.nodes.values()]
+					.filter((n) => n.id !== this._controller!.ownNodeId)
+					.sort((a, b) =>
+						// Fully-interviewed devices first (need the least amount of communication now)
+						(b.interviewStage - a.interviewStage)
+						// Always listening -> FLiRS -> sleeping
+						|| (
+							(b.isListening ? 2 : b.isFrequentListening ? 1 : 0)
+							- (a.isListening
+								? 2
+								: a.isFrequentListening
+								? 1
+								: 0)
+						)
+						// Then by last seen, more recently first
+						|| (
+							(b.lastSeen?.getTime() ?? 0)
+							- (a.lastSeen?.getTime() ?? 0)
+						)
+						// Lastly ascending by node ID
+						|| (a.id - b.id)
+					);
+
+				if (nodeInterviewOrder.length) {
+					this.controllerLog.print(
+						`Interviewing nodes and/or determining their status: ${
+							nodeInterviewOrder.map((n) => n.id).join(", ")
+						}`,
+					);
+					for (const node of nodeInterviewOrder) {
+						if (node.canSleep) {
+							// A node that can sleep should be assumed to be sleeping after resuming from cache
+							node.markAsAsleep();
+						}
+
+						void (async () => {
+							// Continue the interview if necessary. If that is not necessary, at least
+							// determine the node's status
+							if (node.interviewStage < InterviewStage.Complete) {
+								await this.interviewNodeInternal(node);
+							} else if (
+								node.isListening || node.isFrequentListening
+							) {
+								// Ping non-sleeping nodes to determine their status
+								await node.ping();
+							}
+						})();
+					}
+				}
+			}
+		} else {
+			if (!this._options.testingHooks?.skipNodeInterview) {
+				// We're a secondary controller. Just determine if nodes are ready and do the interview at another time.
+
+				// First complete the controller "interview"
+				const controllerNode = this._controller.nodes.get(
+					this._controller.ownNodeId!,
+				)!;
+				await this.interviewNodeInternal(controllerNode);
+				// The controller node is always alive
+				controllerNode.markAsAlive();
+
+				// Query the protocol information from the controller
+				for (const node of this._controller.nodes.values()) {
+					if (node.isControllerNode) continue;
+					await node["queryProtocolInfo"]();
 				}
 
-				void (async () => {
-					// Continue the interview if necessary. If that is not necessary, at least
-					// determine the node's status
-					if (node.interviewStage < InterviewStage.Complete) {
-						// don't await the interview, because it may take a very long time
-						// if a node is asleep
-						await this.interviewNode(node);
-					} else if (node.isListening || node.isFrequentListening) {
-						// Ping non-sleeping nodes to determine their status
-						await node.ping();
-					}
+				// Then ping (frequently) listening nodes to determine their status
+				const nodeInterviewOrder = [...this._controller.nodes.values()]
+					.filter((n) => n.id !== this._controller!.ownNodeId)
+					.filter((n) => n.isListening || n.isFrequentListening)
+					.sort((a, b) =>
+						// Always listening -> FLiRS
+						(
+							(b.isListening ? 1 : 0)
+							- (a.isListening ? 1 : 0)
+						)
+						// Then by last seen, more recently first
+						|| (
+							(b.lastSeen?.getTime() ?? 0)
+							- (a.lastSeen?.getTime() ?? 0)
+						)
+						// Lastly ascending by node ID
+						|| (a.id - b.id)
+					);
 
-					// Previous versions of zwave-js didn't configure the SUC return route. Make sure each node has one
-					// and remember that we did. If the node is not responsive - tough luck, try again next time
-					if (
-						!node.hasSUCReturnRoute &&
-						node.status !== NodeStatus.Dead
-					) {
-						node.hasSUCReturnRoute =
-							await this.controller.assignSUCReturnRoute(node.id);
+				if (nodeInterviewOrder.length) {
+					this.controllerLog.print(
+						`Determining node status: ${
+							nodeInterviewOrder.map((n) => n.id).join(", ")
+						}`,
+					);
+					for (const node of nodeInterviewOrder) {
+						void node.ping();
 					}
-				})();
+				}
 			}
 		}
+
+		// If we only have sleeping nodes or a controller-only network, the send
+		// thread is idle before the driver gets marked ready, the idle tasks won't be triggered.
+		// So do it manually.
+		this.handleQueueIdleChange(this.queueIdle);
 	}
+
+	private autoRefreshNodeValueTimers = new Map<number, NodeJS.Timeout>();
 
 	private retryNodeInterviewTimeouts = new Map<number, NodeJS.Timeout>();
 	/**
@@ -1047,31 +2155,31 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	 * WARNING: Do not call this method from application code. To refresh the information
 	 * for a specific node, use `node.refreshInfo()` instead
 	 */
-	public async interviewNode(node: ZWaveNode): Promise<void> {
+	public async interviewNodeInternal(node: ZWaveNode): Promise<void> {
 		if (node.interviewStage === InterviewStage.Complete) {
 			return;
 		}
 
 		// Avoid having multiple restart timeouts active
 		if (this.retryNodeInterviewTimeouts.has(node.id)) {
-			clearTimeout(this.retryNodeInterviewTimeouts.get(node.id)!);
+			clearTimeout(this.retryNodeInterviewTimeouts.get(node.id));
 			this.retryNodeInterviewTimeouts.delete(node.id);
 		}
 
 		// Drop all pending messages that come from a previous interview attempt
 		this.rejectTransactions(
 			(t) =>
-				t.message.getNodeId() === node.id &&
-				(t.priority === MessagePriority.NodeQuery ||
-					t.tag === "interview"),
+				t.message.getNodeId() === node.id
+				&& (t.priority === MessagePriority.NodeQuery
+					|| t.tag === "interview"),
 			"The interview was restarted",
 			ZWaveErrorCodes.Controller_InterviewRestarted,
 		);
 
-		const maxInterviewAttempts = this.options.attempts.nodeInterview;
+		const maxInterviewAttempts = this._options.attempts.nodeInterview;
 
 		try {
-			if (!(await node.interview())) {
+			if (!(await node.interviewInternal())) {
 				// Find out if we may retry the interview
 				if (node.status === NodeStatus.Dead) {
 					this.controllerLog.logNode(
@@ -1095,7 +2203,8 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 						"warn",
 					);
 					node.emit("interview failed", node, {
-						errorMessage: `Attempt ${node.interviewAttempts}/${maxInterviewAttempts} failed`,
+						errorMessage:
+							`Attempt ${node.interviewAttempts}/${maxInterviewAttempts} failed`,
 						isFinal: false,
 						attempt: node.interviewAttempts,
 						maxAttempts: maxInterviewAttempts,
@@ -1105,7 +2214,7 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 						node.id,
 						setTimeout(() => {
 							this.retryNodeInterviewTimeouts.delete(node.id);
-							void this.interviewNode(node);
+							void this.interviewNodeInternal(node);
 						}, retryTimeout).unref(),
 					);
 				} else {
@@ -1122,24 +2231,23 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 					});
 				}
 			} else if (
-				node.manufacturerId != undefined &&
-				node.productType != undefined &&
-				node.productId != undefined &&
-				node.firmwareVersion != undefined &&
-				!node.deviceConfig &&
-				process.env.NODE_ENV !== "test"
+				node.manufacturerId != undefined
+				&& node.productType != undefined
+				&& node.productId != undefined
+				&& node.firmwareVersion != undefined
+				&& !node.deviceConfig
+				&& process.env.NODE_ENV !== "test"
 			) {
 				// The interview succeeded, but we don't have a device config for this node.
 				// Report it, so we can add a config file
 
-				// eslint-disable-next-line @typescript-eslint/no-empty-function
-				void reportMissingDeviceConfig(node as any).catch(() => {});
+				void reportMissingDeviceConfig(this, node as any).catch(noop);
 			}
 		} catch (e) {
 			if (isZWaveError(e)) {
 				if (
-					e.code === ZWaveErrorCodes.Driver_NotReady ||
-					e.code === ZWaveErrorCodes.Controller_NodeRemoved
+					e.code === ZWaveErrorCodes.Driver_NotReady
+					|| e.code === ZWaveErrorCodes.Controller_NodeRemoved
 				) {
 					// This only happens when a node is removed during the interview - we don't log this
 					return;
@@ -1171,18 +2279,21 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 			.on(
 				"firmware update finished",
 				this.onNodeFirmwareUpdated.bind(this),
-			);
+			)
+			.on("notification", this.onNodeNotification.bind(this));
+
+		// Add forwarders for all node events
+		for (const event of zWaveNodeEvents) {
+			node.on(event, (...args: any[]) => {
+				// @ts-expect-error We made sure that args matches
+				this.emit(`node ${event}`, ...args);
+			});
+		}
 	}
 
 	/** Removes a node's event handlers that were added with addNodeEventHandlers */
 	private removeNodeEventHandlers(node: ZWaveNode): void {
-		node.removeAllListeners("wake up")
-			.removeAllListeners("sleep")
-			.removeAllListeners("alive")
-			.removeAllListeners("dead")
-			.removeAllListeners("interview completed")
-			.removeAllListeners("ready")
-			.removeAllListeners("firmware update finished");
+		node.removeAllListeners();
 	}
 
 	/** Is called when a node wakes up */
@@ -1196,18 +2307,15 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 
 		// Make sure to handle the pending messages as quickly as possible
 		if (oldStatus === NodeStatus.Asleep) {
-			this.sendThread.send({
-				type: "reduce",
-				reducer: ({ message }) => {
-					// Ignore messages that are not for this node
-					if (message.getNodeId() !== node.id)
-						return { type: "keep" };
-					// Resolve pings, so we don't need to send them (we know the node is awake)
-					if (messageIsPing(message))
-						return { type: "resolve", message: undefined };
-					// Re-queue all other transactions for this node, so they get added in front of the others
-					return { type: "requeue" };
-				},
+			this.reduceQueues(({ message }) => {
+				// Ignore messages that are not for this node
+				if (message.getNodeId() !== node.id) return { type: "keep" };
+				// Resolve pings, so we don't need to send them (we know the node is awake)
+				if (messageIsPing(message)) {
+					return { type: "resolve", message: undefined };
+				}
+				// Re-queue all other transactions for this node, so they get added in front of the others
+				return { type: "requeue" };
 			});
 		}
 	}
@@ -1235,10 +2343,11 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 			}alive.`,
 		);
 		if (
-			oldStatus === NodeStatus.Dead &&
-			node.interviewStage !== InterviewStage.Complete
+			oldStatus === NodeStatus.Dead
+			&& node.interviewStage !== InterviewStage.Complete
+			&& !this._options.testingHooks?.skipNodeInterview
 		) {
-			void this.interviewNode(node);
+			void this.interviewNodeInternal(node);
 		}
 	}
 
@@ -1261,8 +2370,24 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		this._nodesReady.add(node.id);
 		this.controllerLog.logNode(node.id, "The node is ready to be used");
 
-		// Regularly query listening nodes for updated values
-		node.scheduleManualValueRefreshes();
+		// Regularly check if values of non-sleeping nodes need to be refreshed per the specs
+		// For sleeping nodes this is done on wakeup
+		if (this.autoRefreshNodeValueTimers.has(node.id)) {
+			clearInterval(this.autoRefreshNodeValueTimers.get(node.id));
+			this.autoRefreshNodeValueTimers.delete(node.id);
+		}
+		if (!node.canSleep) {
+			// Randomize the interval so we don't get a flood of queries for all listening nodes
+			const intervalMinutes = 50 + Math.random() * 20;
+			this.autoRefreshNodeValueTimers.set(
+				node.id,
+				setInterval(() => {
+					void node.autoRefreshValues().catch(() => {
+						// ignore errors
+					});
+				}, timespan.minutes(intervalMinutes)).unref(),
+			);
+		}
 
 		this.checkAllNodesReady();
 	}
@@ -1299,6 +2424,70 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		| Pick<AppInfo, "applicationName" | "applicationVersion">
 		| undefined;
 
+	private userAgentComponents = new Map<string, string>();
+
+	/**
+	 * Updates individual components of the user agent. Versions for individual applications can be added or removed.
+	 * @param components An object with application/module/component names and their versions. Set a version to `null` or `undefined` explicitly to remove it from the user agent.
+	 */
+	public updateUserAgent(
+		components: Record<string, string | null | undefined>,
+	): void {
+		this.userAgentComponents = mergeUserAgent(
+			this.userAgentComponents,
+			components,
+		);
+		this._userAgent = this.getEffectiveUserAgentString(
+			this.userAgentComponents,
+		);
+	}
+
+	/**
+	 * Returns the effective user agent string for the given components.
+	 * The driver name and version is automatically prepended and the statisticsAppInfo data is automatically appended if no components were given.
+	 */
+	private getEffectiveUserAgentString(
+		components: Map<string, string>,
+	): string {
+		const effectiveComponents = new Map([
+			[libName, libVersion],
+			...components,
+		]);
+		if (
+			effectiveComponents.size === 1
+			&& this.statisticsAppInfo
+			&& this.statisticsAppInfo.applicationName !== "node-zwave-js"
+		) {
+			effectiveComponents.set(
+				this.statisticsAppInfo.applicationName,
+				this.statisticsAppInfo.applicationVersion,
+			);
+		}
+		return userAgentComponentsToString(effectiveComponents);
+	}
+
+	private _userAgent: string = `node-zwave-js/${libVersion}`;
+	/** Returns the user agent string used for service requests */
+	public get userAgent(): string {
+		return this._userAgent;
+	}
+
+	/** Returns the user agent string combined with the additional components (if given) */
+	public getUserAgentStringWithComponents(
+		components?: Record<string, string | null | undefined>,
+	): string {
+		if (!components || Object.keys(components).length === 0) {
+			return this._userAgent;
+		}
+
+		const merged = mergeUserAgent(
+			this.userAgentComponents,
+			components,
+			false,
+		);
+		return this.getEffectiveUserAgentString(merged);
+	}
+
 	/**
 	 * Enable sending usage statistics. Although this does not include any sensitive information, we expect that you
 	 * inform your users before enabling statistics.
@@ -1307,12 +2496,11 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		appInfo: Pick<AppInfo, "applicationName" | "applicationVersion">,
 	): void {
 		if (this._statisticsEnabled) return;
-		this._statisticsEnabled = true;
 
 		if (
-			!isObject(appInfo) ||
-			typeof appInfo.applicationName !== "string" ||
-			typeof appInfo.applicationVersion !== "string"
+			!isObject(appInfo)
+			|| typeof appInfo.applicationName !== "string"
+			|| typeof appInfo.applicationVersion !== "string"
 		) {
 			throw new ZWaveError(
 				`The application statistics must be an object with two string properties "applicationName" and "applicationVersion"!`,
@@ -1330,6 +2518,7 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 			);
 		}
 
+		this._statisticsEnabled = true;
 		this.statisticsAppInfo = appInfo;
 
 		// If we're already ready, send statistics
@@ -1357,7 +2546,10 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	public async getUUID(): Promise<string> {
 		// To anonymously identify a network, we create a unique ID and use it to salt the Home ID
 		if (!this._valueDB!.has("uuid")) {
-			this._valueDB!.set("uuid", randomBytes(32).toString("hex"));
+			this._valueDB!.set(
+				"uuid",
+				Bytes.view(randomBytes(32)).toString("hex"),
+			);
 		}
 		const ret = this._valueDB!.get("uuid") as string;
 		return ret;
@@ -1422,20 +2614,41 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	/** This is called when a new node has been added to the network */
 	private onNodeAdded(node: ZWaveNode): void {
 		this.addNodeEventHandlers(node);
-		if (!this.options.interview.skipInterview) {
-			// Interview the node
-			// don't await the interview, because it may take a very long time
-			// if a node is asleep
-			void this.interviewNode(node);
-		}
+
+		if (this._options.interview?.disableOnNodeAdded) return;
+		if (this._options.testingHooks?.skipNodeInterview) return;
+
+		// Interview the node
+		// don't await the interview, because it may take a very long time
+		// if a node is asleep
+		void this.interviewNodeInternal(node);
 	}
 
 	/** This is called when a node was removed from the network */
-	private onNodeRemoved(node: ZWaveNode, replaced: boolean): void {
-		// Remove all listeners
+	private onNodeRemoved(node: ZWaveNode, reason: RemoveNodeReason): void {
+		// Remove all listeners and timers
 		this.removeNodeEventHandlers(node);
+		if (this.sendNodeToSleepTimers.has(node.id)) {
+			clearTimeout(this.sendNodeToSleepTimers.get(node.id));
+			this.sendNodeToSleepTimers.delete(node.id);
+		}
+		if (this.retryNodeInterviewTimeouts.has(node.id)) {
+			clearTimeout(this.retryNodeInterviewTimeouts.get(node.id));
+			this.retryNodeInterviewTimeouts.delete(node.id);
+		}
+		if (this.autoRefreshNodeValueTimers.has(node.id)) {
+			clearTimeout(this.autoRefreshNodeValueTimers.get(node.id));
+			this.autoRefreshNodeValueTimers.delete(node.id);
+		}
+
 		// purge node values from the DB
 		node.valueDB.clear();
+		this.cachePurge(cacheKeys.node(node.id)._baseKey);
+
+		// Remove the node from all security manager instances
+		this.securityManager?.deleteAllNoncesForReceiver(node.id);
+		this.securityManager2?.deleteNonce(node.id);
+		this.securityManagerLR?.deleteNonce(node.id);
 
 		this.rejectAllTransactionsForNode(
 			node.id,
@@ -1443,6 +2656,8 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 			ZWaveErrorCodes.Controller_NodeRemoved,
 		);
 
+		const replaced = reason === RemoveNodeReason.Replaced
+			|| reason === RemoveNodeReason.ProxyReplaced;
 		if (!replaced) {
 			// Asynchronously remove the node from all possible associations, ignore potential errors
 			// but only if the node is not getting replaced, because the removal will interfere with
@@ -1464,33 +2679,204 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		this.checkAllNodesReady();
 	}
 
-	/** This is called when a node's firmware was updated */
-	private onNodeFirmwareUpdated(
-		node: ZWaveNode,
-		status: FirmwareUpdateStatus,
-		waitTime?: number,
-	): void {
-		// Don't do this for non-successful updates
-		if (status < FirmwareUpdateStatus.OK_WaitingForActivation) return;
-
-		// Wait at least 5 seconds
-		if (!waitTime) waitTime = 5;
-		this.controllerLog.logNode(
-			node.id,
-			`Firmware updated, scheduling interview in ${waitTime} seconds...`,
-		);
-		// We reuse the retryNodeInterviewTimeouts here because they serve a similar purpose
-		this.retryNodeInterviewTimeouts.set(
-			node.id,
-			setTimeout(() => {
-				this.retryNodeInterviewTimeouts.delete(node.id);
-				void node.refreshInfo();
-			}, waitTime * 1000).unref(),
-		);
+	private onControllerStatusChanged(_status: ControllerStatus): void {
+		this.triggerQueues();
 	}
 
+	private async onNetworkFound(
+		homeId: number,
+		_ownNodeId: number,
+	): Promise<void> {
+		try {
+			this.driverLog.print(
+				`Joined network with home ID ${
+					num2hex(homeId)
+				}, switching to new network cache...`,
+			);
+			await this.recreateNetworkCacheAndValueDBs();
+		} catch (e) {
+			this.driverLog.print(
+				`Recreating the network cache and value DBs failed: ${
+					getErrorMessage(e)
+				}`,
+				"error",
+			);
+		}
+	}
+
+	private onNetworkJoined(): void {
+		this.driverLog.print(`Finished joining network`);
+	}
+
+	private async onNetworkLeft(): Promise<void> {
+		try {
+			this.driverLog.print(
+				`Left the previous network, switching network cache to new home ID ${
+					num2hex(this.controller.homeId)
+				}...`,
+			);
+			await this.recreateNetworkCacheAndValueDBs();
+		} catch (e) {
+			this.driverLog.print(
+				`Recreating the network cache and value DBs failed: ${
+					getErrorMessage(e)
+				}`,
+				"error",
+			);
+		}
+	}
+
+	private async recreateNetworkCacheAndValueDBs(): Promise<void> {
+		await this._networkCache?.close();
+		await this._valueDB?.close();
+		await this._metadataDB?.close();
+
+		// Reopen with the new home ID
+		await this.initNetworkCache(this.controller.homeId!);
+		await this.initValueDBs(this.controller.homeId!);
+		await this.performCacheMigration();
+	}
+
+	/**
+	 * Returns the time in seconds to actually wait after a firmware upgrade, depending on what the device said.
+	 * This number will always be a bit greater than the advertised duration, because devices have been found to take longer to actually reboot.
+	 */
+	public getConservativeWaitTimeAfterFirmwareUpdate(
+		advertisedWaitTime: number | undefined,
+	): number {
+		// Wait the specified time plus a bit, so the device is actually ready to use
+		if (!advertisedWaitTime) {
+			// Wait at least 5 seconds
+			return 5;
+		} else if (advertisedWaitTime < 20) {
+			return advertisedWaitTime + 5;
+		} else if (advertisedWaitTime < 60) {
+			return advertisedWaitTime + 10;
+		} else {
+			return advertisedWaitTime + 30;
+		}
+	}
+
+	/** This is called when the firmware on one of a node's firmware targets was updated */
+	private async onNodeFirmwareUpdated(
+		node: ZWaveNode,
+		result: FirmwareUpdateResult,
+	): Promise<void> {
+		const { success, reInterview } = result;
+
+		// Nothing to do for non-successful updates
+		if (!success) return;
+
+		// TODO: Add support for delayed activation
+
+		// Reset nonces etc. to prevent false-positive duplicates after the update
+		this.securityManager?.deleteAllNoncesForReceiver(node.id);
+		this.securityManager2?.deleteNonce(node.id);
+		this.securityManagerLR?.deleteNonce(node.id);
+
+		// waitTime should always be defined, but just to be sure
+		const waitTime = result.waitTime ?? 5;
+
+		if (reInterview) {
+			this.controllerLog.logNode(
+				node.id,
+				`Firmware updated, scheduling interview in ${waitTime} seconds...`,
+			);
+			// We reuse the retryNodeInterviewTimeouts here because they serve a similar purpose
+			this.retryNodeInterviewTimeouts.set(
+				node.id,
+				setTimeout(() => {
+					this.retryNodeInterviewTimeouts.delete(node.id);
+					void node.refreshInfo({
+						// After a firmware update, we need to refresh the node info
+						waitForWakeup: false,
+					});
+				}, waitTime * 1000).unref(),
+			);
+		} else {
+			this.controllerLog.logNode(
+				node.id,
+				`Firmware updated. No restart or re-interview required. Refreshing version information in ${waitTime} seconds...`,
+			);
+
+			await wait(waitTime * 1000, true);
+
+			try {
+				const versionAPI = node.commandClasses.Version;
+				await versionAPI.get();
+				if (
+					versionAPI.supportsCommand(VersionCommand.CapabilitiesGet)
+				) {
+					await versionAPI.getCapabilities();
+				}
+				if (
+					versionAPI.supportsCommand(VersionCommand.ZWaveSoftwareGet)
+				) {
+					await versionAPI.getZWaveSoftware();
+				}
+			} catch {
+				// ignore
+			}
+
+			// No need to keep the node awake longer than necessary
+			node.keepAwake = false;
+			this.debounceSendNodeToSleep(node);
+		}
+	}
+
+	/** This is called when a node emits a `"notification"` event */
+	private onNodeNotification: ZWaveNotificationCallback = (
+		endpoint,
+		ccId,
+		ccArgs,
+	) => {
+		let prefix: string;
+		let details: string[];
+		if (ccId === CommandClasses.Notification) {
+			const msg: MessageRecord = {
+				type: ccArgs.label,
+				event: ccArgs.eventLabel,
+			};
+			if (ccArgs.parameters) {
+				if (isUint8Array(ccArgs.parameters)) {
+					msg.parameters = buffer2hex(ccArgs.parameters);
+				} else if (Duration.isDuration(ccArgs.parameters)) {
+					msg.duration = ccArgs.parameters.toString();
+				} else if (isObject(ccArgs.parameters)) {
+					Object.assign(msg, ccArgs.parameters);
+				}
+			}
+			prefix = "[Notification]";
+			details = messageRecordToLines(msg);
+		} else if (ccId === CommandClasses["Entry Control"]) {
+			prefix = "[Notification] Entry Control";
+			details = messageRecordToLines({
+				"event type": ccArgs.eventTypeLabel,
+				"data type": ccArgs.dataTypeLabel,
+			});
+		} else if (ccId === CommandClasses["Multilevel Switch"]) {
+			prefix = "[Notification] Multilevel Switch";
+			details = messageRecordToLines(
+				stripUndefined({
+					"event type": ccArgs.eventTypeLabel,
+					direction: ccArgs.direction,
+				}),
+			);
+		} /*if (ccId === CommandClasses.Powerlevel)*/ else {
+			// Don't bother logging this
+			return;
+		}
+
+		this.controllerLog.logNode(endpoint.nodeId, {
+			endpoint: endpoint.index,
+			message: [prefix, ...details.map((d) => `  ${d}`)].join("\n"),
+		});
+	};
+
 	/** Checks if there are any pending messages for the given node */
-	private hasPendingMessages(node: ZWaveNode): boolean {
+	private hasPendingMessages(
+		node: ZWaveNodeBase & NodeSchedulePoll,
+	): boolean {
 		// First check if there are messages in the queue
 		if (
 			this.hasPendingTransactions(
@@ -1501,17 +2887,18 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		}
 
 		// Then check if there are scheduled polls
-		return node.scheduledPolls.size > 0;
+		return node.hasScheduledPolls();
 	}
 
 	/** Checks if there are any pending transactions that match the given predicate */
 	public hasPendingTransactions(
 		predicate: (t: Transaction) => boolean,
 	): boolean {
-		const { queue, currentTransaction } = this.sendThread.state.context;
-		return (
-			(currentTransaction && predicate(currentTransaction)) ||
-			!!queue.find((t) => predicate(t))
+		// Queue is not an array
+		// eslint-disable-next-line unicorn/prefer-array-some
+		if (!!this.queue.find((t) => predicate(t))) return true;
+		return this.queues.some(
+			(q) => q.currentTransaction && predicate(q.currentTransaction),
 		);
 	}
 
@@ -1524,7 +2911,7 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	 * @param nodeId The node for which the CC version should be retrieved
 	 * @param endpointIndex The endpoint in question
 	 */
-	public getSupportedCCVersionForEndpoint(
+	public getSupportedCCVersion(
 		cc: CommandClasses,
 		nodeId: number,
 		endpointIndex: number = 0,
@@ -1542,53 +2929,165 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 
 	/**
 	 * Retrieves the maximum version of a command class that can be used to communicate with a node.
-	 * Returns 1 if the node claims that it does not support a CC.
-	 * Throws if the CC is not implemented in this library yet.
+	 * Returns the highest implemented version if the node's CC version is unknown.
+	 * Returns `undefined` for CCs that are not implemented in this library yet.
 	 *
 	 * @param cc The command class whose version should be retrieved
 	 * @param nodeId The node for which the CC version should be retrieved
 	 * @param endpointIndex The endpoint for which the CC version should be retrieved
 	 */
-	public getSafeCCVersionForNode(
+	public getSafeCCVersion(
 		cc: CommandClasses,
 		nodeId: number,
 		endpointIndex: number = 0,
-	): number {
-		const supportedVersion = this.getSupportedCCVersionForEndpoint(
+	): number | undefined {
+		const implementedVersion = getImplementedVersion(cc);
+		if (
+			implementedVersion === 0
+			|| implementedVersion === Number.POSITIVE_INFINITY
+		) {
+			return undefined;
+		}
+		const supportedVersion = this.getSupportedCCVersion(
 			cc,
 			nodeId,
 			endpointIndex,
 		);
 		if (supportedVersion === 0) {
-			// For unsupported CCs use version 1, no matter what
-			return 1;
-		} else {
-			// For supported versions find the maximum version supported by both the
-			// node and this library
-			const implementedVersion = getImplementedVersion(cc);
-			if (
-				implementedVersion !== 0 &&
-				implementedVersion !== Number.POSITIVE_INFINITY
-			) {
-				return Math.min(supportedVersion, implementedVersion);
-			}
-			throw new ZWaveError(
-				"Cannot retrieve the version of a CC that is not implemented",
-				ZWaveErrorCodes.CC_NotSupported,
+			// Unknown, use the highest implemented version
+			return implementedVersion;
+		}
+
+		return Math.min(supportedVersion, implementedVersion);
+	}
+
+	/**
+	 * Determines whether a CC must be secure for a given node and endpoint.
+	 *
+	 * @param ccId The command class in question
+	 * @param nodeId The node for which the CC security should be determined
+	 * @param endpointIndex The endpoint for which the CC security should be determined
+	 */
+	isCCSecure(
+		ccId: CommandClasses,
+		nodeId: number,
+		endpointIndex: number = 0,
+	): boolean {
+		// This is obvious
+		if (
+			ccId === CommandClasses.Security
+			|| ccId === CommandClasses["Security 2"]
+		) {
+			return true;
+		}
+
+		const node = this.controller.nodes.get(nodeId);
+		// Node is unknown, don't use secure communication
+		if (!node) return false;
+
+		const endpoint = node.getEndpoint(endpointIndex);
+
+		const securityClass = node.getHighestSecurityClass();
+		// Node is not secure, don't use secure communication
+		if (
+			securityClass === undefined || securityClass === SecurityClass.None
+		) {
+			return false;
+		}
+
+		// Special case for Basic CC, which we sometimes hide:
+		// A securely included node MAY support the Basic Command Class at the highest security level but it
+		// MUST NOT support the Basic Command Class at any lower security level or non-securely.
+		const isBasicCC = ccId === CommandClasses.Basic;
+
+		// Security S2 specs also mandate that all non-securely supported CCs MUST also be supported securely
+		// so we can just shortcut if the node is using S2
+		if (securityClassIsS2(securityClass)) {
+			// Use secure communication if the CC is supported. This avoids silly things like S2-encapsulated pings
+			return (
+				!!this.getSecurityManager2(nodeId)
+				&& (isBasicCC || (endpoint ?? node).supportsCC(ccId))
 			);
 		}
+
+		// Security S0 can be a little more complicated, with secure and non-secure endpoints
+		if (securityClass === SecurityClass.S0_Legacy) {
+			// Therefore actually check if the CC is marked as secure
+			return (
+				!!this.securityManager
+				&& (isBasicCC || (endpoint ?? node).isCCSecure(ccId))
+			);
+		}
+
+		// We shouldn't be here
+		return false;
+	}
+
+	/**
+	 * **!!! INTERNAL !!!**
+	 *
+	 * Not intended to be used by applications.
+	 * Needed for compatibility with CCAPIHost
+	 */
+	public schedulePoll(
+		nodeId: number,
+		valueId: ValueID,
+		options: SchedulePollOptions,
+	): boolean {
+		const node = this.controller.nodes.getOrThrow(nodeId);
+		return node.schedulePoll(valueId, options);
 	}
 
 	private isSoftResetting: boolean = false;
+
+	private maySoftReset(): boolean {
+		// 700+ series controllers have no problems with soft reset and MUST even be soft reset in some cases
+		if (this._controller?.sdkVersionGt("7.0")) return true;
+
+		// Blacklist some sticks that are known to not support soft reset
+		const { manufacturerId, productType, productId } = this.controller;
+
+		// Z-Wave.me UZB1
+		if (
+			manufacturerId === 0x0115
+			&& productType === 0x0000
+			&& productId === 0x0000
+		) {
+			return false;
+		}
+
+		// Z-Wave.me UZB
+		if (
+			manufacturerId === 0x0115
+			&& productType === 0x0400
+			&& productId === 0x0001
+		) {
+			return false;
+		}
+
+		// Vision Gen5 USB Stick
+		if (
+			manufacturerId === 0x0109
+			&& productType === 0x1001
+			&& productId === 0x0201
+			// firmware version 15.1 (GH#3730)
+		) {
+			return false;
+		}
+
+		// No clear indication, make the result depend on the config option
+		return !!this._options.features.softReset;
+	}
 
 	/**
 	 * Soft-resets the controller if the feature is enabled
 	 */
 	public async trySoftReset(): Promise<void> {
-		if (this.options.enableSoftReset) {
+		if (this.maySoftReset()) {
 			await this.softReset();
 		} else {
-			const message = `The soft reset feature is not enabled, skipping API call.`;
+			const message =
+				`The controller should not or cannot be soft reset, skipping API call.`;
 			this.controllerLog.print(message, "warn");
 		}
 	}
@@ -1601,8 +3100,9 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	 * **Warning:** This call will throw if soft-reset is not enabled.
 	 */
 	public async softReset(): Promise<void> {
-		if (!this.options.enableSoftReset) {
-			const message = `The soft reset feature has been disabled with a config option or the ZWAVEJS_DISABLE_SOFT_RESET environment variable.`;
+		if (!this.maySoftReset()) {
+			const message =
+				`The controller does not support soft reset or the soft reset feature has been disabled with a config option or the ZWAVEJS_DISABLE_SOFT_RESET environment variable.`;
 			this.controllerLog.print(message, "error");
 			throw new ZWaveError(
 				message,
@@ -1610,36 +3110,202 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 			);
 		}
 
-		this.controllerLog.print("performing soft reset...");
+		if (this._controller?.isAnyOTAFirmwareUpdateInProgress()) {
+			const message =
+				`Failed to soft reset controller: A firmware update is in progress on this network.`;
+			this.controllerLog.print(message, "error");
+			throw new ZWaveError(
+				message,
+				ZWaveErrorCodes.FirmwareUpdateCC_NetworkBusy,
+			);
+		}
+
+		return this.softResetInternal(true);
+	}
+
+	private async softResetInternal(destroyOnError: boolean): Promise<void> {
+		this.controllerLog.print("Performing soft reset...");
 
 		try {
 			this.isSoftResetting = true;
-			await this.sendMessage(new SoftResetRequest(this), {
+			await this.sendMessage(new SoftResetRequest(), {
 				supportCheck: false,
 				pauseSendThread: true,
 			});
+		} catch (e) {
+			this.controllerLog.print(
+				`Soft reset failed: ${getErrorMessage(e)}`,
+				"error",
+			);
+			// Don't continue if the controller is unresponsive
+			if (isMissingControllerACK(e)) throw e;
+		}
 
-			// TODO: This will cause the controller to issue a FUNC_ID_SERIAL_API_STARTED command
-			// We should react to that instead of waiting a fixed 1.5 seconds
+		if (this._controller) {
+			// Soft-reset resets the node ID type back to 8 bit
+			this._controller["_nodeIdType"] = NodeIDType.Short;
+
+			// Soft-resetting disables any ongoing inclusion, so we need to reset
+			// the state that is tracked in the controller
+			this._controller.setInclusionState(InclusionState.Idle);
+		}
+
+		// Make sure we're able to communicate with the controller again
+		if (!(await this.ensureSerialAPI())) {
+			if (destroyOnError) {
+				await this.destroy();
+			} else {
+				throw new ZWaveError(
+					"The Serial API did not respond after soft-reset",
+					ZWaveErrorCodes.Driver_Failed,
+				);
+			}
+		}
+
+		this.isSoftResetting = false;
+
+		// This is a bit hacky, but what the heck...
+		if (!this._enteringBootloader) {
+			// Start the watchdog again, unless disabled
+			if (this.options.features.watchdog) {
+				void this._controller?.startWatchdog();
+			}
+
+			// If desired, re-configure the controller to use 16 bit node IDs
+			void this._controller?.trySetNodeIDType(NodeIDType.Long);
+
+			// Resume sending
+			this.unpauseSendQueue();
+		}
+	}
+
+	/** @internal */
+	public async softResetAndRestart(
+		restartLogMessage: string,
+		restartReason: string,
+	): Promise<void> {
+		this.controllerLog.print("Performing soft reset...");
+
+		try {
+			this.isSoftResetting = true;
+			await this.sendMessage(new SoftResetRequest(), {
+				supportCheck: false,
+				pauseSendThread: true,
+			});
 		} catch (e) {
 			this.controllerLog.print(
 				`Soft reset failed: ${getErrorMessage(e)}`,
 				"error",
 			);
 		}
+		this.isSoftResetting = false;
 
+		this.controllerLog.print(restartLogMessage);
+
+		await this.destroy();
+
+		// Let the async calling context finish before emitting the error
+		process.nextTick(() => {
+			this.emit(
+				"error",
+				new ZWaveError(restartReason, ZWaveErrorCodes.Driver_Failed),
+			);
+		});
+	}
+
+	/**
+	 * Checks whether recovering an unresponsive controller is enabled
+	 * and whether the driver is in a state where it makes sense.
+	 */
+	private mayRecoverUnresponsiveController(): boolean {
+		if (!this._options.features.unresponsiveControllerRecovery) {
+			return false;
+		}
+		// Only recover after we know the controller has been responsive
+		return this._controllerInterviewed;
+	}
+
+	private async ensureSerialAPI(): Promise<boolean> {
 		// Wait 1.5 seconds after reset to ensure that the module is ready for communication again
-		await wait(1500);
+		// Z-Wave 700 sticks are relatively fast, so we also wait for the Serial API started command
+		// to bail early
+		this.controllerLog.print("Waiting for the controller to reconnect...");
+		let waitResult = await this.waitForMessage<SerialAPIStartedRequest>(
+			(msg) => msg.functionType === FunctionType.SerialAPIStarted,
+			1500,
+		).catch(() => false as const);
+
+		if (waitResult) {
+			// Serial API did start
+			this.controllerLog.print("reconnected and restarted");
+			this.controller["_supportsLongRange"] =
+				waitResult.supportsLongRange;
+			return true;
+		}
 
 		// If the controller disconnected the serial port during the soft reset, we need to re-open it
 		if (!this.serial!.isOpen) {
-			await this.tryOpenSerialport();
+			this.controllerLog.print("Re-opening serial port...");
+			try {
+				await this.openSerialport();
+			} catch {
+				return false;
+			}
 		}
 
-		this.isSoftResetting = false;
+		// Wait the configured amount of time for the Serial API started command to be received
+		this.controllerLog.print("Waiting for the Serial API to start...");
+		waitResult = await this.waitForMessage<SerialAPIStartedRequest>(
+			(msg) => {
+				return msg.functionType === FunctionType.SerialAPIStarted;
+			},
+			this._options.timeouts.serialAPIStarted,
+		).catch(() => false as const);
 
-		// And resume sending
-		this.unpauseSendThread();
+		if (waitResult) {
+			// Serial API did start, maybe do something with the information?
+			this.controllerLog.print("Serial API started");
+			this.controller["_supportsLongRange"] =
+				waitResult.supportsLongRange;
+			return true;
+		}
+
+		this.controllerLog.print(
+			"Did not receive notification that Serial API has started, checking if it responds...",
+		);
+
+		// We don't need to use any specific command here. However we're going to use this one in the interview
+		// anyways, so we might aswell use it here too
+		const pollController = async () => {
+			try {
+				// And resume sending - this requires us to unpause the send thread
+				this.unpauseSendQueue();
+				await this.sendMessage(new GetControllerVersionRequest(), {
+					supportCheck: false,
+					priority: MessagePriority.ControllerImmediate,
+				});
+				this.pauseSendQueue();
+				this.controllerLog.print("Serial API responded");
+				return true;
+			} catch {
+				return false;
+			}
+		};
+		// Poll the controller with increasing backoff delay
+		if (await pollController()) return true;
+		for (const backoff of [2, 5, 10, 15]) {
+			this.controllerLog.print(
+				`Serial API did not respond, trying again in ${backoff} seconds...`,
+			);
+			await wait(backoff * 1000);
+			if (await pollController()) return true;
+		}
+
+		this.controllerLog.print(
+			"Serial API did not respond, giving up",
+			"error",
+		);
+		return false;
 	}
 
 	/**
@@ -1650,26 +3316,94 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	 */
 	public async hardReset(): Promise<void> {
 		this.ensureReady(true);
-		// Calling ensureReady with true ensures that _controller is defined
-		await this._controller!.hardReset();
+
+		if (this.controller.isAnyOTAFirmwareUpdateInProgress()) {
+			const message =
+				`Failed to hard reset controller: A firmware update is in progress on this network.`;
+			this.controllerLog.print(message, "error");
+			throw new ZWaveError(
+				message,
+				ZWaveErrorCodes.FirmwareUpdateCC_NetworkBusy,
+			);
+		}
+
+		// Preserve the private key for the authenticated learn mode ECDH key pair
+		const oldPrivateKey = this.cacheGet<Uint8Array>(
+			cacheKeys.controller.privateKey,
+		);
+
+		// Drop all scheduled tasks - they don't make sense after a hard reset
+		await this.scheduler.removeTasks(
+			() => true,
+			new ZWaveError(
+				"The controller is being hard-reset",
+				ZWaveErrorCodes.Driver_TaskRemoved,
+			),
+		);
+
+		// Update the controller NIF prior to hard resetting
+		await this.controller.setControllerNIF();
+		await this.controller.hardReset();
 
 		// Clean up
 		this.rejectTransactions(() => true, `The controller was hard-reset`);
 		this.sendNodeToSleepTimers.forEach((timeout) => clearTimeout(timeout));
 		this.sendNodeToSleepTimers.clear();
 		this.retryNodeInterviewTimeouts.forEach((timeout) =>
-			clearTimeout(timeout),
+			clearTimeout(timeout)
 		);
 		this.retryNodeInterviewTimeouts.clear();
+		this.autoRefreshNodeValueTimers.forEach((timeout) =>
+			clearTimeout(timeout)
+		);
+		this.autoRefreshNodeValueTimers.clear();
+		if (this.pollBackgroundRSSITimer) {
+			clearTimeout(this.pollBackgroundRSSITimer);
+			this.pollBackgroundRSSITimer = undefined;
+		}
 
 		this._controllerInterviewed = false;
 		void this.initializeControllerAndNodes();
+
+		// Save the key pair in the new cache again
+		if (oldPrivateKey) {
+			this.once("driver ready", () => {
+				this.cacheSet(cacheKeys.controller.privateKey, oldPrivateKey);
+			});
+		}
+	}
+
+	/**
+	 * Instructs the Z-Wave API to shut down in order to safely remove the power.
+	 * This will destroy the driver instance if it succeeds.
+	 */
+	public async shutdown(): Promise<boolean> {
+		this.ensureReady(true);
+
+		// Not a good idea to abort firmware updates this way
+		if (this.controller.isAnyOTAFirmwareUpdateInProgress()) {
+			const message =
+				`Failed to shut down controller: A firmware update is in progress on this network.`;
+			this.controllerLog.print(message, "error");
+			throw new ZWaveError(
+				message,
+				ZWaveErrorCodes.FirmwareUpdateCC_NetworkBusy,
+			);
+		}
+
+		const result = await this.controller.shutdown();
+		try {
+			if (result) await this.destroy();
+		} finally {
+			return result;
+		}
 	}
 
 	private _destroyPromise: DeferredPromise<void> | undefined;
 	private get wasDestroyed(): boolean {
 		return !!this._destroyPromise;
 	}
+
 	/**
 	 * Ensures that the driver is ready to communicate (serial port open and not destroyed).
 	 * If desired, also checks that the controller interview has been completed.
@@ -1687,21 +3421,35 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 				ZWaveErrorCodes.Driver_NotReady,
 			);
 		}
+		if (this._bootloader) {
+			throw new ZWaveError(
+				"Cannot do this while in bootloader mode",
+				ZWaveErrorCodes.Driver_NotReady,
+			);
+		}
 	}
 
 	/** Indicates whether the driver is ready, i.e. the "driver ready" event was emitted */
 	public get ready(): boolean {
 		return (
-			this._wasStarted &&
-			this._isOpen &&
-			!this.wasDestroyed &&
-			this._controllerInterviewed
+			this._wasStarted
+			&& this._isOpen
+			&& !this.wasDestroyed
+			&& this._controllerInterviewed
 		);
 	}
 
-	private _cleanupHandler = (): void => {
-		void this.destroy();
-	};
+	private async destroyWithMessage(message: string): Promise<void> {
+		this.driverLog.print(message, "error");
+
+		const error = new ZWaveError(
+			message,
+			ZWaveErrorCodes.Driver_Failed,
+		);
+		this.emit("error", error);
+
+		await this.destroy();
+	}
 
 	/**
 	 * Terminates the driver instance and closes the underlying serial connection.
@@ -1714,52 +3462,74 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 
 		this.driverLog.print("destroying driver instance...");
 
-		// First stop the send thread machine and close the serial port, so nothing happens anymore
-		if (this.sendThread.initialized) this.sendThread.stop();
+		// First stop the scheduler, all queues and close the serial port, so nothing happens anymore
+		await this._scheduler.stop();
+
+		this.serialAPIQueue.abort();
+		for (const queue of this.queues) {
+			queue.abort();
+		}
+
 		if (this.serial != undefined) {
 			// Avoid spewing errors if the port was in the middle of receiving something
-			this.serial.removeAllListeners();
 			if (this.serial.isOpen) await this.serial.close();
 			this.serial = undefined;
 		}
 
+		// Attempt to close the value DBs and network cache
 		try {
-			// Attempt to save the network to cache
-			await this.saveNetworkToCacheInternal();
+			await this._valueDB?.close();
 		} catch (e) {
 			this.driverLog.print(
-				`Saving the network to cache failed: ${getErrorMessage(e)}`,
+				`Closing the value DB failed: ${getErrorMessage(e)}`,
 				"error",
 			);
 		}
-
 		try {
-			// Attempt to close the value DBs
-			await this._valueDB?.close();
 			await this._metadataDB?.close();
 		} catch (e) {
 			this.driverLog.print(
-				`Closing the value DBs failed: ${getErrorMessage(e)}`,
+				`Closing the metadata DB failed: ${getErrorMessage(e)}`,
+				"error",
+			);
+		}
+		try {
+			await this._networkCache?.close();
+		} catch (e) {
+			this.driverLog.print(
+				`Closing the network cache failed: ${getErrorMessage(e)}`,
 				"error",
 			);
 		}
 
 		// Remove all timeouts
-		for (const timeout of [
-			this.saveToCacheTimer,
-			...this.sendNodeToSleepTimers.values(),
-			...this.retryNodeInterviewTimeouts.values(),
-			this.statisticsTimeout,
-		]) {
+		for (
+			const timeout of [
+				...this.sendNodeToSleepTimers.values(),
+				...this.retryNodeInterviewTimeouts.values(),
+				...this.autoRefreshNodeValueTimers.values(),
+				this.statisticsTimeout,
+				this.pollBackgroundRSSITimer,
+				...this.awaitedCommands.map((c) => c.timeout),
+				...this.awaitedMessages.map((m) => m.timeout),
+				...this.awaitedMessageHeaders.map((h) => h.timeout),
+				...this.awaitedBootloaderChunks.map((b) => b.timeout),
+				this._powerlevelTestNodeContext?.timeout,
+			]
+		) {
 			if (timeout) clearTimeout(timeout);
 		}
 
-		// Destroy all nodes
-		this._controller?.nodes.forEach((n) => n.destroy());
+		// Destroy all nodes and the controller
+		if (this._controller) {
+			this._controller.nodes.forEach((n) => n.destroy());
+			(this._controller.nodes as ThrowingMap<any, any>).clear();
 
-		process.removeListener("exit", this._cleanupHandler);
-		process.removeListener("SIGINT", this._cleanupHandler);
-		process.removeListener("uncaughtException", this._cleanupHandler);
+			this._controller.removeAllListeners();
+			this._controller = undefined;
+		}
+
+		this.driverLog.print(`driver instance destroyed`);
 
 		// destroy loggers as the very last thing
 		this._logContainer.destroy();
@@ -1767,33 +3537,91 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		this._destroyPromise.resolve();
 	}
 
+	private async handleSerialData(serial: ZWaveSerialStream): Promise<void> {
+		try {
+			for await (const frame of serial.readable) {
+				setImmediate(() => {
+					if (frame.type === ZWaveSerialFrameType.SerialAPI) {
+						void this.serialport_onData(frame.data);
+					} else if (frame.type === ZWaveSerialFrameType.Bootloader) {
+						void this.serialport_onBootloaderData(frame.data);
+					} else {
+						// Handle discarded data?
+					}
+				});
+			}
+		} catch (e) {
+			if (isAbortError(e)) {
+				return;
+			} else if (
+				isZWaveError(e) && e.code === ZWaveErrorCodes.Driver_Failed
+			) {
+				// A disconnection while soft resetting is to be expected.
+				// The soft reset method will handle reopening
+				if (this.isSoftResetting) return;
+
+				void this.destroyWithMessage(e.message);
+				return;
+			}
+			throw e;
+		}
+	}
+
 	/**
 	 * Is called when the serial port has received a single-byte message or a complete message buffer
 	 */
 	private async serialport_onData(
 		data:
-			| Buffer
+			| Uint8Array
 			| MessageHeaders.ACK
 			| MessageHeaders.CAN
 			| MessageHeaders.NAK,
 	): Promise<void> {
 		if (typeof data === "number") {
 			switch (data) {
-				// single-byte messages - just forward them to the send thread
-				case MessageHeaders.ACK: {
-					this.sendThread.send("ACK");
-					return;
-				}
-				case MessageHeaders.NAK: {
-					this.sendThread.send("NAK");
-					this._controller?.incrementStatistics("NAK");
-					return;
-				}
+				case MessageHeaders.ACK:
+				case MessageHeaders.NAK:
 				case MessageHeaders.CAN: {
-					this.sendThread.send("CAN");
-					this._controller?.incrementStatistics("CAN");
+					// check if someone is waiting for this
+					for (const entry of this.awaitedMessageHeaders) {
+						if (entry.predicate(data)) {
+							entry.handler(data);
+							break;
+						}
+					}
 					return;
 				}
+
+					// // single-byte messages - just forward them to the send thread
+					// case MessageHeaders.ACK: {
+					// 	if (
+					// 		this.serialAPIInterpreter?.status
+					// 			=== InterpreterStatus.Running
+					// 	) {
+					// 		this.serialAPIInterpreter.send("ACK");
+					// 	}
+					// 	return;
+					// }
+					// case MessageHeaders.NAK: {
+					// 	if (
+					// 		this.serialAPIInterpreter?.status
+					// 			=== InterpreterStatus.Running
+					// 	) {
+					// 		this.serialAPIInterpreter.send("NAK");
+					// 	}
+					// 	this._controller?.incrementStatistics("NAK");
+					// 	return;
+					// }
+					// case MessageHeaders.CAN: {
+					// 	if (
+					// 		this.serialAPIInterpreter?.status
+					// 			=== InterpreterStatus.Running
+					// 	) {
+					// 		this.serialAPIInterpreter.send("CAN");
+					// 	}
+					// 	this._controller?.incrementStatistics("CAN");
+					// 	return;
+					// }
 			}
 		}
 
@@ -1801,14 +3629,33 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		try {
 			// Parse the message while remembering potential decoding errors in embedded CCs
 			// This way we can log the invalid CC contents
-			msg = Message.from(this, data);
-			// Then ensure there are no errors
-			if (isCommandClassContainer(msg)) {
-				assertValidCCs(msg);
+			msg = Message.parse(
+				data,
+				this.getMessageParsingContext(),
+			);
+
+			// Parse embedded CCs
+			if (isCommandRequest(msg) && containsSerializedCC(msg)) {
+				msg.command = await CommandClass.parseAsync(
+					msg.serializedCC,
+					{
+						...this.getCCParsingContext(),
+						sourceNodeId: msg.getNodeId()!,
+						frameType: msg.frameType,
+					},
+				);
+
+				// Whether successful or not, a message from a node should update last seen
+				const node = this.tryGetNode(msg);
+				if (node) node.lastSeen = new Date();
+
+				// Ensure there are no errors
+				assertValidCCs(msg as ContainsCC);
 			}
+			// And update statistics
 			if (!!this._controller) {
-				if (isCommandClassContainer(msg)) {
-					msg.getNodeUnsafe()?.incrementStatistics("commandsRX");
+				if (containsCC(msg)) {
+					this.tryGetNode(msg)?.incrementStatistics("commandsRX");
 				} else {
 					this._controller.incrementStatistics("messagesRX");
 				}
@@ -1823,31 +3670,47 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 					const response = this.handleDecodeError(e, data, msg);
 					if (response) await this.writeHeader(response);
 					if (!!this._controller) {
-						if (isCommandClassContainer(msg)) {
-							msg.getNodeUnsafe()?.incrementStatistics(
+						if (containsCC(msg)) {
+							this.tryGetNode(msg)?.incrementStatistics(
 								"commandsDroppedRX",
 							);
 
 							// Figure out if the command was received with supervision encapsulation
-							const supervisionSessionId =
-								SupervisionCC.getSessionId(msg.command);
+							const supervisionSessionId = SupervisionCC
+								.getSessionId(msg.command);
 							if (
-								supervisionSessionId !== undefined &&
-								msg.command instanceof InvalidCC
+								supervisionSessionId !== undefined
+								&& msg.command instanceof InvalidCC
 							) {
 								// If it was, we need to notify the sender that we couldn't decode the command
-								await msg
-									.getNodeUnsafe()
-									?.createAPI(
-										CommandClasses.Supervision,
-										false,
-									)
-									.sendReport({
-										sessionId: supervisionSessionId,
-										moreUpdatesFollow: false,
-										status: SupervisionStatus.NoSupport,
-										secure: msg.command.secure,
-									});
+								const node = this.tryGetNode(msg);
+								if (node) {
+									const endpoint = node.getEndpoint(
+										msg.command.endpointIndex,
+									) ?? node;
+									const encapsulationFlags =
+										msg.command.encapsulationFlags;
+									await endpoint
+										.createAPI(
+											CommandClasses.Supervision,
+											false,
+										)
+										.sendReport({
+											sessionId: supervisionSessionId,
+											moreUpdatesFollow: false,
+											status: SupervisionStatus.NoSupport,
+											requestWakeUpOnDemand: this
+												.shouldRequestWakeupOnDemand(
+													node,
+												),
+											encapsulationFlags,
+											lowPriority: this
+												.shouldUseLowPriorityForSupervisionReport(
+													node,
+													encapsulationFlags,
+												),
+										});
+								}
 								return;
 							}
 						} else {
@@ -1872,18 +3735,23 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 			msg = undefined;
 		}
 
+		// If we receive a CC from a node while the controller is not ready yet,
+		// we can't do anything with it, but logging it may assume that it can access the controller.
+		// To prevent this problem, we just ignore CCs until the controller is ready
+		if (!this._controller && containsCC(msg)) return;
+
 		// If the message could be decoded, forward it to the send thread
 		if (msg) {
 			let wasMessageLogged = false;
-			if (isCommandClassContainer(msg)) {
+			if (isCommandRequest(msg) && containsCC(msg)) {
 				// SecurityCCCommandEncapsulationNonceGet is two commands in one, but
 				// we're not set up to handle things like this. Reply to the nonce get
 				// and handle the encapsulation part normally
 				if (
-					msg.command instanceof
-					SecurityCCCommandEncapsulationNonceGet
+					msg.command
+						instanceof SecurityCCCommandEncapsulationNonceGet
 				) {
-					void msg.getNodeUnsafe()?.handleSecurityNonceGet();
+					void this.tryGetNode(msg)?.handleSecurityNonceGet();
 				}
 
 				// Transport Service commands must be handled before assembling partial CCs
@@ -1903,7 +3771,57 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 				}
 
 				// Assemble partial CCs on the driver level. Only forward complete messages to the send thread machine
-				if (!this.assemblePartialCCs(msg)) return;
+				if (!(await this.assemblePartialCCs(msg))) {
+					// Check if a message timer needs to be refreshed.
+					for (const entry of this.awaitedMessages) {
+						if (entry.refreshPredicate?.(msg)) {
+							entry.timeout?.refresh();
+							// Since this is a partial message there may be no clear 1:1 match.
+							// Therefore we loop through all awaited messages
+						}
+					}
+					return;
+				}
+
+				// Make sure we are allowed to handle this command
+				if (
+					this.isSecurityLevelTooLow(msg.command)
+					|| this.shouldDiscardCC(msg.command)
+				) {
+					if (!wasMessageLogged) {
+						this.driverLog.logMessage(msg, {
+							direction: "inbound",
+							secondaryTags: ["discarded"],
+						});
+					}
+					return;
+				}
+
+				// When we have a complete CC, save its values
+				try {
+					this.persistCCValues(msg.command);
+				} catch (e) {
+					// Indicate invalid payloads with a special CC type
+					if (
+						isZWaveError(e)
+						&& e.code
+							=== ZWaveErrorCodes.PacketFormat_InvalidPayload
+					) {
+						this.driverLog.print(
+							`dropping CC with invalid values${
+								typeof e.context === "string"
+									? ` (Reason: ${e.context})`
+									: ""
+							}`,
+							"warn",
+						);
+						// TODO: We may need to do the S2 MOS dance here - or we can deal with it when the next valid CC arrives
+						return;
+					} else {
+						throw e;
+					}
+				}
+
 				// Transport Service CC can be eliminated from the encapsulation stack, since it is always the outermost CC
 				if (isTransportServiceEncapsulation(msg.command)) {
 					msg.command = msg.command.encapsulated;
@@ -1912,41 +3830,37 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 				}
 			}
 
-			try {
-				if (!wasMessageLogged) {
-					this.driverLog.logMessage(msg, { direction: "inbound" });
-				}
-
-				if (process.env.NODE_ENV !== "test") {
-					// Enrich error data in case something goes wrong
-					Sentry.addBreadcrumb({
-						category: "message",
-						timestamp: Date.now() / 1000,
-						type: "debug",
-						data: {
-							direction: "inbound",
-							msgType: msg.type,
-							functionType: msg.functionType,
-							name: msg.constructor.name,
-							nodeId: msg.getNodeId(),
-							...msg.toLogEntry(),
-						},
+			if (!wasMessageLogged) {
+				try {
+					this.driverLog.logMessage(msg, {
+						direction: "inbound",
 					});
+				} catch (e) {
+					// We shouldn't throw just because logging a message fails
+					this.driverLog.print(
+						`Logging a message failed: ${getErrorMessage(e)}`,
+					);
 				}
-			} catch (e) {
-				// We shouldn't throw just because logging a message fails
-				this.driverLog.print(
-					`Logging a message failed: ${getErrorMessage(e)}`,
-				);
 			}
-			this.sendThread.send({ type: "message", message: msg });
+
+			// // Check if this message is unsolicited by passing it to the Serial API command interpreter if possible
+			// if (
+			// 	this.serialAPIInterpreter?.status === InterpreterStatus.Running
+			// ) {
+			// 	this.serialAPIInterpreter.send({
+			// 		type: "message",
+			// 		message: msg,
+			// 	});
+			// } else {
+			void this.handleUnsolicitedMessage(msg);
+			// }
 		}
 	}
 
 	/** Handles a decoding error and returns the desired reply to the stick */
 	private handleDecodeError(
 		e: Error,
-		data: Buffer,
+		data: Uint8Array,
 		msg: Message | undefined,
 	): MessageHeaders | undefined {
 		if (isZWaveError(e)) {
@@ -1988,9 +3902,11 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 						} catch (e) {
 							// We shouldn't throw just because logging a message fails
 							this.driverLog.print(
-								`Logging a message failed: ${getErrorMessage(
-									e,
-								)}`,
+								`Logging a message failed: ${
+									getErrorMessage(
+										e,
+									)
+								}`,
 							);
 						}
 					} else {
@@ -1999,8 +3915,7 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 								typeof e.context === "string"
 									? ` (Reason: ${e.context})`
 									: ""
-							}:
-0x${data.toString("hex")}`,
+							}:\n${buffer2hex(data)}`,
 							"warn",
 						);
 					}
@@ -2010,6 +3925,17 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 				case ZWaveErrorCodes.Security2CC_NotInitialized:
 					this.driverLog.print(
 						`Dropping message because network keys are not set or the driver is not yet ready to receive secure messages.`,
+						"warn",
+					);
+					return MessageHeaders.ACK;
+
+				case ZWaveErrorCodes.Controller_NodeNotFound:
+					this.driverLog.print(
+						`Dropping message because ${
+							typeof e.context === "number"
+								? `node ${e.context}`
+								: "the node"
+						} does not exist.`,
 						"warn",
 					);
 					return MessageHeaders.ACK;
@@ -2028,15 +3954,44 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 		throw e;
 	}
 
+	private mustReplyWithSecurityS2MOS(
+		msg: ContainsCC & CommandRequest,
+	): boolean {
+		// We're looking for a singlecast S2-encapsulated request
+		if (msg.frameType !== "singlecast") return false;
+		const encapS2 = msg.command.getEncapsulatingCC(
+			CommandClasses["Security 2"],
+			Security2Command.MessageEncapsulation,
+		) as Security2CCMessageEncapsulation | undefined;
+		if (!encapS2) return false;
+
+		// With the MGRP extension present
+		const node = this.tryGetNode(msg);
+		if (!node) return false;
+		const groupId = encapS2.getMulticastGroupId();
+		if (groupId == undefined) return false;
+		const securityManager = this.getSecurityManager2(node.id);
+		if (
+			// but where we don't have an MPAN stored
+			securityManager?.getPeerMPAN(
+				msg.command.nodeId as number,
+				groupId,
+			).type !== MPANState.MPAN
+		) {
+			return true;
+		}
+		return false;
+	}
+
 	private async handleSecurityS2DecodeError(
 		e: Error,
 		msg: Message | undefined,
 	): Promise<boolean> {
 		if (!isZWaveError(e)) return false;
 		if (
-			(e.code === ZWaveErrorCodes.Security2CC_NoSPAN ||
-				e.code === ZWaveErrorCodes.Security2CC_CannotDecode) &&
-			isCommandClassContainer(msg)
+			(e.code === ZWaveErrorCodes.Security2CC_NoSPAN
+				|| e.code === ZWaveErrorCodes.Security2CC_CannotDecode)
+			&& containsCC(msg)
 		) {
 			// Decoding the command failed because no SPAN has been established with the other node
 			const nodeId = msg.getNodeId()!;
@@ -2061,9 +4016,9 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 
 			// Ensure that we're not flooding the queue with unnecessary NonceReports
 			const isS2NonceReport = (t: Transaction) =>
-				t.message.getNodeId() === nodeId &&
-				isCommandClassContainer(t.message) &&
-				t.message.command instanceof Security2CCNonceReport;
+				t.message.getNodeId() === nodeId
+				&& containsCC(t.message)
+				&& t.message.command instanceof Security2CCNonceReport;
 
 			const message: string =
 				e.code === ZWaveErrorCodes.Security2CC_CannotDecode
@@ -2071,25 +4026,65 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 					: "No SPAN is established yet";
 
 			if (this.controller.bootstrappingS2NodeId === nodeId) {
-				// The node is currently being bootstrapped. Us not being able to decode the command means we need to abort the bootstrapping process
-				this.controllerLog.logNode(nodeId, {
-					message: `${message}, cannot decode command. Aborting the S2 bootstrapping process...`,
-					level: "error",
-					direction: "inbound",
-				});
-				this.controller.cancelSecureBootstrapS2(
-					KEXFailType.BootstrappingCanceled,
-				);
+				// The node is currently being bootstrapped.
+				const securityManager = this.getSecurityManager2(nodeId);
+				if (securityManager?.tempKeys.has(nodeId)) {
+					// The DSK has been verified, so we should be able to decode this command.
+					// If this is the first attempt, we need to request a nonce first
+					if (
+						securityManager.getSPANState(nodeId).type
+							=== SPANState.None
+					) {
+						this.controllerLog.logNode(nodeId, {
+							message:
+								`${message}, cannot decode command. Requesting a nonce...`,
+							level: "verbose",
+							direction: "outbound",
+						});
+						// Send the node our nonce
+						node.commandClasses["Security 2"]
+							.sendNonce()
+							.catch(() => {
+								// Ignore errors
+							});
+					} else {
+						// Us repeatedly not being able to decode the command means we need to abort the bootstrapping process
+						// because the PIN is wrong
+						this.controllerLog.logNode(nodeId, {
+							message:
+								`${message}, cannot decode command. Aborting the S2 bootstrapping process...`,
+							level: "error",
+							direction: "inbound",
+						});
+						this.controller.cancelSecureBootstrapS2(
+							KEXFailType.BootstrappingCanceled,
+						);
+					}
+				} else {
+					this.controllerLog.logNode(nodeId, {
+						message:
+							`Ignoring KEXSet because the DSK has not been verified yet`,
+						level: "verbose",
+						direction: "inbound",
+					});
+				}
 			} else if (!this.hasPendingTransactions(isS2NonceReport)) {
 				this.controllerLog.logNode(nodeId, {
-					message: `${message}, cannot decode command. Requesting a nonce...`,
+					message:
+						`${message}, cannot decode command. Requesting a nonce...`,
 					level: "verbose",
 					direction: "outbound",
 				});
-				// Send the node our nonce
-				node.commandClasses["Security 2"].sendNonce().catch(() => {
-					// Ignore errors
-				});
+				// Send the node our nonce, and use the chance to re-sync the MPAN if necessary
+				const s2MulticastOutOfSync = isCommandRequest(msg)
+					&& this.mustReplyWithSecurityS2MOS(msg);
+
+				node.commandClasses["Security 2"]
+					.withOptions({ s2MulticastOutOfSync })
+					.sendNonce()
+					.catch(() => {
+						// Ignore errors
+					});
 			} else {
 				this.controllerLog.logNode(nodeId, {
 					message: `${message}, cannot decode command.`,
@@ -2097,6 +4092,31 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 					direction: "none",
 				});
 			}
+
+			return true;
+		} else if (
+			(e.code === ZWaveErrorCodes.Security2CC_NoMPAN
+				|| e.code === ZWaveErrorCodes.Security2CC_CannotDecodeMulticast)
+			&& containsCC(msg)
+		) {
+			// Decoding the command failed because the MPAN used by the other node
+			// is not known to us yet
+			const nodeId = msg.getNodeId()!;
+			// If the node isn't known, ignore this error
+			const node = this._controller?.nodes.get(nodeId);
+			if (!node) return false;
+
+			// Before we can send anything, ACK the command
+			await this.writeHeader(MessageHeaders.ACK);
+
+			this.driverLog.logMessage(msg, { direction: "inbound" });
+			node.incrementStatistics("commandsDroppedRX");
+
+			this.controllerLog.logNode(nodeId, {
+				message:
+					`Cannot decode S2 multicast command, since MPAN is not known yet. Will attempt re-sync after the next singlecast.`,
+				level: "verbose",
+			});
 
 			return true;
 		}
@@ -2112,60 +4132,410 @@ export class Driver extends TypedEventEmitter<DriverEventCallbacks> {
 	} {
 		return (
 			// If the node does not acknowledge our request, it is either asleep or dead
-			e.code === ZWaveErrorCodes.Controller_CallbackNOK &&
-			(transaction.message instanceof SendDataRequest ||
-				transaction.message instanceof SendDataBridgeRequest) &&
-			// Ignore pre-transmit handshakes because the actual transaction will be retried
-			transaction.priority !== MessagePriority.PreTransmitHandshake
+			e.code === ZWaveErrorCodes.Controller_CallbackNOK
+			&& (transaction.message instanceof SendDataRequest
+				|| transaction.message instanceof SendDataBridgeRequest)
 		);
 	}
 
 	/**
+	 * @internal
 	 * Handles the case that a node failed to respond in time.
 	 * Returns `true` if the transaction failure was handled, `false` if it needs to be rejected.
 	 */
-	private handleMissingNodeACK(
+	public handleMissingNodeACK(
 		transaction: Transaction & {
-			message: SendDataRequest | SendDataBridgeRequest;
+			message: HasNodeId;
 		},
+		error: ZWaveError,
 	): boolean {
-		const node = transaction.message.getNodeUnsafe();
+		const node = this.tryGetNode(transaction.message);
 		if (!node) return false; // This should never happen, but whatever
+
+		const messagePart1 = isSendData(transaction.message)
+			? `The node did not respond after ${transaction.message.maxSendAttempts} attempts`
+			: `The node did not respond`;
 
 		if (!transaction.changeNodeStatusOnTimeout) {
 			// The sender of this transaction doesn't want it to change the status of the node
 			return false;
 		} else if (node.canSleep) {
+			if (node.status === NodeStatus.Asleep) {
+				// We already moved the messages to the wakeup queue before. If we end up here, this means a command
+				// was sent that may be sent to potentially asleep nodes - including pings.
+				return false;
+			}
 			this.controllerLog.logNode(
 				node.id,
-				`The node did not respond after ${transaction.message.maxSendAttempts} attempts.
-It is probably asleep, moving its messages to the wakeup queue.`,
+				`${messagePart1}. It is probably asleep, moving its messages to the wakeup queue.`,
 				"warn",
 			);
-			// Mark the node as asleep
-			// The handler for the asleep status will move the messages to the wakeup queue
-			// We need to re-add the current transaction if that is allowed because otherwise it will be dropped silently
-			if (this.mayMoveToWakeupQueue(transaction)) {
-				this.sendThread.send({ type: "add", transaction });
-			} else {
-				transaction.promise.reject(
-					new ZWaveError(
-						`The node is asleep`,
-						ZWaveErrorCodes.Controller_MessageDropped,
-					),
-				);
+
+			// There is no longer a reference to the current transaction. If it should be moved to the wakeup queue,
+			// it temporarily needs to be added to the queue again.
+			const handled = this.mayMoveToWakeupQueue(transaction);
+			if (handled) {
+				this.queue.add(transaction);
 			}
+
+			// Mark the node as asleep. This will move the messages to the wakeup queue
 			node.markAsAsleep();
-			return true;
+
+			return handled;
 		} else {
-			const errorMsg = `Node ${node.id} did not respond after ${transaction.message.maxSendAttempts} attempts, it is presumed dead`;
+			const errorMsg = `${messagePart1}, it is presumed dead`;
 			this.controllerLog.logNode(node.id, errorMsg, "warn");
 
 			node.markAsDead();
+
+			// There is no longer a reference to the current transaction on the queue, so we need to reject it separately.
+			transaction.setProgress({
+				state: TransactionState.Failed,
+				reason: errorMsg,
+			});
+
+			transaction.abort(error);
 			this.rejectAllTransactionsForNode(node.id, errorMsg);
-			// The above call will reject the transaction, no need to do it again
+
+			return true;
+		}
+	}
+
+	/**
+	 * @internal
+	 * Handles the case that the controller didn't acknowledge a command in time
+	 * Returns `true` if the transaction failure was handled, `false` if it needs to be rejected.
+	 */
+	private handleMissingControllerACK(
+		transaction: Transaction,
+		error: ZWaveError & {
+			code: ZWaveErrorCodes.Controller_Timeout;
+			context: "ACK";
+		},
+	): boolean {
+		if (!this._controller || !this.mayRecoverUnresponsiveController()) {
 			return false;
 		}
+
+		const recoverByReopeningSerialport = async () => {
+			if (!this.serial) return;
+			this.driverLog.print(
+				"Attempting to recover unresponsive controller by reopening the serial port...",
+				"warn",
+			);
+			if (this.serial.isOpen) await this.serial.close();
+			await wait(1000);
+			await this.openSerialport();
+
+			this.driverLog.print(
+				"Serial port reopened. Returning to normal operation and hoping for the best...",
+				"warn",
+			);
+
+			// We don't know if this worked
+			// Go back to normal operation and hope for the best.
+			this._controller?.setStatus(ControllerStatus.Ready);
+			this._recoveryPhase = ControllerRecoveryPhase.None;
+		};
+
+		if (
+			(this._controller.status !== ControllerStatus.Unresponsive
+				&& !this.maySoftReset())
+			|| this._recoveryPhase
+				=== ControllerRecoveryPhase.ACKTimeoutAfterReset
+		) {
+			// Either we can/could not do a soft reset or the controller is still timing out afterwards
+			void recoverByReopeningSerialport().catch(noop);
+
+			return true;
+		} else if (this._controller.status !== ControllerStatus.Unresponsive) {
+			// The controller was responsive before this transaction failed.
+			// Mark it as unresponsive and try to soft-reset it.
+			this.controller.setStatus(
+				ControllerStatus.Unresponsive,
+			);
+
+			this._recoveryPhase = ControllerRecoveryPhase.ACKTimeout;
+
+			this.driverLog.print(
+				"Attempting to recover unresponsive controller by restarting it...",
+				"warn",
+			);
+
+			// Execute the soft-reset asynchronously
+			void this.softReset().then(() => {
+				// The controller responded. It is no longer unresponsive
+
+				// Re-queue the transaction, so it can get handled next.
+				// Its message generator may have finished, so reset that too.
+				transaction.reset();
+				this.getQueueForTransaction(transaction).add(
+					transaction.clone(),
+				);
+
+				this._controller?.setStatus(ControllerStatus.Ready);
+				this._recoveryPhase = ControllerRecoveryPhase.None;
+			}).catch(() => {
+				// Soft-reset failed. Reject the transaction
+				this.rejectTransaction(transaction, error);
+
+				// and reopen the serial port
+				return recoverByReopeningSerialport();
+			});
+
+			return true;
+		} else {
+			// Not sure what to do here
+			return false;
+		}
+	}
+
+	/**
+	 * @internal
+	 * Handles the case that the controller didn't send the callback for a SendData in time
+	 * Returns `true` if the transaction failure was handled, `false` if it needs to be rejected.
+	 */
+	private handleMissingSendDataResponseOrCallback(
+		transaction: Transaction,
+		error: ZWaveError & {
+			code: ZWaveErrorCodes.Controller_Timeout;
+			context: "callback" | "response";
+		},
+	): boolean {
+		if (!this._controller || !this.mayRecoverUnresponsiveController()) {
+			return false;
+		}
+
+		if (
+			// The SendData response can time out on older controllers trying to reach a dead node.
+			// In this case, we do not want to reset the controller, but just mark the node as dead.
+			error.context === "response"
+			// Also do this if the callback is timing out even after restarting the controller
+			|| this._recoveryPhase
+				=== ControllerRecoveryPhase.CallbackTimeoutAfterReset
+		) {
+			const node = this.tryGetNode(transaction.message);
+			if (!node) return false; // This should never happen, but whatever
+
+			// The controller is still timing out transmitting after a soft reset, don't try again.
+			// Real-world experience has shown that for older controllers this situation can be caused by unresponsive nodes.
+
+			// The following is essentially a copy of handleMissingNodeACK, but with updated error messages
+			const messagePart1 =
+				"The node is causing the controller to become unresponsive";
+
+			let handled: boolean;
+
+			if (node.canSleep) {
+				if (node.status === NodeStatus.Asleep) {
+					// We already moved the messages to the wakeup queue before. If we end up here, this means a command
+					// was sent that may be sent to potentially asleep nodes - including pings.
+					return false;
+				}
+				this.controllerLog.logNode(
+					node.id,
+					`${messagePart1}. It is probably asleep, moving its messages to the wakeup queue.`,
+					"warn",
+				);
+
+				// There is no longer a reference to the current transaction. If it should be moved to the wakeup queue,
+				// it temporarily needs to be added to the queue again.
+				handled = this.mayMoveToWakeupQueue(transaction);
+				if (handled) {
+					this.queue.add(transaction);
+				}
+
+				// Mark the node as asleep. This will move the messages to the wakeup queue
+				node.markAsAsleep();
+			} else {
+				const errorMsg = `${messagePart1}, it is presumed dead`;
+				this.controllerLog.logNode(node.id, errorMsg, "warn");
+
+				node.markAsDead();
+
+				// There is no longer a reference to the current transaction on the queue, so we need to reject it separately.
+				transaction.setProgress({
+					state: TransactionState.Failed,
+					reason: errorMsg,
+				});
+
+				transaction.abort(error);
+				this.rejectAllTransactionsForNode(node.id, errorMsg);
+
+				handled = true;
+			}
+
+			// If the controller is still timing out, reset it once more
+			if (
+				this._recoveryPhase
+					=== ControllerRecoveryPhase.CallbackTimeoutAfterReset
+			) {
+				this.driverLog.print(
+					"Attempting to recover controller again...",
+					"warn",
+				);
+				void this.softResetInternal(true).catch(() => {
+					this.driverLog.print(
+						"Automatic controller recovery failed. Returning to normal operation and hoping for the best.",
+						"warn",
+					);
+				}).finally(() => {
+					this._recoveryPhase = ControllerRecoveryPhase.None;
+					this._controller?.setStatus(ControllerStatus.Ready);
+				});
+			}
+
+			return handled;
+		} else if (this._controller.status !== ControllerStatus.Unresponsive) {
+			// The controller was responsive before this transaction failed.
+
+			if (this.maySoftReset()) {
+				// Mark it as unresponsive and try to soft-reset it.
+				this.controller.setStatus(
+					ControllerStatus.Unresponsive,
+				);
+
+				this._recoveryPhase = ControllerRecoveryPhase.CallbackTimeout;
+
+				this.driverLog.print(
+					"Controller missed Send Data callback. Attempting to recover...",
+					"warn",
+				);
+
+				// Execute the soft-reset asynchronously
+				void this.softResetInternal(true).then(() => {
+					// The controller responded. It is no longer unresponsive.
+
+					// Re-queue the transaction, so it can get handled next.
+					// Its message generator may have finished, so reset that too.
+					transaction.reset();
+					this.getQueueForTransaction(transaction).add(
+						transaction.clone(),
+					);
+
+					this._controller?.setStatus(ControllerStatus.Ready);
+					this._recoveryPhase =
+						ControllerRecoveryPhase.CallbackTimeoutAfterReset;
+				}).catch(() => {
+					// Soft-reset failed. Just reject the transaction
+					this.rejectTransaction(transaction, error);
+
+					this.driverLog.print(
+						"Automatic controller recovery failed. Returning to normal operation and hoping for the best.",
+						"warn",
+					);
+					this._recoveryPhase = ControllerRecoveryPhase.None;
+					this._controller?.setStatus(ControllerStatus.Ready);
+				});
+			} else {
+				this.driverLog.print(
+					"Controller missed Send Data callback. Cannot recover automatically because the soft reset feature is unsupported or disabled. Returning to normal operation and hoping for the best...",
+					"warn",
+				);
+				this.rejectTransaction(transaction, error);
+			}
+
+			return true;
+		} else {
+			// Not sure what to do here
+			return false;
+		}
+	}
+
+	/**
+	 * @internal
+	 * Handles the case that the controller locks up and fails to transmit continuously
+	 */
+	private handleJammedController(
+		transaction: Transaction,
+		error: ZWaveError,
+	): boolean {
+		if (!this._controller || !this.mayRecoverUnresponsiveController()) {
+			return false;
+		}
+
+		if (
+			// Transmits still fail even after restarting the controller
+			this._recoveryPhase
+				=== ControllerRecoveryPhase.JammedAfterReset
+		) {
+			// Maybe this isn't actually the controller being jammed. Give up on this command.
+			this.driverLog.print(
+				"Automatic controller recovery failed. Returning to normal operation and hoping for the best.",
+				"warn",
+			);
+			this._recoveryPhase = ControllerRecoveryPhase.None;
+			this._controller.setStatus(ControllerStatus.Ready);
+
+			return false;
+		} else if (this._controller.status === ControllerStatus.Jammed) {
+			// The controller failed to transmit continuously. Try to soft-reset it if we can.
+			if (this.controller.sdkVersionLt("7.0")) {
+				// The workaround only makes sense on 700/800 series
+				this.driverLog.print(
+					"Cannot recover jammed controller automatically. Returning to normal operation and hoping for the best...",
+					"warn",
+				);
+				this._controller?.setStatus(ControllerStatus.Ready);
+				this.rejectTransaction(transaction, error);
+			} else if (this.maySoftReset()) {
+				this._recoveryPhase = ControllerRecoveryPhase.Jammed;
+
+				this.driverLog.print(
+					"Attempting to recover jammed controller...",
+					"warn",
+				);
+
+				// Execute the soft-reset asynchronously
+				void this.softReset().then(() => {
+					// The controller responded. It is no longer unresponsive.
+
+					// Re-queue the transaction, so it can get handled next.
+					// Its message generator may have finished, so reset that too.
+					transaction.reset();
+					this.getQueueForTransaction(transaction).add(
+						transaction.clone(),
+					);
+
+					this._recoveryPhase =
+						ControllerRecoveryPhase.JammedAfterReset;
+				}).catch(() => {
+					// Soft-reset failed. Just reject the transaction
+					this.rejectTransaction(transaction, error);
+
+					this.driverLog.print(
+						"Automatic controller recovery failed. Returning to normal operation and hoping for the best.",
+						"warn",
+					);
+					this._recoveryPhase = ControllerRecoveryPhase.None;
+					this._controller?.setStatus(ControllerStatus.Ready);
+				});
+			} else {
+				this.driverLog.print(
+					"Cannot recover jammed controller automatically because the soft reset feature is unsupported or disabled. Returning to normal operation and hoping for the best...",
+					"warn",
+				);
+				this._controller?.setStatus(ControllerStatus.Ready);
+				this.rejectTransaction(transaction, error);
+			}
+
+			return true;
+		} else {
+			// Not sure what to do here
+			return false;
+		}
+	}
+
+	private shouldRequestWakeupOnDemand(node: ZWaveNode): boolean {
+		return (
+			!!node.supportsWakeUpOnDemand
+			&& node.status === NodeStatus.Asleep
+			&& this.hasPendingTransactions(
+				(t) =>
+					t.requestWakeUpOnDemand
+					&& t.message.getNodeId() === node.id,
+			)
+		);
 	}
 
 	private partialCCSessions = new Map<string, CommandClass[]>();
@@ -2192,8 +4562,8 @@ It is probably asleep, moving its messages to the wakeup queue.`,
 				...sessionId,
 			});
 			if (
-				createIfMissing &&
-				!this.partialCCSessions.has(partialSessionKey)
+				createIfMissing
+				&& !this.partialCCSessions.has(partialSessionKey)
 			) {
 				this.partialCCSessions.set(partialSessionKey, []);
 			}
@@ -2207,7 +4577,9 @@ It is probably asleep, moving its messages to the wakeup queue.`,
 	 * Assembles partial CCs of in a message body. Returns `true` when the message is complete and can be handled further.
 	 * If the message expects another partial one, this returns `false`.
 	 */
-	private assemblePartialCCs(msg: Message & ICommandClassContainer): boolean {
+	private async assemblePartialCCs(
+		msg: CommandRequest & ContainsCC,
+	): Promise<boolean> {
 		let command: CommandClass | undefined = msg.command;
 		// We search for the every CC that provides us with a session ID
 		// There might be newly-completed CCs that contain a partial CC,
@@ -2232,11 +4604,18 @@ It is probably asleep, moving its messages to the wakeup queue.`,
 					// this is the final one, merge the previous responses
 					this.partialCCSessions.delete(partialSessionKey!);
 					try {
-						command.mergePartialCCs(session);
+						await command.mergePartialCCsAsync(session, {
+							...this.getCCParsingContext(),
+							sourceNodeId: msg.command.nodeId as number,
+							frameType: msg.frameType,
+						});
+						// Ensure there are no errors
+						assertValidCCs(msg);
 					} catch (e) {
 						if (isZWaveError(e)) {
 							switch (e.code) {
-								case ZWaveErrorCodes.Deserialization_NotImplemented:
+								case ZWaveErrorCodes
+									.Deserialization_NotImplemented:
 								case ZWaveErrorCodes.CC_NotImplemented:
 									this.driverLog.print(
 										`Dropping message because it could not be deserialized: ${e.message}`,
@@ -2245,7 +4624,8 @@ It is probably asleep, moving its messages to the wakeup queue.`,
 									// Don't continue handling this message
 									return false;
 
-								case ZWaveErrorCodes.PacketFormat_InvalidPayload:
+								case ZWaveErrorCodes
+									.PacketFormat_InvalidPayload:
 									this.driverLog.print(
 										`Could not assemble partial CCs because the payload is invalid. Dropping them.`,
 										"warn",
@@ -2287,107 +4667,145 @@ It is probably asleep, moving its messages to the wakeup queue.`,
 			| TransportServiceCCSubsequentSegment,
 	): Promise<void> {
 		const nodeSessions = this.ensureNodeSessions(command.nodeId);
-		// If this command belongs to an existing session, just forward it to the state machine
-		const transportSession = nodeSessions.transportService.get(
-			command.sessionId,
-		);
+
+		// TODO: Figure out how to know which timeout is the correct one. For now use the larger one
+		const missingSegmentTimeout =
+			TransportServiceTimeouts.requestMissingSegmentR2;
+
+		const advanceTransportServiceSession = async (
+			session: TransportServiceSession,
+			input: TransportServiceRXMachineInput,
+		): Promise<void> => {
+			const machine = session.machine;
+
+			// Figure out what needs to be done for this input
+			const transition = machine.next(input);
+			if (transition) {
+				machine.transition(transition.newState);
+
+				if (machine.state.value === "receive") {
+					// We received a segment in the normal flow. Restart the timer
+					startMissingSegmentTimeout(session);
+				} else if (machine.state.value === "requestMissing") {
+					// A segment is missing. Request it and restart the timeout
+					this.controllerLog.logNode(command.nodeId, {
+						message:
+							`Transport Service RX session #${command.sessionId}: Segment with offset ${machine.state.offset} missing - requesting it...`,
+						level: "debug",
+						direction: "outbound",
+					});
+					const cc = new TransportServiceCCSegmentRequest({
+						nodeId: command.nodeId,
+						sessionId: command.sessionId,
+						datagramOffset: machine.state.offset,
+					});
+					await this.sendCommand(cc, {
+						maxSendAttempts: 1,
+						priority: MessagePriority.Immediate,
+					});
+
+					startMissingSegmentTimeout(session);
+				} else if (machine.state.value === "failure") {
+					this.controllerLog.logNode(command.nodeId, {
+						message:
+							`Transport Service RX session #${command.sessionId} failed`,
+						level: "error",
+						direction: "none",
+					});
+					// TODO: Update statistics
+					nodeSessions.transportService.delete(command.sessionId);
+					if (session.timeout) {
+						clearTimeout(session.timeout);
+					}
+				}
+			}
+
+			if (machine.state.value === "success") {
+				// This state may happen without a transition if we received the last segment before
+				// but the SegmentComplete message got lost
+				this.controllerLog.logNode(command.nodeId, {
+					message:
+						`Transport Service RX session #${command.sessionId} complete`,
+					level: "debug",
+					direction: "inbound",
+				});
+				if (session.timeout) {
+					clearTimeout(session.timeout);
+				}
+
+				const cc = new TransportServiceCCSegmentComplete({
+					nodeId: command.nodeId,
+					sessionId: command.sessionId,
+				});
+				await this.sendCommand(cc, {
+					maxSendAttempts: 1,
+					priority: MessagePriority.Immediate,
+				}).catch(noop);
+			}
+		};
+
+		function startMissingSegmentTimeout(
+			session: TransportServiceSession,
+		): void {
+			if (session.timeout) {
+				clearTimeout(session.timeout);
+			}
+
+			session.timeout = setTimeout(() => {
+				session.timeout = undefined;
+				void advanceTransportServiceSession(session, {
+					value: "timeout",
+				});
+			}, missingSegmentTimeout);
+		}
+
 		if (command instanceof TransportServiceCCFirstSegment) {
 			// This is the first message in a sequence. Create or re-initialize the session
 			// We don't delete finished sessions when the last message is received in order to be able to
 			// handle when the SegmentComplete message gets lost. As soon as the node initializes a new session,
 			// we do know that the previous one is finished.
-			if (transportSession) {
-				transportSession.interpreter.stop();
-			}
 			nodeSessions.transportService.clear();
 
 			this.controllerLog.logNode(command.nodeId, {
-				message: `Beginning Transport Service RX session #${command.sessionId}...`,
+				message:
+					`Beginning Transport Service RX session #${command.sessionId}...`,
 				level: "debug",
 				direction: "inbound",
 			});
 
-			const RXStateMachine = createTransportServiceRXMachine(
-				{
-					requestMissingSegment: async (index: number) => {
-						this.controllerLog.logNode(command.nodeId, {
-							message: `Transport Service RX session #${command.sessionId}: Segment ${index} missing - requesting it...`,
-							level: "debug",
-							direction: "outbound",
-						});
-						const cc = new TransportServiceCCSegmentRequest(this, {
-							nodeId: command.nodeId,
-							sessionId: command.sessionId,
-							datagramOffset:
-								index * transportSession!.fragmentSize,
-						});
-						await this.sendCommand(cc, {
-							maxSendAttempts: 1,
-							priority: MessagePriority.Handshake,
-						});
-					},
-					sendSegmentsComplete: async () => {
-						this.controllerLog.logNode(command.nodeId, {
-							message: `Transport Service RX session #${command.sessionId} complete`,
-							level: "debug",
-							direction: "outbound",
-						});
-						const cc = new TransportServiceCCSegmentComplete(this, {
-							nodeId: command.nodeId,
-							sessionId: command.sessionId,
-						});
-						await this.sendCommand(cc, {
-							maxSendAttempts: 1,
-							priority: MessagePriority.Handshake,
-						});
-					},
-				},
-				{
-					// TODO: Figure out how to know which timeout is the correct one. For now use the larger one
-					missingSegmentTimeout:
-						TransportServiceTimeouts.requestMissingSegmentR2,
-					numSegments: Math.ceil(
-						command.datagramSize / command.partialDatagram.length,
-					),
-				},
+			const machine = createTransportServiceRXMachine(
+				command.datagramSize,
+				command.partialDatagram.length,
 			);
 
-			const interpreter = interpret(RXStateMachine).start();
-			nodeSessions.transportService.set(command.sessionId, {
+			const session: TransportServiceSession = {
 				fragmentSize: command.partialDatagram.length,
-				interpreter,
-			});
+				machine,
+			};
+			nodeSessions.transportService.set(command.sessionId, session);
 
-			interpreter.onTransition((state) => {
-				if (state.changed && state.value === "failure") {
-					this.controllerLog.logNode(command.nodeId, {
-						message: `Transport Service RX session #${command.sessionId} failed`,
-						level: "error",
-						direction: "none",
-					});
-					// TODO: Update statistics
-					interpreter.stop();
-					nodeSessions.transportService.delete(command.sessionId);
-				}
-			});
+			// Time out waiting for subsequent segments
+			startMissingSegmentTimeout(session);
 		} else {
-			// This is a subsequent message in a sequence. Just forward it to the state machine if there is one
+			// This is a subsequent message in a sequence. Continue executing the state machine
+			const transportSession = nodeSessions.transportService.get(
+				command.sessionId,
+			);
 			if (transportSession) {
-				transportSession.interpreter.send({
-					type: "segment",
-					index: Math.floor(
-						command.datagramOffset / transportSession.fragmentSize,
-					),
+				await advanceTransportServiceSession(transportSession, {
+					value: "segment",
+					offset: command.datagramOffset,
+					length: command.partialDatagram.length,
 				});
 			} else {
 				// This belongs to a session we don't know... tell the sending node to try again
-				const cc = new TransportServiceCCSegmentWait(this, {
+				const cc = new TransportServiceCCSegmentWait({
 					nodeId: command.nodeId,
 					pendingSegments: 0,
 				});
 				await this.sendCommand(cc, {
 					maxSendAttempts: 1,
-					priority: MessagePriority.Handshake,
+					priority: MessagePriority.Immediate,
 				});
 			}
 		}
@@ -2398,27 +4816,84 @@ It is probably asleep, moving its messages to the wakeup queue.`,
 	 * @param msg The decoded message
 	 */
 	private async handleUnsolicitedMessage(msg: Message): Promise<void> {
-		if (msg.type === MessageType.Request) {
-			// This is a request we might have registered handlers for
-			try {
+		// FIXME: Rename this - msg might not be unsolicited
+		// This is a message we might have registered handlers for
+		try {
+			if (msg.type === MessageType.Request) {
 				await this.handleRequest(msg);
-			} catch (e) {
-				if (
-					isZWaveError(e) &&
-					e.code === ZWaveErrorCodes.Driver_NotReady
-				) {
-					this.driverLog.print(
-						`Cannot handle message because the driver is not ready to handle it yet.`,
+			} else {
+				await this.handleResponse(msg);
+			}
+		} catch (e) {
+			if (
+				isZWaveError(e)
+				&& e.code === ZWaveErrorCodes.Driver_NotReady
+			) {
+				this.driverLog.print(
+					`Cannot handle message because the driver is not ready to handle it yet.`,
+					"warn",
+				);
+			} else {
+				throw e;
+			}
+		}
+	}
+
+	/**
+	 * Is called when the Serial API restart unexpectedly.
+	 */
+	private async handleSerialAPIStartedUnexpectedly(
+		msg: SerialAPIStartedRequest,
+	): Promise<boolean> {
+		// Normally, the soft reset command includes waiting for this message.
+		// If we end up here, it is unexpected.
+
+		switch (msg.wakeUpReason) {
+			// All wakeup reasons that indicate a reset of the Serial API
+			// need to be handled here, so we interpret node IDs correctly.
+			case SerialAPIWakeUpReason.Reset:
+			case SerialAPIWakeUpReason.WatchdogReset:
+			case SerialAPIWakeUpReason.SoftwareReset:
+			case SerialAPIWakeUpReason.EmergencyWatchdogReset:
+			case SerialAPIWakeUpReason.BrownoutCircuit: {
+				// The Serial API restarted unexpectedly
+				this.controllerLog.print(
+					`Serial API restarted unexpectedly.`,
+					"warn",
+				);
+
+				// In this situation, we may be executing a Serial API command, which will never complete.
+				// Abort it, so it can be retried
+				if (this.abortSerialAPICommand) {
+					this.controllerLog.print(
+						`Currently active command will be retried...`,
 						"warn",
 					);
-				} else {
-					throw e;
+					this.abortSerialAPICommand.reject(
+						new ZWaveError(
+							"The Serial API restarted unexpectedly",
+							ZWaveErrorCodes.Controller_Reset,
+						),
+					);
 				}
+
+				// Restart the watchdog unless disabled
+				if (this.options.features.watchdog) {
+					await this._controller?.startWatchdog();
+				}
+
+				if (this._controller?.nodeIdType === NodeIDType.Long) {
+					// We previously used 16 bit node IDs, but the controller was reset.
+					// Remember this and try to go back to 16 bit.
+					this._controller.nodeIdType = NodeIDType.Short;
+					await this._controller.trySetNodeIDType(NodeIDType.Long);
+				}
+
+				return true; // Don't invoke any more handlers
 			}
-		} else {
-			this.driverLog.transactionResponse(msg, undefined, "unexpected");
-			this.driverLog.print("unexpected response, discarding...", "warn");
 		}
+
+		return false; // Not handled
 	}
 
 	/**
@@ -2436,8 +4911,8 @@ It is probably asleep, moving its messages to the wakeup queue.`,
 		oneTime: boolean = false,
 	): void {
 		const handlers: RequestHandlerEntry<T>[] = this.requestHandlers.has(
-			fnType,
-		)
+				fnType,
+			)
 			? this.requestHandlers.get(fnType)!
 			: [];
 		const entry: RequestHandlerEntry<T> = { invoke: handler, oneTime };
@@ -2478,44 +4953,219 @@ ${handlers.length} left`,
 	}
 
 	/**
-	 * Checks whether a CC may be handled or should be ignored.
-	 * This method expects `cc` to be unwrapped.
+	 * Checks whether a CC has a lower than expected security level and needs to be discarded
 	 */
-	private mayHandleUnsolicitedCommand(cc: CommandClass): boolean {
-		// This should only be necessary for unsolicited commands, since the response matching
-		// is pretty strict and looks at the encapsulation order
+	private isSecurityLevelTooLow(cc: CommandClass): boolean {
+		// With Security S0, some commands may be accepted without encryption, some require it
+		// With Security S2, a node MUST support its command classes only when communication is using its
+		// highest Security Class granted during security bootstrapping.
 
-		// From SDS11847:
-		// A controlling node MUST discard a received Report/Notification type command if it is
-		// not received using S0 encapsulation and the corresponding Command Class is supported securely only
+		// We already discard lower S2 keys when decrypting, so all that's left here to check is if the
+		// CC is encrypted at all.
 
+		const node = this._controller?.nodes.get(cc.nodeId as number);
+		if (!node) {
+			// Node does not exist, don't accept the CC
+			this.controllerLog.logNode(
+				cc.nodeId as number,
+				`is unknown - discarding received command...`,
+				"warn",
+			);
+			return true;
+		}
+
+		// Transport Service has a special handler
+		if (cc instanceof TransportServiceCC) return false;
+		// CRC16 belongs outside of Security encapsulation
+		if (cc instanceof CRC16CCCommandEncapsulation) {
+			return this.isSecurityLevelTooLow(cc.encapsulated);
+		}
+
+		const secClass = node.getHighestSecurityClass();
 		if (
-			cc.secure &&
-			cc.ccId !== CommandClasses.Security &&
-			cc.ccId !== CommandClasses["Security 2"]
+			secClass === SecurityClass.None
+			|| secClass === SecurityClass.Temporary
 		) {
-			const commandName = cc.constructor.name;
-			if (
-				commandName.endsWith("Report") ||
-				commandName.endsWith("Notification")
-			) {
-				// Check whether there was a security encapsulation
-				if (
-					cc.isEncapsulatedWith(CommandClasses.Security) ||
-					cc.isEncapsulatedWith(CommandClasses["Security 2"])
-				) {
-					return true;
+			return false;
+		}
+
+		const expectedSecurityCC = securityClassIsS2(secClass)
+			? CommandClasses["Security 2"]
+			: secClass === SecurityClass.S0_Legacy
+			? CommandClasses.Security
+			: undefined;
+
+		const isCCConsideredSecure = (
+			cmd: CommandClass,
+		): MaybeNotKnown<boolean> => {
+			// Some CCs are always accepted, regardless of security class
+			if (cmd instanceof SecurityCC) {
+				switch (cmd.ccCommand) {
+					// Cannot be sent encapsulated:
+					case SecurityCommand.NonceGet:
+					case SecurityCommand.NonceReport:
+					case SecurityCommand.SchemeGet:
+					case SecurityCommand.SchemeReport:
+						return true;
 				}
-				// none found, don't accept the CC
-				this.controllerLog.logNode(
-					cc.nodeId as number,
-					`command must be encrypted but was received without Security encapsulation - discarding it...`,
-					"warn",
+
+				if (cmd instanceof SecurityCCCommandEncapsulation) {
+					// CommandsSupportedReport is always accepted to be able to learn security classes and interview nodes
+					// CommandsSupportedGet is always accepted, so others can learn our security classes
+					if (
+						cmd.encapsulated
+							instanceof SecurityCCCommandsSupportedReport
+						|| cmd.encapsulated
+							instanceof SecurityCCCommandsSupportedGet
+					) {
+						return true;
+					}
+
+					// Other S0 commands are only accepted if S0 is the highest security class
+					return secClass === SecurityClass.S0_Legacy;
+				}
+			} else if (cmd instanceof Security2CC) {
+				if (cmd instanceof Security2CCMessageEncapsulation) {
+					// CommandsSupportedReport is always accepted to be able to learn security classes and interview nodes
+					if (
+						cmd.encapsulated
+							instanceof Security2CCCommandsSupportedReport
+					) {
+						return true;
+					}
+
+					// CommandsSupportedGet is always accepted, so others can learn our security classes
+					if (
+						cmd.encapsulated
+							instanceof Security2CCCommandsSupportedGet
+					) {
+						return true;
+					}
+
+					// Multicast commands are always accepted
+					if (cmd.getMulticastGroupId() != undefined) return true;
+
+					// This shouldn't happen, but better be sure
+					if (cmd.securityClass == undefined) return false;
+
+					// All other commands are only accepted if the highest security class is used
+					return cmd.securityClass === secClass;
+				}
+			}
+
+			return cmd.ccId === expectedSecurityCC;
+		};
+
+		let requiresSecurity = securityClassIsS2(secClass);
+		const isSecure = isCCConsideredSecure(cc);
+
+		while (true) {
+			if (isEncapsulatingCommandClass(cc)) {
+				cc = cc.encapsulated;
+			} else if (isMultiEncapsulatingCommandClass(cc)) {
+				requiresSecurity ||= cc.encapsulated.some((cmd) =>
+					node.isCCSecure(cmd.ccId)
 				);
-				return false;
+				break;
+			} else {
+				requiresSecurity ||= node.isCCSecure(cc.ccId)
+					&& cc.ccId !== CommandClasses.Security
+					&& cc.ccId !== CommandClasses["Security 2"];
+
+				break;
 			}
 		}
-		return true;
+		if (requiresSecurity && !isSecure) {
+			// none found, don't accept the CC
+			this.controllerLog.logNode(
+				cc.nodeId as number,
+				`command was received at a lower security level than expected - discarding it...`,
+				"warn",
+			);
+			return true;
+		}
+
+		return false;
+	}
+
+	/** Checks whether a CC should be discarded */
+	private shouldDiscardCC(cc: CommandClass): boolean {
+		if (isEncapsulatingCommandClass(cc)) {
+			return this.shouldDiscardCC(cc.encapsulated);
+		}
+
+		const node = this._controller?.nodes.get(cc.nodeId as number);
+		// We should have checked this before, but better be safe than sorry
+		if (!node) {
+			// Node does not exist, don't accept the CC
+			this.controllerLog.logNode(
+				cc.nodeId as number,
+				`is unknown - discarding received command...`,
+				"warn",
+			);
+			return true;
+		}
+
+		if (
+			cc.constructor.name.endsWith("Get")
+			&& (cc.frameType === "multicast" || cc.frameType === "broadcast")
+		) {
+			this.controllerLog.logNode(
+				cc.nodeId as number,
+				`received GET-type command via ${cc.frameType} - discarding...`,
+				"warn",
+			);
+			return true;
+		}
+
+		// Do not accept Meter CC and/or Multilevel Sensor CC if the node does not support them
+		// https://github.com/zwave-js/node-zwave-js/issues/5510
+		// TODO: Consider expanding this to all CCs and not only reports
+		if (
+			cc.ccId === CommandClasses.Meter
+			|| cc.ccId === CommandClasses["Multilevel Sensor"]
+		) {
+			const endpoint = node.getEndpoint(cc.endpointIndex) ?? node;
+			if (
+				!endpoint.supportsCC(cc.ccId) && !endpoint.controlsCC(cc.ccId)
+			) {
+				this.controllerLog.logNode(
+					cc.nodeId as number,
+					`${
+						cc.endpointIndex > 0
+							? `Endpoint ${cc.endpointIndex} `
+							: ""
+					}does not support CC ${
+						getCCName(
+							cc.ccId,
+						)
+					} - discarding received command...`,
+					"warn",
+				);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Is called when a Response-type message was received
+	 */
+	private handleResponse(msg: Message): Promise<void> {
+		// Check if we have a dynamic handler waiting for this message
+		for (const entry of this.awaitedMessages) {
+			if (entry.predicate(msg)) {
+				// We do
+				entry.handler(msg);
+				return Promise.resolve();
+			}
+		}
+
+		this.driverLog.transactionResponse(msg, undefined, "unexpected");
+		this.driverLog.print("unexpected response, discarding...", "warn");
+
+		return Promise.resolve();
 	}
 
 	/**
@@ -2524,11 +5174,8 @@ ${handlers.length} left`,
 	private async handleRequest(msg: Message): Promise<void> {
 		let handlers: RequestHandlerEntry[] | undefined;
 
-		// For further actions, we are only interested in the innermost CC
-		if (isCommandClassContainer(msg)) this.unwrapCommands(msg);
-
-		if (isNodeQuery(msg) || isCommandClassContainer(msg)) {
-			const node = msg.getNodeUnsafe();
+		if (hasNodeId(msg) || containsCC(msg)) {
+			const node = this.tryGetNode(msg);
 			if (node) {
 				// We have received an unsolicited message from a dead node, bring it back to life
 				if (node.status === NodeStatus.Dead) {
@@ -2537,29 +5184,41 @@ ${handlers.length} left`,
 			}
 		}
 
-		if (isCommandClassContainer(msg)) {
-			const node = msg.getNodeUnsafe();
-			// If we receive an encrypted message but assume the node is insecure, change our assumption
-			if (
-				node?.isSecure === false &&
-				(msg.command.ccId === CommandClasses.Security ||
-					msg.command.isEncapsulatedWith(CommandClasses.Security))
-			) {
-				node.securityClasses.set(SecurityClass.S0_Legacy, true);
-				// Force a new interview
-				void node.refreshInfo();
+		// Check if we have a dynamic handler waiting for this message
+		for (const entry of this.awaitedMessages) {
+			if (entry.predicate(msg)) {
+				// We do
+				entry.handler(msg);
+				return;
 			}
-
-			// Check if we may even handle the command
-			if (!this.mayHandleUnsolicitedCommand(msg.command)) return;
 		}
 
-		if (
-			msg instanceof ApplicationCommandRequest ||
-			msg instanceof BridgeApplicationCommandRequest
-		) {
-			// we handle ApplicationCommandRequests differently because they are handled by the nodes directly
-			const nodeId = msg.command.nodeId;
+		if (isCommandRequest(msg) && containsCC(msg)) {
+			const nodeId = msg.getNodeId()!;
+
+			// It could also be that this is the node's response for a CC that we sent, but where the ACK is delayed
+			const currentMessage = this.queue.currentTransaction
+				?.getCurrentMessage();
+			if (
+				currentMessage
+				&& currentMessage.expectsNodeUpdate()
+				&& currentMessage.isExpectedNodeUpdate(msg)
+			) {
+				// The message we're currently sending is still in progress but expects this message in response.
+				// Remember the message there.
+				this.controllerLog.logNode(msg.getNodeId()!, {
+					message:
+						`received expected response prematurely, remembering it...`,
+					level: "verbose",
+					direction: "inbound",
+				});
+				currentMessage.prematureNodeUpdate = msg;
+				return;
+			}
+
+			// For further actions, we are only interested in the innermost CC
+			this.unwrapCommands(msg);
+
 			// cannot handle ApplicationCommandRequests without a controller
 			if (this._controller == undefined) {
 				this.driverLog.print(
@@ -2579,28 +5238,9 @@ ${handlers.length} left`,
 			const nodeSessions = this.nodeSessions.get(nodeId);
 			// Check if we need to handle the command ourselves
 			if (
-				msg.command.ccId === CommandClasses["Device Reset Locally"] &&
-				msg.command instanceof DeviceResetLocallyCCNotification
-			) {
-				this.controllerLog.logNode(msg.command.nodeId, {
-					message: `The node was reset locally, removing it`,
-					direction: "inbound",
-				});
-
-				try {
-					await this.controller.removeFailedNode(msg.command.nodeId);
-				} catch (e) {
-					this.controllerLog.logNode(msg.command.nodeId, {
-						message: `removing the node failed: ${getErrorMessage(
-							e,
-						)}`,
-						level: "error",
-					});
-				}
-			} else if (
-				msg.command.ccId === CommandClasses.Supervision &&
-				msg.command instanceof SupervisionCCReport &&
-				nodeSessions?.supervision.has(msg.command.sessionId)
+				msg.command.ccId === CommandClasses.Supervision
+				&& msg.command instanceof SupervisionCCReport
+				&& nodeSessions?.supervision.has(msg.command.sessionId)
 			) {
 				// Supervision commands are handled here
 				this.controllerLog.logNode(msg.command.nodeId, {
@@ -2609,119 +5249,125 @@ ${handlers.length} left`,
 				});
 
 				// Call the update handler
-				nodeSessions.supervision.get(msg.command.sessionId)!(
-					msg.command.status,
-					msg.command.duration,
-				);
+				nodeSessions.supervision.get(msg.command.sessionId)!({
+					status: msg.command.status,
+					remainingDuration: msg.command.duration,
+				} as SupervisionResult);
 				// If this was a final report, remove the handler
 				if (!msg.command.moreUpdatesFollow) {
 					nodeSessions.supervision.delete(msg.command.sessionId);
 				}
 			} else {
-				// Figure out if the command was received with supervision encapsulation
+				// Figure out if the command was received with supervision encapsulation and we need to respond accordingly
 				const supervisionSessionId = SupervisionCC.getSessionId(
 					msg.command,
 				);
-				const secure = msg.command.secure;
+				// Figure out if this is an S2 multicast followup for a group that is out of sync
+				const s2MulticastOutOfSync = this.mustReplyWithSecurityS2MOS(
+					msg,
+				);
 
+				const encapsulationFlags = msg.command.encapsulationFlags;
+
+				let reply: (
+					status:
+						| SupervisionStatus.Success
+						| SupervisionStatus.Fail
+						| SupervisionStatus.NoSupport,
+				) => Promise<void>;
+				if (supervisionSessionId != undefined) {
+					// The command was supervised, and we must respond with a Supervision Report
+					const endpoint = node.getEndpoint(msg.command.endpointIndex)
+						?? node;
+					reply = (status) =>
+						endpoint
+							.createAPI(CommandClasses.Supervision, false)
+							.withOptions({ s2MulticastOutOfSync })
+							.sendReport({
+								sessionId: supervisionSessionId,
+								moreUpdatesFollow: false,
+								status,
+								requestWakeUpOnDemand: this
+									.shouldRequestWakeupOnDemand(node),
+								encapsulationFlags,
+								lowPriority: this
+									.shouldUseLowPriorityForSupervisionReport(
+										node,
+										encapsulationFlags,
+									),
+							});
+				} else {
+					// Unsupervised, reply is a no-op
+					reply = () => Promise.resolve();
+				}
 				// DO NOT force-add support for the Supervision CC here. Some devices only support Supervision when sending,
 				// so we need to trust the information we already have.
+
+				// In the case where the command was unsupervised and we need to send a MOS, do it as soon as possible
+				if (supervisionSessionId == undefined && s2MulticastOutOfSync) {
+					// If the command was NOT received using Supervision,
+					// we need to respond with an MOS nonce. Otherwise we'll set the flag
+					// on the Supervision Report
+					node.commandClasses["Security 2"].sendMOS().catch(() => {
+						// Ignore errors
+					});
+				}
 
 				// check if someone is waiting for this command
 				for (const entry of this.awaitedCommands) {
 					if (entry.predicate(msg.command)) {
-						// resolve the promise - this will remove the entry from the list
-						entry.promise.resolve(msg.command);
+						// there is!
+						entry.handler(msg.command);
 
-						// send back a Supervision Report if the command was received via Supervision Get
-						if (supervisionSessionId !== undefined) {
-							await node
-								.createAPI(CommandClasses.Supervision, false)
-								.sendReport({
-									sessionId: supervisionSessionId,
-									moreUpdatesFollow: false,
-									status: SupervisionStatus.Success,
-									secure,
-								});
-						}
+						// and possibly reply to a supervised command
+						await reply(SupervisionStatus.Success);
 						return;
 					}
 				}
 
 				// No one is waiting, dispatch the command to the node itself
-				if (supervisionSessionId !== undefined) {
-					// Wrap the handleCommand in try-catch so we can notify the node that we weren't able to handle the command
-					try {
-						await node.handleCommand(msg.command);
+				try {
+					await node.handleCommand(msg.command);
+					await reply(SupervisionStatus.Success);
+				} catch (e) {
+					let handled = false;
+					if (isZWaveError(e)) {
+						if (e.code === ZWaveErrorCodes.CC_OperationFailed) {
+							// The sending node tried to do something that didn't work
+							await reply(SupervisionStatus.Fail);
+							handled = true;
+						} else if (e.code === ZWaveErrorCodes.CC_NotSupported) {
+							// The sending node sent a command we could not handle
+							await reply(SupervisionStatus.NoSupport);
+							handled = true;
+						}
+					}
 
-						await node
-							.createAPI(CommandClasses.Supervision, false)
-							.sendReport({
-								sessionId: supervisionSessionId,
-								moreUpdatesFollow: false,
-								status: SupervisionStatus.Success,
-								secure,
-							});
-					} catch (e) {
-						await node
-							.createAPI(CommandClasses.Supervision, false)
-							.sendReport({
-								sessionId: supervisionSessionId,
-								moreUpdatesFollow: false,
-								status: SupervisionStatus.Fail,
-								secure,
-							});
+					if (!handled) {
+						// Something unexpected happened.
+						// Report failure, then re-throw the error, so it can be handled accordingly
+						await reply(SupervisionStatus.Fail);
 
-						// In any case we don't want to swallow the error
 						throw e;
 					}
-				} else {
-					await node.handleCommand(msg.command);
 				}
 			}
 
 			return;
 		} else if (msg instanceof ApplicationUpdateRequest) {
-			if (msg instanceof ApplicationUpdateRequestNodeInfoReceived) {
-				const node = msg.getNodeUnsafe();
-				if (node) {
-					this.controllerLog.logNode(node.id, {
-						message: "Received updated node info",
-						direction: "inbound",
-					});
-					node.updateNodeInfo(msg.nodeInformation);
-
-					// Tell the send thread that we received a NIF from the node
-					this.sendThread.send({ type: "NIF", nodeId: node.id });
-
-					if (
-						node.canSleep &&
-						node.supportsCC(CommandClasses["Wake Up"])
-					) {
-						// In case this is a sleeping node and there are no messages in the queue, the node may go back to sleep very soon
-						this.debounceSendNodeToSleep(node);
-					}
-
-					return;
-				}
+			// Make sure we're ready to handle this command
+			this.ensureReady(true);
+			return this.controller.handleApplicationUpdateRequest(msg);
+		} else if (msg instanceof SerialAPIStartedRequest) {
+			if (await this.handleSerialAPIStartedUnexpectedly(msg)) {
+				return;
 			}
 		} else {
-			// Check if we have a dynamic handler waiting for this message
-			for (const entry of this.awaitedMessages) {
-				if (entry.predicate(msg)) {
-					// resolve the promise - this will remove the entry from the list
-					entry.promise.resolve(msg);
-					return;
-				}
-			}
-
-			// Otherwise loop through the static handlers
-
 			// TODO: This deserves a nicer formatting
 			this.driverLog.print(
-				`handling request ${FunctionType[msg.functionType]} (${
-					msg.functionType
-				})`,
+				`handling request ${
+					FunctionType[msg.functionType]
+				} (${msg.functionType})`,
 			);
 			handlers = this.requestHandlers.get(msg.functionType);
 		}
@@ -2758,18 +5404,38 @@ ${handlers.length} left`,
 		}
 	}
 
-	private lastCallbackId = 0xff;
 	/**
-	 * Returns the next callback ID. Callback IDs are used to correllate requests
+	 * Returns the next callback ID. Callback IDs are used to correlate requests
 	 * to the controller/nodes with its response
 	 */
-	public getNextCallbackId(): number {
-		this.lastCallbackId = (this.lastCallbackId + 1) & 0xff;
-		if (this.lastCallbackId < 1) this.lastCallbackId = 1;
-		return this.lastCallbackId;
+	public readonly getNextCallbackId = createWrappingCounter(0xff);
+
+	private readonly supervisionSessionIDs = new Map<number, () => number>();
+	/**
+	 * Returns the next session ID for Supervision CC
+	 */
+	public getNextSupervisionSessionId(nodeId: number): number {
+		if (!this.supervisionSessionIDs.has(nodeId)) {
+			this.supervisionSessionIDs.set(
+				nodeId,
+				createWrappingCounter(MAX_SUPERVISION_SESSION_ID, true),
+			);
+		}
+		return this.supervisionSessionIDs.get(nodeId)!();
 	}
 
-	private encapsulateCommands(msg: Message & ICommandClassContainer): void {
+	/**
+	 * Returns the next session ID for Transport Service CC
+	 */
+	public readonly getNextTransportServiceSessionId = createWrappingCounter(
+		MAX_TRANSPORT_SERVICE_SESSION_ID,
+		true,
+	);
+
+	private encapsulateCommands(
+		cmd: CommandClass,
+		options: Omit<SendCommandOptions, keyof SendMessageOptions> = {},
+	): CommandClass {
 		// The encapsulation order (from outside to inside) is as follows:
 		// 5. Any one of the following combinations:
 		//   a. Security (S0 or S2) followed by transport service
@@ -2785,52 +5451,753 @@ ${handlers.length} left`,
 		// TODO: 2.
 
 		// 3.
-		if (SupervisionCC.requiresEncapsulation(msg.command)) {
-			msg.command = SupervisionCC.encapsulate(this, msg.command);
+		if (SupervisionCC.requiresEncapsulation(cmd)) {
+			cmd = SupervisionCC.encapsulate(
+				cmd,
+				this.getNextSupervisionSessionId(cmd.nodeId as number),
+			);
 		}
 
 		// 4.
-		if (MultiChannelCC.requiresEncapsulation(msg.command)) {
-			msg.command = MultiChannelCC.encapsulate(this, msg.command);
+		if (MultiChannelCC.requiresEncapsulation(cmd)) {
+			const multiChannelCCVersion = this.getSupportedCCVersion(
+				CommandClasses["Multi Channel"],
+				cmd.nodeId as number,
+			);
+
+			cmd = multiChannelCCVersion === 1
+				? MultiChannelCC.encapsulateV1(cmd)
+				: MultiChannelCC.encapsulate(cmd);
 		}
 
 		// 5.
+		if (CRC16CC.requiresEncapsulation(cmd)) {
+			cmd = CRC16CC.encapsulate(cmd);
+		} else {
+			// The command must be S2-encapsulated, if ...
+			let maybeS2 = false;
+			const node = cmd.getNode(this);
+			if (node?.supportsCC(CommandClasses["Security 2"])) {
+				// ... the node supports S2 and has a valid security class
+				const nodeSecClass = node.getHighestSecurityClass();
+				const securityManager = this.getSecurityManager2(node.id);
+				maybeS2 = securityClassIsS2(nodeSecClass)
+					|| !!securityManager?.tempKeys.has(node.id);
+			} else if (options.s2MulticastGroupId != undefined) {
+				// ... or we're dealing with S2 multicast
+				maybeS2 = true;
+			}
+			if (maybeS2 && Security2CC.requiresEncapsulation(cmd)) {
+				cmd = Security2CC.encapsulate(
+					cmd,
+					this.ownNodeId,
+					this,
+					{
+						securityClass: options.s2OverrideSecurityClass,
+						multicastOutOfSync: !!options.s2MulticastOutOfSync,
+						multicastGroupId: options.s2MulticastGroupId,
+						verifyDelivery: options.s2VerifyDelivery,
+					},
+				);
+			}
 
-		// When a node supports S2 and has a valid security class, the command
-		// must be S2-encapsulated
-		const node = msg.command.getNode();
-		if (node?.supportsCC(CommandClasses["Security 2"])) {
-			const securityClass = node.getHighestSecurityClass();
-			if (
-				((securityClass != undefined &&
-					securityClass !== SecurityClass.S0_Legacy) ||
-					this.securityManager2?.tempKeys.has(node.id)) &&
-				Security2CC.requiresEncapsulation(msg.command)
-			) {
-				msg.command = Security2CC.encapsulate(this, msg.command);
+			// This check will return false for S2-encapsulated commands
+			if (SecurityCC.requiresEncapsulation(cmd)) {
+				cmd = SecurityCC.encapsulate(
+					this.ownNodeId,
+					this.securityManager!,
+					cmd,
+				);
 			}
 		}
-		// This check will return false for S2-encapsulated commands
-		if (SecurityCC.requiresEncapsulation(msg.command)) {
-			msg.command = SecurityCC.encapsulate(this, msg.command);
-		}
+		return cmd;
 	}
 
-	private unwrapCommands(msg: Message & ICommandClassContainer): void {
+	public unwrapCommands(msg: Message & ContainsCC): void {
 		// Unwrap encapsulating CCs until we get to the core
 		while (
-			isEncapsulatingCommandClass(msg.command) ||
-			isMultiEncapsulatingCommandClass(msg.command)
+			isEncapsulatingCommandClass(msg.command)
+			|| isMultiEncapsulatingCommandClass(msg.command)
 		) {
 			const unwrapped = msg.command.encapsulated;
 			if (isArray(unwrapped)) {
-				this.driverLog.print(
-					`Received a command that contains multiple CommandClasses. This is not supported yet! Discarding the message...`,
-					"warn",
-				);
+				// Multi Command CC cannot be further unwrapped. Preserve the encapsulation flags though.
+				for (const cmd of unwrapped) {
+					cmd.toggleEncapsulationFlag(
+						msg.command.encapsulationFlags,
+						true,
+					);
+				}
 				return;
 			}
+
+			// Copy the encapsulation flags and add the current encapsulation
+			unwrapped.encapsulationFlags = msg.command.encapsulationFlags;
+			switch (msg.command.ccId) {
+				case CommandClasses.Supervision:
+					unwrapped.toggleEncapsulationFlag(
+						EncapsulationFlags.Supervision,
+						true,
+					);
+					break;
+				case CommandClasses["Security 2"]:
+				case CommandClasses.Security:
+					unwrapped.toggleEncapsulationFlag(
+						EncapsulationFlags.Security,
+						true,
+					);
+					break;
+				case CommandClasses["CRC-16 Encapsulation"]:
+					unwrapped.toggleEncapsulationFlag(
+						EncapsulationFlags.CRC16,
+						true,
+					);
+					break;
+			}
+
 			msg.command = unwrapped;
+		}
+	}
+
+	private shouldPersistCCValues(cc: CommandClass): boolean {
+		// Always persist encapsulation CCs, otherwise interviews don't work.
+		if (isEncapsulationCC(cc.ccId)) return true;
+
+		// Do not persist values for a node or endpoint that does not exist
+		const endpoint = this.tryGetEndpoint(cc);
+		const node = endpoint?.tryGetNode();
+		if (!node) return false;
+
+		// Do not persist values for a CC that was force-removed via config
+		if (endpoint?.wasCCRemovedViaConfig(cc.ccId)) return false;
+
+		// Do not persist values for a CC that's being mapped to another endpoint.
+		// FIXME: This duplicates logic in Node.ts -> handleCommand
+		const compatConfig = node?.deviceConfig?.compat;
+		if (
+			cc.endpointIndex === 0
+			&& cc.constructor.name.endsWith("Report")
+			&& node.getEndpointCount() >= 1
+			// Only map reports from the root device to an endpoint if we know which one
+			&& compatConfig?.mapRootReportsToEndpoint != undefined
+		) {
+			const targetEndpoint = node.getEndpoint(
+				compatConfig.mapRootReportsToEndpoint,
+			);
+			if (targetEndpoint?.supportsCC(cc.ccId)) return false;
+		}
+
+		return true;
+	}
+
+	/** Persists the values contained in a Command Class in the corresponding nodes's value DB */
+	private persistCCValues(cc: CommandClass) {
+		if (this.shouldPersistCCValues(cc)) {
+			cc.persistValues(this);
+		}
+
+		if (isEncapsulatingCommandClass(cc)) {
+			this.persistCCValues(cc.encapsulated);
+		} else if (isMultiEncapsulatingCommandClass(cc)) {
+			for (const encapsulated of cc.encapsulated) {
+				this.persistCCValues(encapsulated);
+			}
+		}
+	}
+
+	/**
+	 * Gets called whenever any Serial API command succeeded or a SendData command had a negative callback.
+	 */
+	private handleSerialAPICommandResult(
+		msg: Message,
+		options: SendMessageOptions,
+		result: Message | undefined,
+	): void {
+		// Update statistics
+		const node = this.tryGetNode(msg);
+		let success = true;
+		if (isSendData(msg) || hasNodeId(msg)) {
+			// This shouldn't happen, but just in case
+			if (!node) return;
+
+			// If this is a transmit report, use it to update statistics
+			if (isTransmitReport(result)) {
+				if (!result.isOK()) {
+					success = false;
+					node.incrementStatistics("commandsDroppedTX");
+				} else {
+					node.incrementStatistics("commandsTX");
+					node.updateRTT(msg);
+					// Update last seen state
+					node.lastSeen = new Date();
+				}
+
+				// Notify listeners about the status report if one was received
+				if (hasTXReport(result)) {
+					options.onTXReport?.(result.txReport);
+					node.updateRouteStatistics(result.txReport);
+				}
+			}
+
+			// Track and potentially update the status of the node when communication succeeds
+			if (success) {
+				if (node.canSleep) {
+					// Do not update the node status when we only responded to a nonce/supervision request
+					if (options.priority !== MessagePriority.Immediate) {
+						// If the node is not meant to be kept awake, try to send it back to sleep
+						if (!node.keepAwake) {
+							setImmediate(() =>
+								this.debounceSendNodeToSleep(node)
+							);
+						}
+						// The node must be awake because it answered
+						node.markAsAwake();
+					}
+				} else if (node.status !== NodeStatus.Alive) {
+					// The node status was unknown or dead - in either case it must be alive because it answered
+					node.markAsAlive();
+				}
+			}
+		} else {
+			this._controller?.incrementStatistics("messagesTX");
+		}
+	}
+
+	private shouldUseLowPriorityForSupervisionReport(
+		targetNode: ZWaveNode,
+		encapsulationFlags: EncapsulationFlags,
+	): boolean {
+		// To avoid S2 collisions, we reduce the priority of Supervision reports
+		// when they are S2-encapsulated, and another S2-encapsulated transaction is in
+		// progress for the same node
+
+		// Use Immediate priority if there is no other transaction for this node in progress
+		const currentNormalMsg = this.queue.currentTransaction?.message;
+		if (currentNormalMsg?.getNodeId() !== targetNode.id) {
+			return false;
+		}
+		if (!containsCC(currentNormalMsg)) {
+			return false;
+		}
+
+		// Use Immediate priority if the node isn't using Security S2
+		if (!securityClassIsS2(targetNode.getHighestSecurityClass())) {
+			return false;
+		}
+
+		// Use Immediate priority unless both messages are S2-encapsulated
+		const currentMsgIsSecure = currentNormalMsg.command
+			instanceof Security2CCMessageEncapsulation;
+		const reportIsSecure = !!(
+			encapsulationFlags & EncapsulationFlags.Security
+		);
+		if (!currentMsgIsSecure || !reportIsSecure) {
+			return false;
+		}
+
+		// This has potential for a conflict, use low priority
+		this.controllerLog.logNode(targetNode.id, {
+			message:
+				"S2 collision detected, reducing priority for Supervision report",
+			level: "debug",
+		});
+		return true;
+	}
+
+	private mayStartTransaction(transaction: Transaction): boolean {
+		// We may not send anything on the normal queue if the send thread is paused
+		// or the controller is unresponsive
+		if (
+			this.queuePaused
+			|| this.controller.status === ControllerStatus.Unresponsive
+		) {
+			return false;
+		}
+
+		const message = transaction.message;
+		const targetNode = message.tryGetNode(this);
+
+		// Messages to the controller may always be sent...
+		if (!targetNode) return true;
+
+		// The transaction queue is sorted automatically. If the first message is for a sleeping node, all messages in the queue are.
+		// There are a few exceptions:
+		// 1. Pings may be used to determine whether a node is really asleep.
+		// 2. Responses to nonce requests must be sent independent of the node status, because some sleeping nodes may try to send us encrypted messages.
+		//    If we don't send them, they block the send queue
+		// 3. Nodes that can sleep but do not support wakeup: https://github.com/zwave-js/node-zwave-js/discussions/1537
+		//    We need to try and send messages to them even if they are asleep, because we might never hear from them
+
+		// 2. is handled by putting the message into the immediate queue
+
+		// Pings may always be sent
+		if (messageIsPing(message)) return true;
+
+		return (
+			targetNode.status !== NodeStatus.Asleep
+			|| (!targetNode.supportsCC(CommandClasses["Wake Up"])
+				&& targetNode.interviewStage >= InterviewStage.NodeInfo)
+		);
+	}
+
+	private markQueueBusy(queue: TransactionQueue, busy: boolean): void {
+		const index = this.queues.indexOf(queue);
+		if (busy) {
+			this._queuesBusyFlags |= 1 << index;
+		} else {
+			this._queuesBusyFlags &= ~(1 << index);
+		}
+		this.queueIdle = this._queuesBusyFlags === 0;
+	}
+
+	private async drainTransactionQueue(
+		queue: TransactionQueue,
+	): Promise<void> {
+		let setIdleTimer: NodeJS.Immediate | undefined;
+		for await (const transaction of queue) {
+			if (setIdleTimer) {
+				clearImmediate(setIdleTimer);
+				setIdleTimer = undefined;
+			}
+			this.markQueueBusy(queue, true);
+
+			let error: ZWaveError | undefined;
+			try {
+				await this.executeTransaction(transaction);
+			} catch (e) {
+				error = e as ZWaveError;
+			} finally {
+				queue.finalizeTransaction();
+			}
+
+			// Handle errors after clearing the current transaction.
+			// Otherwise, it will get considered the active transaction and cause an unnecessary SendDataAbort
+			if (error) {
+				this.handleFailedTransaction(transaction, error);
+			}
+
+			setIdleTimer = setImmediate(() => {
+				this.markQueueBusy(queue, false);
+			});
+		}
+	}
+
+	/** Steps through the message generator of a transaction. Throws an error if the transaction should fail. */
+	private async executeTransaction(transaction: Transaction): Promise<void> {
+		let prevResult: Message | undefined;
+		let msg: Message | undefined;
+
+		transaction.start();
+		transaction.setProgress({ state: TransactionState.Active });
+
+		const maxJammedAttempts =
+			this._recoveryPhase === ControllerRecoveryPhase.JammedAfterReset
+				// After attempting soft-reset, only try sending once
+				? 1
+				: this.options.attempts.sendDataJammed;
+
+		// Step through the transaction as long as it gives us a next message
+		while ((msg = await transaction.generateNextMessage(prevResult))) {
+			// Keep track of how often the controller failed to send a command, to prevent ending up in an infinite loop
+			let jammedAttempts = 0;
+			attemptMessage: for (let attemptNumber = 1;; attemptNumber++) {
+				try {
+					prevResult = await this.queueSerialAPICommand(
+						msg,
+						transaction.stack,
+					);
+					if (isTransmitReport(prevResult)) {
+						// Figure out if the controller is jammed. If it is, wait a second and try again.
+						// https://github.com/zwave-js/node-zwave-js/issues/6199
+						// In some cases, the transmit status can be Fail, even after transmitting for a couple of seconds.
+						// Not sure what causes this, but it doesn't mean that the controller is jammed.
+						if (
+							prevResult.transmitStatus === TransmitStatus.Fail
+							&& "txReport" in prevResult
+							// Ensure the controller didn't actually transmit
+							&& prevResult.txReport?.txTicks === 0
+						) {
+							jammedAttempts++;
+							if (jammedAttempts < maxJammedAttempts) {
+								// The controller is jammed. Wait a bit, then try again.
+								this.controller.setStatus(
+									ControllerStatus.Jammed,
+								);
+								await wait(
+									this.options.timeouts.retryJammed,
+									true,
+								);
+
+								continue attemptMessage;
+							} else {
+								// Reject the transaction so we can attempt to recover
+								throw new ZWaveError(
+									`Failed to send the command after ${jammedAttempts} attempts`,
+									ZWaveErrorCodes.Controller_MessageDropped,
+									prevResult,
+									transaction.stack,
+								);
+							}
+						}
+
+						if (
+							this.controller.status === ControllerStatus.Jammed
+						) {
+							// A command could be sent, so the controller is no longer jammed
+							this.controller.setStatus(ControllerStatus.Ready);
+						}
+
+						if (!prevResult.isOK()) {
+							throw new ZWaveError(
+								"The node did not acknowledge the command",
+								ZWaveErrorCodes.Controller_CallbackNOK,
+								prevResult,
+								transaction.stack,
+							);
+						}
+					}
+					// We got a result - it will be passed to the next iteration
+					break attemptMessage;
+				} catch (e: any) {
+					let zwError: ZWaveError;
+
+					if (!isZWaveError(e)) {
+						zwError = createMessageDroppedUnexpectedError(e);
+					} else {
+						if (
+							isSendData(msg) && isMissingControllerCallback(e)
+						) {
+							// The controller is unresponsive. Reject the transaction, so we can attempt to recover
+							throw e;
+						} else if (isMissingControllerACK(e)) {
+							// The controller is unresponsive. Reject the transaction, so we can attempt to recover
+							throw e;
+						} else if (wasControllerReset(e)) {
+							// The controller was reset unexpectedly. Reject the transaction, so we can attempt to recover
+							throw e;
+						} else if (
+							e.code === ZWaveErrorCodes.Controller_MessageDropped
+						) {
+							// We gave up on this command, so don't retry it
+							throw e;
+						}
+
+						if (
+							this.mayRetrySerialAPICommand(
+								msg,
+								// Ignore the number of attempts while jammed
+								attemptNumber - jammedAttempts,
+								e,
+							)
+						) {
+							// Retry the command
+							continue attemptMessage;
+						}
+
+						zwError = e;
+					}
+
+					// Sending the command failed, reject the transaction
+					throw zwError;
+				}
+			}
+		}
+
+		// This transaction completed successfully, try the next one
+		transaction.setProgress({ state: TransactionState.Completed });
+	}
+
+	/**
+	 * Provides access to the result Promise for the currently executed serial API command
+	 */
+	private _currentSerialAPICommandPromise:
+		| DeferredPromise<Message | undefined>
+		| undefined;
+
+	/** Handles sequencing of queued Serial API commands */
+	private async drainSerialAPIQueue(): Promise<void> {
+		for await (const item of this.serialAPIQueue) {
+			const { msg, transactionSource, result } = item;
+			try {
+				const ret = await this.executeSerialAPICommand(
+					msg,
+					transactionSource,
+				);
+				result.resolve(ret);
+			} catch (e) {
+				result.reject(e as Error);
+			} finally {
+				this._currentSerialAPICommandPromise = undefined;
+			}
+		}
+	}
+
+	private triggerQueues(): void {
+		for (const queue of this.queues) {
+			queue.trigger();
+		}
+	}
+
+	/** Puts a message on the serial API queue and returns or throws the command result */
+	private queueSerialAPICommand(
+		msg: Message,
+		transactionSource?: string,
+	): Promise<Message | undefined> {
+		const result = createDeferredPromise<Message | undefined>();
+		this.serialAPIQueue.add({
+			msg,
+			transactionSource,
+			result,
+		});
+
+		return result;
+	}
+
+	private mayRetrySerialAPICommand(
+		msg: Message,
+		attemptNumber: number,
+		error: ZWaveError,
+	): boolean {
+		// Only retry Send Data, nothing else
+		if (!isSendData(msg)) return false;
+
+		// Don't try to resend SendData commands when the response times out
+		if (
+			error.code === ZWaveErrorCodes.Controller_Timeout
+			&& error.context === "response"
+		) {
+			return false;
+		}
+
+		// Don't try to resend multicast messages if they were already transmitted.
+		// One or more nodes might have already reacted
+		if (
+			(msg instanceof SendDataMulticastRequest
+				|| msg instanceof SendDataMulticastBridgeRequest)
+			&& error.code === ZWaveErrorCodes.Controller_CallbackNOK
+		) {
+			return false;
+		}
+
+		return attemptNumber < msg.maxSendAttempts;
+	}
+
+	/**
+	 * Executes a Serial API command and returns or throws the result.
+	 * This method should not be called outside of {@link drainSerialAPIQueue}.
+	 */
+	private async executeSerialAPICommand(
+		msg: Message,
+		transactionSource?: string,
+	): Promise<Message | undefined> {
+		// Give the command a callback ID if it needs one
+		if (msg.needsCallbackId() && !msg.hasCallbackId()) {
+			msg.callbackId = this.getNextCallbackId();
+		}
+
+		// Work around an issue in the 700 series firmware where the ACK after a soft-reset has a random high nibble.
+		// This was broken in 7.19, not fixed so far
+		if (
+			msg.functionType === FunctionType.SoftReset
+			&& this.controller.sdkVersionGte("7.19.0")
+		) {
+			this.serial?.ignoreAckHighNibbleOnce();
+		}
+
+		const machine = createSerialAPICommandMachine(msg);
+		this.abortSerialAPICommand = createDeferredPromise();
+		const abortController = new AbortController();
+
+		let nextInput: SerialAPICommandMachineInput | undefined = {
+			value: "start",
+		};
+
+		try {
+			while (!machine.done) {
+				if (nextInput == undefined) {
+					// We should not be in a situation where we have no input for the state machine
+					throw new Error(
+						"Serial API Command machine is in an invalid state: no input provided",
+					);
+				}
+				const transition = machine.next(nextInput);
+				if (transition == undefined) {
+					// We should not be in a situation where the state machine does not transition
+					throw new Error(
+						"Serial API Command machine is in an invalid state: no transition taken",
+					);
+				}
+
+				// The input was used
+				nextInput = undefined;
+
+				// Transition to the new state
+				machine.transition(transition.newState);
+
+				// Now check what needs to be done in the new state
+				switch (machine.state.value) {
+					case "initial":
+						// This should never happen
+						throw new Error(
+							"Serial API Command machine is in an invalid state: transitioned to initial state",
+						);
+
+					case "sending": {
+						this.driverLog.logMessage(msg, {
+							direction: "outbound",
+						});
+
+						// Mark the message as sent immediately before actually sending
+						msg.markAsSent();
+						const data = await msg.serializeAsync(
+							this.getEncodingContext(),
+						);
+						await this.writeSerial(data);
+						nextInput = { value: "message sent" };
+						break;
+					}
+
+					case "waitingForACK": {
+						const controlFlow = await this.waitForMessageHeader(
+							() => true,
+							this.options.timeouts.ack,
+						).catch(() => "timeout" as const);
+
+						if (controlFlow === "timeout") {
+							nextInput = { value: "timeout" };
+						} else if (controlFlow === MessageHeaders.ACK) {
+							nextInput = { value: "ACK" };
+						} else if (controlFlow === MessageHeaders.CAN) {
+							nextInput = { value: "CAN" };
+						} else if (controlFlow === MessageHeaders.NAK) {
+							nextInput = { value: "NAK" };
+						}
+
+						break;
+					}
+
+					case "waitingForResponse": {
+						const response = await Promise.race([
+							this.abortSerialAPICommand?.catch((e) =>
+								e as Error
+							),
+							this.waitForMessage(
+								(resp) => msg.isExpectedResponse(resp),
+								msg.getResponseTimeout()
+									?? this.options.timeouts.response,
+								undefined,
+								abortController.signal,
+							).catch(() => "timeout" as const),
+						]);
+
+						if (response instanceof Error) {
+							// The command was aborted from the outside
+							// Remove the pending wait entry
+							abortController.abort();
+							throw response;
+						}
+
+						if (response === "timeout") {
+							if (isSendData(msg)) {
+								// Timed out SendData commands must be aborted
+								void this.abortSendData();
+							}
+
+							nextInput = { value: "timeout" };
+						} else if (
+							isSuccessIndicator(response) && !response.isOK()
+						) {
+							nextInput = { value: "response NOK", response };
+						} else {
+							nextInput = { value: "response", response };
+						}
+
+						break;
+					}
+
+					case "waitingForCallback": {
+						let sendDataAbortTimeout: NodeJS.Timeout | undefined;
+						if (isSendData(msg)) {
+							// We abort timed out SendData commands before the callback times out
+							sendDataAbortTimeout = setTimeout(() => {
+								void this.abortSendData();
+							}, this.options.timeouts.sendDataAbort).unref();
+						}
+
+						const callback = await Promise.race([
+							this.abortSerialAPICommand?.catch((e) =>
+								e as Error
+							),
+							this.waitForMessage(
+								(resp) => msg.isExpectedCallback(resp),
+								msg.getCallbackTimeout()
+									?? this.options.timeouts.sendDataCallback,
+								undefined,
+								abortController.signal,
+							).catch(() => "timeout" as const),
+						]);
+
+						if (sendDataAbortTimeout) {
+							clearTimeout(sendDataAbortTimeout);
+						}
+
+						if (callback instanceof Error) {
+							// The command was aborted from the outside
+							// Remove the pending wait entry
+							abortController.abort();
+							throw callback;
+						}
+
+						if (callback === "timeout") {
+							nextInput = { value: "timeout" };
+						} else if (
+							isSuccessIndicator(callback) && !callback.isOK()
+						) {
+							nextInput = { value: "callback NOK", callback };
+						} else {
+							nextInput = { value: "callback", callback };
+						}
+
+						break;
+					}
+
+					case "success": {
+						return machine.state.result;
+					}
+
+					case "failure": {
+						const { reason, result } = machine.state;
+						if (
+							reason === "callback NOK"
+							&& (isSendData(msg) || isTransmitReport(result))
+						) {
+							// For messages that were sent to a node, a NOK callback still contains useful info we need to evaluate
+							// ... so we treat it as a result
+							return result;
+						} else {
+							throw serialAPICommandErrorToZWaveError(
+								reason,
+								msg,
+								result,
+								transactionSource,
+							);
+						}
+					}
+				}
+			}
+		} finally {
+			this.abortSerialAPICommand = undefined;
+		}
+	}
+
+	private getQueueForTransaction(t: Transaction): TransactionQueue {
+		if (
+			t.priority === MessagePriority.Immediate
+			|| t.priority === MessagePriority.ControllerImmediate
+		) {
+			return this.immediateQueue;
+		} else {
+			return this.queue;
 		}
 	}
 
@@ -2846,23 +6213,13 @@ ${handlers.length} left`,
 		this.ensureReady();
 
 		let node: ZWaveNode | undefined;
-
-		// Don't send messages to dead nodes
-		if (isNodeQuery(msg) || isCommandClassContainer(msg)) {
-			node = msg.getNodeUnsafe();
-			if (!messageIsPing(msg) && node?.status === NodeStatus.Dead) {
-				// Instead of throwing immediately, try to ping the node first - if it responds, continue
-				if (!(await node.ping())) {
-					throw new ZWaveError(
-						`The message cannot be sent because node ${node.id} is dead`,
-						ZWaveErrorCodes.Controller_MessageDropped,
-					);
-				}
-			}
+		if (hasNodeId(msg) || containsCC(msg)) {
+			node = this.tryGetNode(msg);
 		}
 
-		if (options.priority == undefined)
+		if (options.priority == undefined) {
 			options.priority = getDefaultPriority(msg);
+		}
 		if (options.priority == undefined) {
 			const className = msg.constructor.name;
 			const msgTypeName = FunctionType[msg.functionType];
@@ -2874,9 +6231,9 @@ ${handlers.length} left`,
 
 		if (options.supportCheck == undefined) options.supportCheck = true;
 		if (
-			options.supportCheck &&
-			this._controller != undefined &&
-			!this._controller.isFunctionSupported(msg.functionType)
+			options.supportCheck
+			&& this._controller != undefined
+			&& !this._controller.isFunctionSupported(msg.functionType)
 		) {
 			throw new ZWaveError(
 				`Your hardware does not support the ${
@@ -2891,22 +6248,21 @@ ${handlers.length} left`,
 		// in comparison with messages to awake nodes.
 		// However there are a few exceptions...
 		if (
-			!!node &&
+			!!node
 			// Pings can be used to check if a node is really asleep, so they should be sent regardless
-			!messageIsPing(msg) &&
+			&& !messageIsPing(msg)
 			// Nodes that can sleep and support the Wake Up CC should have their messages queued for wakeup
-			node.canSleep &&
-			(node.supportsCC(CommandClasses["Wake Up"]) ||
+			&& node.canSleep
+			&& (node.supportsCC(CommandClasses["Wake Up"])
 				// If we don't know the Wake Up support yet, also change the priority or RequestNodeInfoRequests will get stuck
 				// in front of the queue
-				node.interviewStage < InterviewStage.NodeInfo) &&
+				|| node.interviewStage < InterviewStage.NodeInfo)
 			// If we move multicasts to the wakeup queue, it is unlikely
 			// that there is ever a points where all targets are awake
-			!(msg instanceof SendDataMulticastRequest) &&
-			!(msg instanceof SendDataMulticastBridgeRequest) &&
-			// Handshake messages are meant to be sent immediately
-			options.priority !== MessagePriority.Handshake &&
-			options.priority !== MessagePriority.PreTransmitHandshake
+			&& !(msg instanceof SendDataMulticastRequest)
+			&& !(msg instanceof SendDataMulticastBridgeRequest)
+			// Nonces and responses to Supervision Get have to be sent immediately
+			&& options.priority !== MessagePriority.Immediate
 		) {
 			if (options.priority === MessagePriority.NodeQuery) {
 				// Remember that this transaction was part of an interview
@@ -2915,15 +6271,24 @@ ${handlers.length} left`,
 			options.priority = MessagePriority.WakeUp;
 		}
 
-		// create the transaction and enqueue it
-		const promise = createDeferredPromise<TResponse>();
-		const transaction = new Transaction(
+		// Create the transaction
+		const { generator, resultPromise } = createMessageGenerator(
 			this,
+			this.getEncodingContext(),
 			msg,
-			promise,
-			options.priority,
+			(msg, _result) => {
+				this.handleSerialAPICommandResult(msg, options, _result);
+			},
 		);
+		const transaction = new Transaction(this, {
+			message: msg,
+			priority: options.priority,
+			parts: generator,
+			promise: resultPromise,
+			listener: options.onProgress,
+		});
 
+		// Configure its options
 		if (options.changeNodeStatusOnMissingACK != undefined) {
 			transaction.changeNodeStatusOnTimeout =
 				options.changeNodeStatusOnMissingACK;
@@ -2934,69 +6299,74 @@ ${handlers.length} left`,
 		transaction.requestWakeUpOnDemand = !!options.requestWakeUpOnDemand;
 		transaction.tag = options.tag;
 
-		// start sending now (maybe)
-		this.sendThread.send({ type: "add", transaction });
+		// And queue it
+		this.getQueueForTransaction(transaction).add(transaction);
+		transaction.setProgress({ state: TransactionState.Queued });
 
 		// If the transaction should expire, start the timeout
 		let expirationTimeout: NodeJS.Timeout | undefined;
 		if (options.expire) {
 			expirationTimeout = setTimeout(() => {
-				this.sendThread.send({
-					type: "reduce",
-					reducer: (t: Transaction) => {
-						if (t === transaction)
-							return {
-								type: "reject",
-								message: `The message has expired`,
-								code: ZWaveErrorCodes.Controller_MessageExpired,
-							};
-						return { type: "keep" };
-					},
+				this.reduceQueues((t, _source) => {
+					if (t === transaction) {
+						return {
+							type: "reject",
+							message: `The message has expired`,
+							code: ZWaveErrorCodes.Controller_MessageExpired,
+						};
+					}
+					return { type: "keep" };
 				});
 			}, options.expire).unref();
 		}
 
 		try {
-			const ret = await promise;
-			// The message was transmitted, so it can no longer expire
-			if (expirationTimeout) clearTimeout(expirationTimeout);
-			// Update statistics
+			const result = (await resultPromise) as TResponse;
+
+			// If this was a successful non-nonce message to a sleeping node, make sure it goes to sleep again
+			let maybeSendToSleep: boolean;
 			if (isSendData(msg)) {
-				node?.incrementStatistics("commandsTX");
+				// For SendData messages, make sure the message is not a nonce
+				maybeSendToSleep =
+					options.priority !== MessagePriority.Immediate
+					// And that the result is either a response from the node
+					// or a transmit report indicating success
+					&& result
+					&& (result.functionType
+							=== FunctionType.BridgeApplicationCommand
+						|| result.functionType
+							=== FunctionType.ApplicationCommand
+						|| (isSendDataTransmitReport(result) && result.isOK()));
 			} else {
-				this._controller?.incrementStatistics("messagesTX");
+				// For other messages to the node, just check for successful completion. If the callback is not OK,
+				// we might not be able to communicate with the node. Sending another message is not a good idea.
+				maybeSendToSleep = hasNodeId(msg)
+					&& result
+					&& isSuccessIndicator(result)
+					&& result.isOK();
 			}
-			// Track and potentially update the status of the node when communication succeeds
-			if (node) {
-				if (node.canSleep) {
-					// Do not update the node status when we just responded to a nonce request
-					if (options.priority !== MessagePriority.Handshake) {
-						// If the node is not meant to be kept awake, try to send it back to sleep
-						if (!node.keepAwake) {
-							this.debounceSendNodeToSleep(node);
-						}
-						// The node must be awake because it answered
-						node.markAsAwake();
-					}
-				} else if (node.status !== NodeStatus.Alive) {
-					// The node status was unknown or dead - in either case it must be alive because it answered
-					node.markAsAlive();
-				}
+
+			if (maybeSendToSleep && node && node.canSleep && !node.keepAwake) {
+				setImmediate(() => this.debounceSendNodeToSleep(node));
 			}
-			return ret;
+
+			// Set the transaction progress to completed before resolving the Promise
+			transaction.setProgress({ state: TransactionState.Completed });
+
+			return result;
 		} catch (e) {
 			if (isZWaveError(e)) {
 				if (
 					// If a controller command failed (that is not SendData), pass the response/callback through
-					(e.code === ZWaveErrorCodes.Controller_ResponseNOK ||
-						e.code === ZWaveErrorCodes.Controller_CallbackNOK) &&
-					e.context instanceof Message &&
+					(e.code === ZWaveErrorCodes.Controller_ResponseNOK
+						|| e.code === ZWaveErrorCodes.Controller_CallbackNOK)
+					&& e.context instanceof Message
 					// We need to check the function type here because context can be the transmit reports
-					e.context.functionType !== FunctionType.SendData &&
-					e.context.functionType !== FunctionType.SendDataMulticast &&
-					e.context.functionType !== FunctionType.SendDataBridge &&
-					e.context.functionType !==
-						FunctionType.SendDataMulticastBridge
+					&& e.context.functionType !== FunctionType.SendData
+					&& e.context.functionType !== FunctionType.SendDataMulticast
+					&& e.context.functionType !== FunctionType.SendDataBridge
+					&& e.context.functionType
+						!== FunctionType.SendDataMulticastBridge
 				) {
 					this._controller?.incrementStatistics("messagesDroppedTX");
 					return e.context as TResponse;
@@ -3004,39 +6374,67 @@ ${handlers.length} left`,
 					// If the node failed to respond in time, remember this for the statistics
 					node?.incrementStatistics("timeoutResponse");
 				}
+				// Enrich errors with the transaction's stack instead of the internal stack
+				if (!e.transactionSource) {
+					throw new ZWaveError(
+						e.message,
+						e.code,
+						e.context,
+						transaction.stack,
+					);
+				}
 			}
 			throw e;
+		} finally {
+			// The transaction was handled, so it can no longer expire
+			if (expirationTimeout) clearTimeout(expirationTimeout);
 		}
 	}
 
-	/**
-	 * Sends a command to a Z-Wave node. If the node returns a command in response, that command will be the return value.
-	 * If the command expects no response **or** the response times out, nothing will be returned
-	 * @param command The command to send. It will be encapsulated in a SendData[Multicast]Request.
-	 * @param options (optional) Options regarding the message transmission
-	 */
-	public async sendCommand<TResponse extends CommandClass = CommandClass>(
+	/** Wraps a CC in the correct SendData message to use for sending */
+	public createSendDataMessage(
 		command: CommandClass,
-		options: SendCommandOptions = {},
-	): Promise<TResponse | undefined> {
+		options: Omit<SendCommandOptions, keyof SendMessageOptions> = {},
+	): SendDataMessage & ContainsCC {
+		// Automatically encapsulate commands before sending
+		if (options.autoEncapsulate !== false) {
+			command = this.encapsulateCommands(command, options);
+		}
+
 		let msg: SendDataMessage;
-		if (command.isSinglecast()) {
+		if (command.isSinglecast() || command.isBroadcast()) {
 			if (
 				this.controller.isFunctionSupported(FunctionType.SendDataBridge)
 			) {
 				// Prioritize Bridge commands when they are supported
-				msg = new SendDataBridgeRequest(this, { command });
+				msg = new SendDataBridgeRequest({
+					sourceNodeId: this.ownNodeId,
+					command,
+					maxSendAttempts: this._options.attempts.sendData,
+				});
 			} else {
-				msg = new SendDataRequest(this, { command });
+				msg = new SendDataRequest({
+					command,
+					maxSendAttempts: this._options.attempts.sendData,
+				});
 			}
 		} else if (command.isMulticast()) {
 			if (
-				this.controller.isFunctionSupported(FunctionType.SendDataBridge)
+				this.controller.isFunctionSupported(
+					FunctionType.SendDataMulticastBridge,
+				)
 			) {
 				// Prioritize Bridge commands when they are supported
-				msg = new SendDataMulticastBridgeRequest(this, { command });
+				msg = new SendDataMulticastBridgeRequest({
+					sourceNodeId: this.ownNodeId,
+					command,
+					maxSendAttempts: this._options.attempts.sendData,
+				});
 			} else {
-				msg = new SendDataMulticastRequest(this, { command });
+				msg = new SendDataMulticastRequest({
+					command,
+					maxSendAttempts: this._options.attempts.sendData,
+				});
 			}
 		} else {
 			throw new ZWaveError(
@@ -3058,22 +6456,42 @@ ${handlers.length} left`,
 			}
 		}
 
-		// Automatically encapsulate commands before sending
-		if (options.autoEncapsulate !== false) this.encapsulateCommands(msg);
+		if (!!options.reportTimeoutMs) {
+			msg.nodeUpdateTimeout = options.reportTimeoutMs;
+		}
 
+		return msg as SendDataMessage & ContainsCC;
+	}
+
+	/**
+	 * Sends a command to a Z-Wave node. If the node returns a command in response, that command will be the return value.
+	 * If the command expects no response **or** the response times out, nothing will be returned
+	 * @param command The command to send. It will be encapsulated in a SendData[Multicast]Request.
+	 * @param options (optional) Options regarding the message transmission
+	 */
+	private async sendCommandInternal<
+		TResponse extends CCId = CCId,
+	>(
+		command: CommandClass,
+		options: Omit<
+			SendCommandOptions,
+			"requestStatusUpdates" | "onUpdate"
+		> = {},
+	): Promise<TResponse | undefined> {
+		const msg = this.createSendDataMessage(command, options);
 		try {
 			const resp = await this.sendMessage(msg, options);
 
 			// And unwrap the response if there was any
-			if (isCommandClassContainer(resp)) {
+			if (containsCC(resp)) {
 				this.unwrapCommands(resp);
-				return resp.command as TResponse;
+				return resp.command as unknown as TResponse;
 			}
 		} catch (e) {
 			// A timeout always has to be expected. In this case return nothing.
 			if (
-				isZWaveError(e) &&
-				e.code === ZWaveErrorCodes.Controller_NodeTimeout
+				isZWaveError(e)
+				&& e.code === ZWaveErrorCodes.Controller_NodeTimeout
 			) {
 				if (command.isSinglecast()) {
 					this.controllerLog.logNode(
@@ -3094,36 +6512,21 @@ ${handlers.length} left`,
 	 * @param command The command to send
 	 * @param options (optional) Options regarding the message transmission
 	 */
-	public async sendSupervisedCommand(
-		command: CommandClass,
-		options: SendSupervisedCommandOptions = {
+	private async sendSupervisedCommand(
+		command: SinglecastCC<CommandClass>,
+		options: SendCommandOptions & { useSupervision?: "auto" } = {
 			requestStatusUpdates: false,
 		},
 	): Promise<SupervisionResult | undefined> {
-		const nodeId = command.nodeId;
-		if (typeof nodeId !== "number") {
-			throw new ZWaveError(
-				`Sending a supervised command is only supported with singlecast!`,
-				ZWaveErrorCodes.CC_NotSupported,
-			);
-		}
-
-		// Check if the target supports this command
-		if (!command.getNode()?.supportsCC(CommandClasses.Supervision)) {
-			throw new ZWaveError(
-				`Node ${nodeId} does not support the Supervision CC!`,
-				ZWaveErrorCodes.CC_NotSupported,
-			);
-		}
-
 		// Create the encapsulating CC so we have a session ID
+		const sessionId = this.getNextSupervisionSessionId(command.nodeId);
 		command = SupervisionCC.encapsulate(
-			this,
 			command,
+			sessionId,
 			options.requestStatusUpdates,
 		);
 
-		const resp = await this.sendCommand<SupervisionCCReport>(
+		const resp = await this.sendCommandInternal<SupervisionCCReport>(
 			command,
 			options,
 		);
@@ -3131,65 +6534,201 @@ ${handlers.length} left`,
 
 		// If future updates are expected, listen for them
 		if (options.requestStatusUpdates && resp.moreUpdatesFollow) {
-			this.ensureNodeSessions(nodeId).supervision.set(
+			this.ensureNodeSessions(command.nodeId).supervision.set(
 				(command as SupervisionCCGet).sessionId,
 				options.onUpdate,
 			);
 		}
 		// In any case, return the status
-		return {
-			status: resp.status,
-			remainingDuration: resp.duration,
-		};
+		return resp.toSupervisionResult();
 	}
 
 	/**
-	 * Sends a supervised command to a Z-Wave node if the Supervision CC is supported. If not, a normal command is sent.
-	 * This does not return any Report values, so only use this for Set-type commands.
+	 * Sends a command to a Z-Wave node. The return value depends on several factors:
+	 * * If the node returns a command in response, that command will be the return value.
+	 * * If the command is a SET-type command and Supervision CC can and should be used, a {@link SupervisionResult} will be returned.
+	 * * If the command expects no response **or** the response times out, nothing will be returned.
 	 *
-	 * @param command The command to send
+	 * @param command The command to send. It will be encapsulated in a SendData[Multicast]Request.
 	 * @param options (optional) Options regarding the message transmission
 	 */
-	public async trySendCommandSupervised(
+	public async sendCommand<
+		TResponse extends CCId | undefined = undefined,
+	>(
 		command: CommandClass,
-		options?: SendSupervisedCommandOptions,
-	): Promise<SupervisionResult | undefined> {
-		if (command.getNode()?.supportsCC(CommandClasses.Supervision)) {
-			return this.sendSupervisedCommand(command, options);
-		} else {
-			await this.sendCommand(command, options);
+		options?: SendCommandOptions,
+	): Promise<SendCommandReturnType<TResponse>> {
+		if (options?.encapsulationFlags != undefined) {
+			command.encapsulationFlags = options.encapsulationFlags;
+		}
+
+		// Use security encapsulation for CCs that are only supported securely, and multicast commands
+		if (
+			this.isCCSecure(
+				command.ccId,
+				command.nodeId as number,
+				command.endpointIndex,
+			)
+			|| options?.s2MulticastGroupId != undefined
+		) {
+			command.toggleEncapsulationFlag(EncapsulationFlags.Security, true);
+		}
+
+		// Only use supervision if...
+		if (
+			// ... not disabled
+			options?.useSupervision !== false
+			// ... and it is legal for the command
+			&& SupervisionCC.mayUseSupervision(this, command)
+		) {
+			const result = await this.sendSupervisedCommand(command, options);
+			if (result?.status !== SupervisionStatus.NoSupport) {
+				// @ts-expect-error TS doesn't know we've narrowed the return type to match
+				return result;
+			}
+
+			// The node should support supervision but it doesn't for this command. Remember this
+			SupervisionCC.setCCSupportedWithSupervision(
+				this,
+				command.getEndpoint(this)!,
+				command.ccId,
+				false,
+			);
+			// And retry the command without supervision
+		}
+
+		// Fall back to non-supervised commands
+		const result = await this.sendCommandInternal(command, options);
+
+		// When sending S2 multicast commands to supporting nodes, the singlecast followups
+		// may use supervision. In this case, the multicast message generator returns a
+		// synthetic SupervisionCCReport.
+		// sendCommand is supposed to return a SupervisionResult though.
+		if (
+			options?.s2MulticastGroupId != undefined
+			&& result instanceof SupervisionCCReport
+		) {
+			// @ts-expect-error TS doesn't know we've narrowed the return type to match
+			return result.toSupervisionResult();
+		}
+
+		// @ts-expect-error TS doesn't know we've narrowed the return type to match
+		return result;
+	}
+
+	/** @internal */
+	public async sendZWaveProtocolCC(
+		command: ZWaveProtocolCC,
+		options: Pick<
+			SendCommandOptions,
+			"changeNodeStatusOnMissingACK" | "maxSendAttempts"
+		> = {},
+	): Promise<void> {
+		await this.sendCommandInternal(command, {
+			priority: MessagePriority.Controller,
+			// No shenanigans, just send the raw command
+			autoEncapsulate: false,
+			useSupervision: false,
+			changeNodeStatusOnMissingACK: options.changeNodeStatusOnMissingACK
+				?? false,
+			maxSendAttempts: options.maxSendAttempts || 1,
+			transmitOptions: TransmitOptions.AutoRoute | TransmitOptions.ACK,
+		});
+	}
+
+	private async abortSendData(): Promise<void> {
+		try {
+			const abort = new SendDataAbort();
+			await this.writeSerial(
+				await abort.serializeAsync(this.getEncodingContext()),
+			);
+			this.driverLog.logMessage(abort, {
+				direction: "outbound",
+			});
+
+			// We're bypassing the serial API machine, so we need to wait for the ACK ourselves
+			// This could also cause a NAK or CAN, but we don't really care
+			await this.waitForMessageHeader(() => true, 500).catch(noop);
+		} catch {
+			// ignore
 		}
 	}
 
 	/**
 	 * Sends a low-level message like ACK, NAK or CAN immediately
-	 * @param message The low-level message to send
+	 * @param header The low-level message to send
 	 */
 	private writeHeader(header: MessageHeaders): Promise<void> {
 		// ACK, CAN, NAK
-		return this.writeSerial(Buffer.from([header]));
+		return this.writeSerial(Uint8Array.from([header]));
 	}
 
 	/** Sends a raw datagram to the serialport (if that is open) */
-	private async writeSerial(data: Buffer): Promise<void> {
+	private async writeSerial(data: Uint8Array): Promise<void> {
 		return this.serial?.writeAsync(data);
+	}
+
+	/**
+	 * Waits until a matching message header is received or a timeout has elapsed. Returns the received message.
+	 *
+	 * @param timeout The number of milliseconds to wait. If the timeout elapses, the returned promise will be rejected
+	 * @param predicate A predicate function to test all incoming message headers.
+	 */
+	public waitForMessageHeader(
+		predicate: (header: MessageHeaders) => boolean,
+		timeout: number,
+	): Promise<MessageHeaders> {
+		return new Promise<MessageHeaders>((resolve, reject) => {
+			const promise = createDeferredPromise<MessageHeaders>();
+			const entry: AwaitedMessageHeader = {
+				predicate,
+				handler: (msg) => promise.resolve(msg),
+				timeout: undefined,
+			};
+			this.awaitedMessageHeaders.push(entry);
+			const removeEntry = () => {
+				if (entry.timeout) clearTimeout(entry.timeout);
+				const index = this.awaitedMessageHeaders.indexOf(entry);
+				if (index !== -1) this.awaitedMessageHeaders.splice(index, 1);
+			};
+			// When the timeout elapses, remove the wait entry and reject the returned Promise
+			entry.timeout = setTimeout(() => {
+				removeEntry();
+				reject(
+					new ZWaveError(
+						`Received no matching serial frame within the provided timeout!`,
+						ZWaveErrorCodes.Controller_Timeout,
+					),
+				);
+			}, timeout);
+			// When the promise is resolved, remove the wait entry and resolve the returned Promise
+			void promise.then((cc) => {
+				removeEntry();
+				resolve(cc);
+			});
+		});
 	}
 
 	/**
 	 * Waits until an unsolicited serial message is received or a timeout has elapsed. Returns the received message.
 	 *
-	 * **Note:** This does not trigger for [Bridge]ApplicationUpdateRequests, which are handled differently. To wait for a certain CommandClass, use {@link waitForCommand}.
+	 * **Note:** To wait for a certain CommandClass, better use {@link waitForCommand}.
 	 * @param timeout The number of milliseconds to wait. If the timeout elapses, the returned promise will be rejected
-	 * @param predicate A predicate function to test all incoming messages
+	 * @param predicate A predicate function to test all incoming messages.
+	 * @param refreshPredicate A predicate function to test partial messages. If this returns `true` for a message, the timer will be restarted.
 	 */
 	public waitForMessage<T extends Message>(
 		predicate: (msg: Message) => boolean,
 		timeout: number,
+		refreshPredicate?: (msg: Message) => boolean,
+		abortSignal?: AbortSignal,
 	): Promise<T> {
 		return new Promise<T>((resolve, reject) => {
+			const promise = createDeferredPromise<Message>();
 			const entry: AwaitedMessageEntry = {
 				predicate,
-				promise: createDeferredPromise<Message>(),
+				refreshPredicate,
+				handler: (msg) => promise.resolve(msg),
 				timeout: undefined,
 			};
 			this.awaitedMessages.push(entry);
@@ -3207,11 +6746,15 @@ ${handlers.length} left`,
 						ZWaveErrorCodes.Controller_Timeout,
 					),
 				);
-			}, timeout).unref();
+			}, timeout);
 			// When the promise is resolved, remove the wait entry and resolve the returned Promise
-			void entry.promise.then((cc) => {
+			void promise.then((cc) => {
 				removeEntry();
 				resolve(cc as T);
+			});
+			// When the abort signal is used, silently remove the wait entry
+			abortSignal?.addEventListener("abort", () => {
+				removeEntry();
 			});
 		});
 	}
@@ -3221,14 +6764,16 @@ ${handlers.length} left`,
 	 * @param timeout The number of milliseconds to wait. If the timeout elapses, the returned promise will be rejected
 	 * @param predicate A predicate function to test all incoming command classes
 	 */
-	public waitForCommand<T extends CommandClass>(
-		predicate: (cc: CommandClass) => boolean,
+	public waitForCommand<T extends CCId>(
+		predicate: (cc: CCId) => boolean,
 		timeout: number,
+		abortSignal?: AbortSignal,
 	): Promise<T> {
 		return new Promise<T>((resolve, reject) => {
+			const promise = createDeferredPromise<CCId>();
 			const entry: AwaitedCommandEntry = {
 				predicate,
-				promise: createDeferredPromise<CommandClass>(),
+				handler: (cc) => promise.resolve(cc),
 				timeout: undefined,
 			};
 			this.awaitedCommands.push(entry);
@@ -3246,28 +6791,113 @@ ${handlers.length} left`,
 						ZWaveErrorCodes.Controller_NodeTimeout,
 					),
 				);
-			}, timeout).unref();
+			}, timeout);
 			// When the promise is resolved, remove the wait entry and resolve the returned Promise
-			void entry.promise.then((cc) => {
+			void promise.then((cc) => {
 				removeEntry();
 				resolve(cc as T);
 			});
+			// When the abort signal is used, silently remove the wait entry
+			abortSignal?.addEventListener("abort", () => {
+				removeEntry();
+			});
 		});
+	}
+
+	/**
+	 * Calls the given handler function every time a CommandClass is received that matches the given predicate.
+	 * @param predicate A predicate function to test all incoming command classes
+	 */
+	public registerCommandHandler<T extends CCId>(
+		predicate: (cc: CCId) => boolean,
+		handler: (cc: T) => void,
+	): {
+		unregister: () => void;
+	} {
+		const entry: AwaitedCommandEntry = {
+			predicate,
+			handler: (cc) => handler(cc as T),
+			timeout: undefined,
+		};
+		this.awaitedCommands.push(entry);
+		const removeEntry = () => {
+			if (entry.timeout) clearTimeout(entry.timeout);
+			const index = this.awaitedCommands.indexOf(entry);
+			if (index !== -1) this.awaitedCommands.splice(index, 1);
+		};
+
+		return {
+			unregister: removeEntry,
+		};
+	}
+
+	private handleFailedTransaction(
+		transaction: Transaction,
+		error: ZWaveError,
+	): void {
+		// If a node failed to respond in time, it might be sleeping
+		if (this.isMissingNodeACK(transaction, error)) {
+			if (this.handleMissingNodeACK(transaction as any, error)) return;
+		} else if (isMissingControllerACK(error)) {
+			if (this.handleMissingControllerACK(transaction, error)) return;
+		} else if (
+			// 700/800 series controllers can be jammed due to a bug,
+			// which a soft-reset is supposed to work around
+			isSendData(transaction.message)
+			&& this.controller.status === ControllerStatus.Jammed
+		) {
+			if (this.handleJammedController(transaction, error)) return;
+		} else if (
+			isSendData(transaction.message)
+			&& (isMissingControllerResponse(error)
+				|| isMissingControllerCallback(error))
+		) {
+			if (
+				this.handleMissingSendDataResponseOrCallback(transaction, error)
+			) return;
+		} else if (wasControllerReset(error)) {
+			// The controller was reset in the middle of a transaction.
+			// Re-queue the transaction, so it can get handled again
+			// Its message generator may have finished, so reset that too.
+			transaction.reset();
+			this.getQueueForTransaction(transaction).add(
+				transaction.clone(),
+			);
+			return;
+		}
+
+		this.rejectTransaction(transaction, error);
+	}
+
+	private rejectTransaction(
+		transaction: Transaction,
+		error: ZWaveError,
+	): void {
+		transaction.setProgress({
+			state: TransactionState.Failed,
+			reason: error.message,
+		});
+
+		transaction.abort(error);
+	}
+
+	private resolveTransaction(
+		transaction: Transaction,
+		result?: Message,
+	): void {
+		transaction.abort(result);
 	}
 
 	/** Checks if a message is allowed to go into the wakeup queue */
 	private mayMoveToWakeupQueue(transaction: Transaction): boolean {
 		const msg = transaction.message;
 		switch (true) {
-			// Pings and handshake responses will block the send queue until wakeup,
-			// so they must be dropped
+			// Pings, nonces and Supervision Reports will block the send queue until wakeup, so they must be dropped
 			case messageIsPing(msg):
-			case transaction.priority === MessagePriority.Handshake:
-			// Outgoing handshake requests are very likely not valid after wakeup, so drop them too
-			case transaction.priority === MessagePriority.PreTransmitHandshake:
+			case transaction.priority === MessagePriority.Immediate:
 			// We also don't want to immediately send the node to sleep when it wakes up
-			case isCommandClassContainer(msg) &&
-				msg.command instanceof WakeUpCCNoMoreInformation:
+			case containsCC(msg)
+				&& msg.command instanceof WakeUpCCNoMoreInformation:
 			// compat queries because they will be recreated when the node wakes up
 			case transaction.tag === "compat":
 				return false;
@@ -3286,13 +6916,15 @@ ${handlers.length} left`,
 		const requeue: TransactionReducerResult = {
 			type: "requeue",
 			priority: MessagePriority.WakeUp,
+			// Reset the transaction so it doesn't simply resolve to `undefined` when we attempt to continue it
+			reset: true,
 		};
 		const requeueAndTagAsInterview: TransactionReducerResult = {
 			...requeue,
 			tag: "interview",
 		};
 
-		const reducer: TransactionReducer = (transaction, _source) => {
+		this.reduceQueues((transaction, _source) => {
 			const msg = transaction.message;
 			if (msg.getNodeId() !== nodeId) return { type: "keep" };
 			// Drop all messages that are not allowed in the wakeup queue
@@ -3302,10 +6934,7 @@ ${handlers.length} left`,
 					? requeueAndTagAsInterview
 					: requeue
 				: reject;
-		};
-
-		// Apply the reducer to the send thread
-		this.sendThread.send({ type: "reduce", reducer });
+		});
 	}
 
 	/**
@@ -3317,7 +6946,7 @@ ${handlers.length} left`,
 		errorMsg: string = `The message has been removed from the queue`,
 		errorCode: ZWaveErrorCodes = ZWaveErrorCodes.Controller_MessageDropped,
 	): void {
-		const reducer: TransactionReducer = (transaction) => {
+		this.reduceQueues((transaction, _source) => {
 			if (predicate(transaction)) {
 				return {
 					type: "reject",
@@ -3327,9 +6956,7 @@ ${handlers.length} left`,
 			} else {
 				return { type: "keep" };
 			}
-		};
-		// Apply the reducer to the send thread
-		this.sendThread.send({ type: "reduce", reducer });
+		});
 	}
 
 	/**
@@ -3349,162 +6976,247 @@ ${handlers.length} left`,
 	}
 
 	/**
-	 * @internal
-	 * Pauses the send thread, avoiding commands to be sent to the controller
+	 * Pauses the send queue, avoiding commands to be sent to the controller
 	 */
-	public pauseSendThread(): void {
-		this.sendThread.send({ type: "pause" });
+	private pauseSendQueue(): void {
+		this.queuePaused = true;
 	}
 
 	/**
-	 * @internal
-	 * Unpauses the send thread, allowing commands to be sent to the controller again
+	 * Unpauses the send queue, allowing commands to be sent to the controller again
 	 */
-	public unpauseSendThread(): void {
-		this.sendThread.send({ type: "unpause" });
+	private unpauseSendQueue(): void {
+		this.queuePaused = false;
+		this.triggerQueues();
 	}
 
-	/** Re-sorts the send queue */
-	private sortSendQueue(): void {
-		this.sendThread.send("sortQueue");
+	private reduceQueues(reducer: TransactionReducer): void {
+		for (const queue of this.queues) {
+			this.reduceQueue(queue, reducer);
+		}
 	}
 
-	/** Re-sends the current command if it is S2 encapsulated */
-	public resendS2EncapsulatedCommand(): void {
-		// If this is called, a receiving node couldn't decode the last message we sent it
-		const { currentTransaction } = this.sendThread.state.context;
-		if (
-			currentTransaction &&
-			isCommandClassContainer(currentTransaction.message) &&
-			currentTransaction.message.command instanceof
-				Security2CCMessageEncapsulation
-		) {
-			const cmd = currentTransaction.message.command;
-			if (cmd.wasRetriedAfterDecodeFailure) {
-				this._controllerLog.logNode(cmd.nodeId as number, {
-					message: `failed to decode the message after re-transmission with SPAN extension, dropping the message.`,
-					direction: "none",
-					level: "warn",
-				});
-				this.sendThread.send({
-					type: "reduce",
-					reducer: (_t, source) => {
-						if (source === "current") {
-							return {
-								type: "reject",
-								code: ZWaveErrorCodes.Security2CC_CannotDecode,
-								message:
-									"The node failed to decode the message.",
-							};
-						} else {
-							return { type: "keep" };
-						}
-					},
-				});
-			} else {
-				this._controllerLog.logNode(cmd.nodeId as number, {
-					message: `failed to decode the message, retrying with SPAN extension...`,
-					direction: "none",
-				});
-				cmd.prepareRetryAfterDecodeFailure();
-				this.sendThread.send("resend");
+	private reduceQueue(
+		queue: TransactionQueue,
+		reducer: TransactionReducer,
+	): void {
+		const dropQueued: Transaction[] = [];
+		let stopActive: Transaction | undefined;
+		const requeue: Transaction[] = [];
+
+		const reduceTransaction: (
+			...args: Parameters<TransactionReducer>
+		) => void = (transaction, source) => {
+			const reducerResult = reducer(transaction, source);
+			switch (reducerResult.type) {
+				case "drop":
+					if (source === "queue") {
+						dropQueued.push(transaction);
+
+						// This will silently drop the transaction, so awaiting it will never resolve.
+						// At least notify the listeners about it.
+						transaction.setProgress({
+							state: TransactionState.Failed,
+							reason: "The message was dropped",
+						});
+					} else {
+						stopActive = transaction;
+					}
+					break;
+				case "requeue":
+					if (reducerResult.priority != undefined) {
+						transaction.priority = reducerResult.priority;
+					}
+					if (reducerResult.tag != undefined) {
+						transaction.tag = reducerResult.tag;
+					}
+					if (reducerResult.reset) {
+						transaction.reset();
+					}
+					if (source === "active") stopActive = transaction;
+					requeue.push(transaction);
+					break;
+				case "resolve":
+					this.resolveTransaction(transaction, reducerResult.message);
+					if (source === "queue") {
+						dropQueued.push(transaction);
+					} else {
+						stopActive = transaction;
+					}
+					break;
+				case "reject":
+					this.rejectTransaction(
+						transaction,
+						new ZWaveError(
+							reducerResult.message,
+							reducerResult.code,
+							undefined,
+							transaction.stack,
+						),
+					);
+					if (source === "queue") {
+						dropQueued.push(transaction);
+					} else {
+						stopActive = transaction;
+					}
+					break;
+			}
+		};
+
+		for (const transaction of queue.transactions) {
+			reduceTransaction(transaction, "queue");
+		}
+
+		if (queue.currentTransaction) {
+			reduceTransaction(queue.currentTransaction, "active");
+		}
+
+		// Now we know what to do with the transactions
+		queue.remove(...dropQueued, ...requeue);
+		const requeued = requeue.map((t) => t.clone());
+		queue.add(...requeued);
+
+		// Notify listeners about re-queued transactions
+		for (const t of requeued) {
+			t.setProgress({ state: TransactionState.Queued });
+		}
+
+		// Abort ongoing SendData messages that should be dropped
+		if (isSendData(stopActive?.message)) {
+			void this.abortSendData();
+		}
+	}
+
+	/** @internal */
+	public resolvePendingPings(nodeId: number): void {
+		// When a previously sleeping node sends a NIF after a ping was sent to it, but not acknowledged yet,
+		// the node is awake, but the ping would fail. Resolve pending pings, so communication can continue.
+		for (const { currentTransaction } of this.queues) {
+			if (!currentTransaction) continue;
+			const msg = currentTransaction.parts.current;
+			if (!!msg && messageIsPing(msg) && msg.getNodeId() === nodeId) {
+				// The pending transaction is a ping. Short-circuit its message generator by throwing something that's not an error
+				currentTransaction.abort(undefined);
 			}
 		}
 	}
 
-	private lastSaveToCache: number = 0;
-	private readonly saveToCacheInterval: number = 150;
-	private saveToCacheTimer: NodeJS.Timer | undefined;
-	private isSavingToCache: boolean = false;
-
 	/**
-	 * Does the work for saveNetworkToCache. This is not throttled, so any call
-	 * to this method WILL save the network.
+	 * @internal
+	 * Helper function to read and convert potentially existing values from the network cache
 	 */
-	private async saveNetworkToCacheInternal(): Promise<void> {
-		// Avoid overwriting the cache with empty data if the controller wasn't interviewed yet
-		if (
-			!this._controller ||
-			this._controller.homeId == undefined ||
-			!this._controllerInterviewed
-		)
-			return;
-
-		await this.options.storage.driver.ensureDir(this.cacheDir);
-		const cacheFile = path.join(
-			this.cacheDir,
-			this._controller.homeId.toString(16) + ".json",
-		);
-
-		const serializedObj = this._controller.serialize();
-		const jsonString = stringify(serializedObj);
-		await this.options.storage.driver.writeFile(
-			cacheFile,
-			jsonString,
-			"utf8",
-		);
+	public cacheGet<T>(
+		cacheKey: string,
+		options?: {
+			reviver?: (value: any) => T;
+		},
+	): T | undefined {
+		let ret = this.networkCache.get(cacheKey);
+		if (ret !== undefined && typeof options?.reviver === "function") {
+			try {
+				ret = options.reviver(ret);
+			} catch {
+				// ignore, invalid entry
+			}
+		}
+		return ret;
 	}
 
 	/**
-	 * Saves the current configuration and collected data about the controller and all nodes to a cache file.
-	 * For performance reasons, these calls may be throttled.
+	 * @internal
+	 * Helper function to convert values and write them to the network cache
 	 */
-	public async saveNetworkToCache(): Promise<void> {
-		// TODO: Detect if the network needs to be saved at all
-		if (!this._controller || this._controller.homeId == undefined) return;
-		// Ensure this method isn't being executed too often
-		if (
-			this.isSavingToCache ||
-			Date.now() - this.lastSaveToCache < this.saveToCacheInterval
-		) {
-			// Schedule a save in a couple of ms to collect changes
-			if (!this.saveToCacheTimer) {
-				this.saveToCacheTimer = setTimeout(
-					() => void this.saveNetworkToCache(),
-					this.saveToCacheInterval,
-				);
-			}
-			return;
+	public cacheSet<T>(
+		cacheKey: string,
+		value: T | undefined,
+		options?: {
+			serializer?: (value: T) => any;
+		},
+	): void {
+		if (value !== undefined && typeof options?.serializer === "function") {
+			value = options.serializer(value);
+		}
+
+		if (value === undefined) {
+			this.networkCache.delete(cacheKey);
 		} else {
-			this.saveToCacheTimer = undefined;
+			this.networkCache.set(cacheKey, value);
 		}
-		this.isSavingToCache = true;
-		await this.saveNetworkToCacheInternal();
-		this.isSavingToCache = false;
-		this.lastSaveToCache = Date.now();
+	}
+
+	/**
+	 * @internal
+	 * Helper function to find multiple existing values from the network cache
+	 */
+	public cacheList<T>(
+		prefix: string,
+		options?: {
+			reviver?: (value: any) => T;
+		},
+	): Record<string, T> {
+		const ret: Record<string, T> = {};
+		for (const entry of this.networkCache.entries()) {
+			const key = entry[0];
+			if (!key.startsWith(prefix)) continue;
+			let value = entry[1];
+			if (value === undefined) continue;
+			if (typeof options?.reviver === "function") {
+				try {
+					value = options.reviver(value);
+				} catch {
+					// invalid entry
+					continue;
+				}
+			}
+			ret[key] = value;
+		}
+		return ret;
+	}
+
+	private cachePurge(prefix: string): void {
+		for (const key of this.networkCache.keys()) {
+			if (key.startsWith(prefix)) {
+				this.networkCache.delete(key);
+			}
+		}
 	}
 
 	/**
 	 * Restores a previously stored Z-Wave network state from cache to speed up the startup process
 	 */
 	public async restoreNetworkStructureFromCache(): Promise<void> {
-		if (!this._controller || !this.controller.homeId) return;
+		if (
+			!this._controller
+			|| !this.controller.homeId
+			|| !this._networkCache
+		) {
+			return;
+		}
 
-		const cacheFile = path.join(
-			this.cacheDir,
-			`${this.controller.homeId.toString(16)}.json`,
-		);
-		if (!(await this.options.storage.driver.pathExists(cacheFile))) return;
+		if (this._networkCache.size <= 1) {
+			// If the size is 0 or 1, the cache is empty, so we cannot restore it
+			return;
+		}
 
 		try {
 			this.driverLog.print(
-				`Cache file for homeId ${num2hex(
-					this.controller.homeId,
-				)} found, attempting to restore the network from cache...`,
+				`Cache file for homeId ${
+					num2hex(
+						this.controller.homeId,
+					)
+				} found, attempting to restore the network from cache...`,
 			);
-			const cacheString = await this.options.storage.driver.readFile(
-				cacheFile,
-				"utf8",
-			);
-			await this.controller.deserialize(JSON.parse(cacheString));
+			await this.controller.deserialize();
 			this.driverLog.print(
 				`Restoring the network from cache was successful!`,
 			);
 		} catch (e) {
-			const message = `Restoring the network from cache failed: ${getErrorMessage(
-				e,
-				true,
-			)}`;
+			const message = `Restoring the network from cache failed: ${
+				getErrorMessage(
+					e,
+					true,
+				)
+			}`;
 			this.emit(
 				"error",
 				new ZWaveError(message, ZWaveErrorCodes.Driver_InvalidCache),
@@ -3518,15 +7230,19 @@ ${handlers.length} left`,
 	 * @internal
 	 * Marks a node for a later sleep command. Every call refreshes the period until the node actually goes to sleep
 	 */
-	public debounceSendNodeToSleep(node: ZWaveNode): void {
+	public debounceSendNodeToSleep(
+		node: ZWaveNodeBase & NodeSchedulePoll & NodeValues & NodeWakeup,
+	): void {
 		// TODO: This should be a single command to the send thread
 		// Delete old timers if any exist
 		if (this.sendNodeToSleepTimers.has(node.id)) {
-			clearTimeout(this.sendNodeToSleepTimers.get(node.id)!);
+			clearTimeout(this.sendNodeToSleepTimers.get(node.id));
 		}
 
 		// Sends a node to sleep if it has no more messages.
-		const sendNodeToSleep = (node: ZWaveNode): void => {
+		const sendNodeToSleep = (
+			node: ZWaveNodeBase & NodeSchedulePoll & NodeWakeup,
+		): void => {
 			this.sendNodeToSleepTimers.delete(node.id);
 			if (!this.hasPendingMessages(node)) {
 				void node.sendNoMoreInformation().catch(() => {
@@ -3537,11 +7253,11 @@ ${handlers.length} left`,
 
 		// If a sleeping node has no messages pending (and supports the Wake Up CC), we may send it back to sleep
 		if (
-			node.supportsCC(CommandClasses["Wake Up"]) &&
-			!this.hasPendingMessages(node)
+			node.supportsCC(CommandClasses["Wake Up"])
+			&& !this.hasPendingMessages(node)
 		) {
 			const wakeUpInterval = node.getValue<number>(
-				getWakeUpIntervalValueId(),
+				WakeUpCCValues.wakeUpInterval.id,
 			);
 			// GH#2179: when a device only wakes up manually, don't send it back to sleep
 			// Best case, the user wanted to interact with it.
@@ -3549,7 +7265,10 @@ ${handlers.length} left`,
 			if (wakeUpInterval !== 0) {
 				this.sendNodeToSleepTimers.set(
 					node.id,
-					setTimeout(() => sendNodeToSleep(node), 1000).unref(),
+					setTimeout(
+						() => sendNodeToSleep(node),
+						this.options.timeouts.sendToSleep,
+					).unref(),
 				);
 			}
 		}
@@ -3557,27 +7276,104 @@ ${handlers.length} left`,
 
 	/** Computes the maximum net CC payload size for the given CC or SendDataRequest */
 	public computeNetCCPayloadSize(
-		commandOrMsg: CommandClass | SendDataRequest | SendDataBridgeRequest,
+		commandOrMsg:
+			| CommandClass
+			| (SendDataRequest | SendDataBridgeRequest) & ContainsCC,
+		ignoreEncapsulation: boolean = false,
 	): number {
 		// Recreate the correct encapsulation structure
-		let msg: SendDataRequest | SendDataBridgeRequest;
+		let msg: (SendDataRequest | SendDataBridgeRequest) & ContainsCC;
 		if (isSendDataSinglecast(commandOrMsg)) {
 			msg = commandOrMsg;
 		} else {
 			const SendDataConstructor = this.getSendDataSinglecastConstructor();
-			msg = new SendDataConstructor(this, { command: commandOrMsg });
+			msg = new SendDataConstructor({
+				sourceNodeId: this.ownNodeId,
+				command: commandOrMsg,
+			}) as (SendDataRequest | SendDataBridgeRequest) & ContainsCC;
 		}
-		this.encapsulateCommands(msg);
-		return msg.command.getMaxPayloadLength(msg.getMaxPayloadLength());
+		if (!ignoreEncapsulation) {
+			msg.command = this.encapsulateCommands(
+				msg.command,
+			) as SinglecastCC<CommandClass>;
+		}
+		return msg.command.getMaxPayloadLength(this.getMaxPayloadLength(msg));
+	}
+
+	/** Computes the maximum payload size that can be transmitted with the given message */
+	public getMaxPayloadLength(msg: SendDataMessage): number {
+		const nodeId = msg.getNodeId();
+
+		// For ZWLR, the result is simply the maximum payload size
+		if (
+			nodeId != undefined
+			&& isLongRangeNodeId(nodeId)
+			&& this._controller?.maxPayloadSizeLR
+		) {
+			return this._controller.maxPayloadSizeLR;
+		}
+
+		// For ZW Classic, it depends on the frame type and transmit options
+		const maxExplorerPayloadSinglecast = this._controller?.maxPayloadSize
+			?? 46;
+		if (isSendDataSinglecast(msg)) {
+			// From INS13954-7, chapter 4.3.3.1.5
+			if (msg.transmitOptions & TransmitOptions.Explore) {
+				return maxExplorerPayloadSinglecast;
+			}
+			if (msg.transmitOptions & TransmitOptions.AutoRoute) {
+				return maxExplorerPayloadSinglecast + 2;
+			}
+			return maxExplorerPayloadSinglecast + 8;
+		} else {
+			// Multicast needs space for the nodes bitmask
+			const maxExplorerPayloadMulticast = maxExplorerPayloadSinglecast
+				- NUM_NODEMASK_BYTES;
+
+			// From INS13954-13, chapter 4.3.3.6
+			if (msg.transmitOptions & TransmitOptions.ACK) {
+				if (msg.transmitOptions & TransmitOptions.Explore) {
+					return maxExplorerPayloadMulticast;
+				}
+				if (msg.transmitOptions & TransmitOptions.AutoRoute) {
+					return maxExplorerPayloadMulticast + 2;
+				}
+			}
+			return maxExplorerPayloadMulticast + 8;
+		}
+	}
+
+	public async exceedsMaxPayloadLength(
+		msg: SendDataMessage,
+	): Promise<boolean> {
+		const serializedCC = await msg.serializeCCAsync(
+			this.getEncodingContext(),
+		);
+		return serializedCC.length > this.getMaxPayloadLength(msg);
+	}
+
+	/** Determines time in milliseconds to wait for a report from a node */
+	public getReportTimeout(msg: Message): number {
+		const node = this.tryGetNode(msg);
+
+		return (
+			// If there's a message-specific timeout, use that
+			msg.nodeUpdateTimeout
+				// If the node has a compat flag to override the timeout, use that
+				?? node?.deviceConfig?.compat?.reportTimeout
+				// otherwise use the driver option
+				?? this._options.timeouts.report
+		);
 	}
 
 	/** Returns the preferred constructor to use for singlecast SendData commands */
 	public getSendDataSinglecastConstructor():
 		| typeof SendDataRequest
-		| typeof SendDataBridgeRequest {
+		| typeof SendDataBridgeRequest
+	{
 		return this._controller?.isFunctionSupported(
-			FunctionType.SendDataBridge,
-		)
+				FunctionType.SendDataBridge,
+			)
 			? SendDataBridgeRequest
 			: SendDataRequest;
 	}
@@ -3585,10 +7381,11 @@ ${handlers.length} left`,
 	/** Returns the preferred constructor to use for multicast SendData commands */
 	public getSendDataMulticastConstructor():
 		| typeof SendDataMulticastRequest
-		| typeof SendDataMulticastBridgeRequest {
+		| typeof SendDataMulticastBridgeRequest
+	{
 		return this._controller?.isFunctionSupported(
-			FunctionType.SendDataMulticastBridge,
-		)
+				FunctionType.SendDataMulticastBridge,
+			)
 			? SendDataMulticastBridgeRequest
 			: SendDataMulticastRequest;
 	}
@@ -3608,25 +7405,30 @@ ${handlers.length} left`,
 		this.ensureReady();
 
 		try {
-			if (!silent)
+			if (!silent) {
 				this.driverLog.print("Checking for configuration updates...");
+			}
 			const ret = await checkForConfigUpdates(this.configVersion);
 			if (ret) {
-				if (!silent)
+				if (!silent) {
 					this.driverLog.print(
 						`Configuration update available: ${ret}`,
 					);
+				}
 			} else {
-				if (!silent)
+				if (!silent) {
 					this.driverLog.print(
 						"No configuration update available...",
 					);
+				}
 			}
 			return ret;
 		} catch (e) {
 			this.driverLog.print(getErrorMessage(e), "error");
 		}
 	}
+
+	private _installConfigUpdatePromise: Promise<boolean> | undefined;
 
 	/**
 	 * Installs an update for the embedded configuration DB if there is a compatible one.
@@ -3637,28 +7439,40 @@ ${handlers.length} left`,
 	public async installConfigUpdate(): Promise<boolean> {
 		this.ensureReady();
 
+		if (this._installConfigUpdatePromise) {
+			return this._installConfigUpdatePromise;
+		}
+		this._installConfigUpdatePromise = this.installConfigUpdateInternal();
+
+		try {
+			return await this._installConfigUpdatePromise;
+		} finally {
+			this._installConfigUpdatePromise = undefined;
+		}
+	}
+
+	private async installConfigUpdateInternal(): Promise<boolean> {
 		const newVersion = await this.checkForConfigUpdates(true);
 		if (!newVersion) return false;
 
-		try {
+		const extConfigDir = this.configManager.externalConfigDir;
+		if (!this.configManager.useExternalConfig || !extConfigDir) {
 			this.driverLog.print(
-				`Installing version ${newVersion} of configuration DB...`,
+				`Cannot update configuration DB update - external config directory is not set`,
+				"error",
 			);
-			// We have 3 variants of this.
-			const extConfigDir = externalConfigDir();
-			if (this.configManager.useExternalConfig && extConfigDir) {
-				// 1. external config dir, leave node_modules alone
-				await installConfigUpdateInDocker(newVersion, {
-					cacheDir: this.options.storage.cacheDir,
-					configDir: extConfigDir,
-				});
-			} else if (isDocker()) {
-				// 2. Docker, but no external config dir, extract into node_modules
-				await installConfigUpdateInDocker(newVersion);
-			} else {
-				// 3. normal environment, use npm/yarn to install a new version of @zwave-js/config
-				await installConfigUpdate(newVersion);
-			}
+			return false;
+		}
+
+		this.driverLog.print(
+			`Installing version ${newVersion} of configuration DB...`,
+		);
+		try {
+			await installConfigUpdate(
+				this.bindings.fs,
+				newVersion,
+				{ configDir: extConfigDir },
+			);
 		} catch (e) {
 			this.driverLog.print(getErrorMessage(e), "error");
 			return false;
@@ -3678,5 +7492,336 @@ ${handlers.length} left`,
 		}
 
 		return true;
+	}
+
+	private _enteringBootloader: boolean = false;
+	private _enterBootloaderPromise: DeferredPromise<void> | undefined;
+
+	/** @internal */
+	public async enterBootloader(): Promise<void> {
+		this.controllerLog.print("Entering bootloader...");
+		this._enteringBootloader = true;
+		try {
+			// await this.controller.toggleRF(false);
+			// Avoid re-transmissions etc. communicating with the bootloader
+			await this.scheduler.removeTasks(
+				() => true,
+				new ZWaveError(
+					"The controller is entering bootloader mode.",
+					ZWaveErrorCodes.Driver_TaskRemoved,
+				),
+			);
+
+			this.rejectTransactions(
+				(_t) => true,
+				"The controller is entering bootloader mode.",
+			);
+
+			await this.trySoftReset();
+			this.pauseSendQueue();
+
+			// Again, just to be very sure
+			this.rejectTransactions(
+				(_t) => true,
+				"The controller is entering bootloader mode.",
+			);
+
+			// It would be nicer to not hardcode the command here, but since we're switching stream parsers
+			// mid-command - thus ignoring the ACK, we can't really use the existing communication machinery
+			const promise = this.writeSerial(Bytes.from("01030027db", "hex"));
+			this.serial!.mode = ZWaveSerialMode.Bootloader;
+			await promise;
+
+			// Wait if the menu shows up
+			this._enterBootloaderPromise = createDeferredPromise();
+			const success = await Promise.race([
+				this._enterBootloaderPromise.then(() => true),
+				wait(5000, true).then(() => false),
+			]);
+			if (success) {
+				this.controllerLog.print("Entered bootloader");
+			} else {
+				throw new ZWaveError(
+					"Failed to enter bootloader",
+					ZWaveErrorCodes.Controller_Timeout,
+				);
+			}
+		} finally {
+			this._enteringBootloader = false;
+		}
+	}
+
+	private leaveBootloaderInternal(): Promise<void> {
+		const promise = this.bootloader.runApplication();
+		// Reset the known serial mode. We might end up in serial or bootloader mode afterwards.
+		this.serial!.mode = undefined;
+		this._bootloader = undefined;
+		return promise;
+	}
+
+	/**
+	 * @internal
+	 * Leaves the bootloader and destroys the driver instance if desired
+	 */
+	public async leaveBootloader(destroy: boolean = false): Promise<void> {
+		this.controllerLog.print("Leaving bootloader...");
+		await this.leaveBootloaderInternal();
+
+		// TODO: do we need to wait here?
+
+		if (destroy) {
+			const restartReason = "Restarting driver after OTW update...";
+			this.controllerLog.print(restartReason);
+
+			await this.destroy();
+
+			// Let the async calling context finish before emitting the error
+			process.nextTick(() => {
+				this.emit(
+					"error",
+					new ZWaveError(
+						restartReason,
+						ZWaveErrorCodes.Driver_Failed,
+					),
+				);
+			});
+		} else {
+			this.unpauseSendQueue();
+			await this.ensureSerialAPI();
+		}
+	}
+
+	private serialport_onBootloaderData(data: BootloaderChunk): void {
+		switch (data.type) {
+			case BootloaderChunkType.Message: {
+				this.controllerLog.print(
+					`[BOOTLOADER] ${data.message}`,
+					"verbose",
+				);
+				break;
+			}
+			case BootloaderChunkType.FlowControl: {
+				if (data.command === XModemMessageHeaders.C) {
+					this.controllerLog.print(
+						`[BOOTLOADER] awaiting input...`,
+						"verbose",
+					);
+				}
+				break;
+			}
+		}
+
+		// Check if there is a handler waiting for this chunk
+		for (const entry of this.awaitedBootloaderChunks) {
+			if (entry.predicate(data)) {
+				// there is!
+				entry.handler(data);
+				return;
+			}
+		}
+
+		if (!this._bootloader && data.type === BootloaderChunkType.Menu) {
+			// We just entered the bootloader
+			this.controllerLog.print(
+				`[BOOTLOADER] version ${data.version}`,
+				"verbose",
+			);
+
+			this._bootloader = new Bootloader(
+				this.writeSerial.bind(this),
+				data.version,
+				data.options,
+			);
+			if (this._enterBootloaderPromise) {
+				this._enterBootloaderPromise.resolve();
+				this._enterBootloaderPromise = undefined;
+			}
+		}
+	}
+
+	/**
+	 * Waits until a specific chunk is received from the bootloader or a timeout has elapsed. Returns the received chunk.
+	 * @param timeout The number of milliseconds to wait. If the timeout elapses, the returned promise will be rejected
+	 * @param predicate A predicate function to test all incoming chunks
+	 */
+	public waitForBootloaderChunk<T extends BootloaderChunk>(
+		predicate: (chunk: BootloaderChunk) => boolean,
+		timeout: number,
+	): Promise<T> {
+		return new Promise<T>((resolve, reject) => {
+			const promise = createDeferredPromise<BootloaderChunk>();
+			const entry: AwaitedBootloaderChunkEntry = {
+				predicate,
+				handler: (chunk) => promise.resolve(chunk),
+				timeout: undefined,
+			};
+			this.awaitedBootloaderChunks.push(entry);
+			const removeEntry = () => {
+				if (entry.timeout) clearTimeout(entry.timeout);
+				const index = this.awaitedBootloaderChunks.indexOf(entry);
+				if (index !== -1) this.awaitedBootloaderChunks.splice(index, 1);
+			};
+			// When the timeout elapses, remove the wait entry and reject the returned Promise
+			entry.timeout = setTimeout(() => {
+				removeEntry();
+				reject(
+					new ZWaveError(
+						`Received no matching chunk within the provided timeout!`,
+						ZWaveErrorCodes.Controller_Timeout,
+					),
+				);
+			}, timeout);
+			// When the promise is resolved, remove the wait entry and resolve the returned Promise
+			void promise.then((chunk) => {
+				removeEntry();
+				resolve(chunk as T);
+			});
+		});
+	}
+
+	private pollBackgroundRSSITimer: NodeJS.Timeout | undefined;
+	private lastBackgroundRSSITimestamp = 0;
+
+	private handleQueueIdleChange(idle: boolean): void {
+		if (!this.ready) return;
+		if (
+			this.controller.isFunctionSupported(FunctionType.GetBackgroundRSSI)
+		) {
+			// When the send thread stays idle for 5 seconds, poll the background RSSI, but at most every 30s
+			if (idle) {
+				const timeout = Math.max(
+					// Wait at least 5s
+					5000,
+					// and up to 30s if we recently queried the RSSI
+					30_000 - (Date.now() - this.lastBackgroundRSSITimestamp),
+				);
+				this.pollBackgroundRSSITimer = setTimeout(async () => {
+					// Due to the timeout, the driver might have been destroyed in the meantime
+					if (!this.ready) return;
+
+					this.lastBackgroundRSSITimestamp = Date.now();
+					try {
+						await this.controller.getBackgroundRSSI();
+					} catch {
+						// ignore errors
+					}
+				}, timeout).unref();
+			} else {
+				clearTimeout(this.pollBackgroundRSSITimer);
+				this.pollBackgroundRSSITimer = undefined;
+			}
+		}
+	}
+
+	private _powerlevelTestNodeContext: {
+		testNodeId: number;
+		timeout: NodeJS.Timeout | undefined;
+		acknowledgedFrames: number;
+	} | undefined;
+
+	/**
+	 * @internal
+	 * Begins a powerlevel test for the given node using NOP power frames
+	 */
+	public async sendNOPPowerFrames(
+		testNodeId: number,
+		powerlevel: Powerlevel,
+		frameCount: number,
+	): Promise<number> {
+		if (this._powerlevelTestNodeContext) {
+			// Cancel the previous test
+			clearTimeout(this._powerlevelTestNodeContext.timeout);
+			this._powerlevelTestNodeContext = undefined;
+		}
+
+		if (frameCount < 1) return 0;
+
+		const ret = createDeferredPromise<number>();
+
+		const context = {
+			testNodeId,
+			acknowledgedFrames: 0,
+			// This is set below after defining sendFrame
+			timeout: undefined as NodeJS.Timeout | undefined,
+		};
+		this._powerlevelTestNodeContext = context;
+
+		// We're expected to send these pretty quickly (260 frames in 25s for the CTT test)
+		const interval = 50;
+
+		const sendFrame = async () => {
+			const result = await this.sendTestFrame(testNodeId, powerlevel);
+			if (result === TransmitStatus.OK) {
+				context.acknowledgedFrames++;
+			}
+			frameCount--;
+
+			if (frameCount > 0) {
+				context.timeout = setTimeout(sendFrame, interval);
+			} else {
+				context.timeout = undefined;
+				ret.resolve(context.acknowledgedFrames);
+			}
+		};
+
+		context.timeout = setTimeout(sendFrame, interval);
+
+		return ret;
+	}
+
+	/** Sends a NOP Power frame to the given node and returns the transmit status if the frame was sent */
+	public async sendTestFrame(
+		nodeId: number,
+		powerlevel: Powerlevel,
+	): Promise<TransmitStatus | undefined> {
+		const result = await this.sendMessage<
+			Message & SuccessIndicator
+		>(
+			new SendTestFrameRequest({
+				testNodeId: nodeId,
+				powerlevel,
+			}),
+		);
+
+		if (result instanceof SendTestFrameTransmitReport) {
+			return result.transmitStatus;
+		}
+	}
+
+	/**
+	 * @internal
+	 * Returns the status of a potentially ongoing NOP power test
+	 */
+	public getNOPPowerTestStatus(): {
+		testNodeId: number;
+		inProgress: boolean;
+		acknowledgedFrames: number;
+	} | undefined {
+		if (this._powerlevelTestNodeContext) {
+			return {
+				inProgress: !!this._powerlevelTestNodeContext.timeout,
+				testNodeId: this._powerlevelTestNodeContext.testNodeId,
+				acknowledgedFrames:
+					this._powerlevelTestNodeContext.acknowledgedFrames,
+			};
+		}
+	}
+
+	/**
+	 * Resets the S2 singlecast encryption state (SPAN) for the given node, which forces
+	 * a re-synchronization on the next communication attempt.
+	 */
+	public resetSPAN(nodeId: number): void {
+		this.getSecurityManager2(nodeId)?.deleteNonce(nodeId);
+	}
+
+	/**
+	 * Resets the S2 singlecast encryption state (SPAN) for all nodes, which forces
+	 * a re-synchronization on the next communication attempt.
+	 */
+	public resetAllSPANs(): void {
+		for (const nodeId of this.controller.nodes.keys()) {
+			this.resetSPAN(nodeId);
+		}
 	}
 }

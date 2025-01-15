@@ -1,26 +1,26 @@
-import * as Sentry from "@sentry/node";
 import {
-	DataDirection,
+	type CommandClass,
+	isEncapsulatingCommandClass,
+	isMultiEncapsulatingCommandClass,
+} from "@zwave-js/cc";
+import {
+	type DataDirection,
+	type LogContext,
+	MessagePriority,
+	type ZWaveLogContainer,
+	ZWaveLoggerBase,
 	getDirectionPrefix,
-	LogContext,
 	messageRecordToLines,
 	tagify,
-	ZWaveLogContainer,
-	ZWaveLoggerBase,
 } from "@zwave-js/core";
+import type { Message, ResponseRole } from "@zwave-js/serial";
+import { FunctionType, MessageType } from "@zwave-js/serial";
+import { containsCC } from "@zwave-js/serial/serialapi";
 import { getEnumMemberName } from "@zwave-js/shared";
-import type { SortedList } from "alcalzone-shared/sorted-list";
-import type { CommandClass } from "../commandclass/CommandClass";
-import { isEncapsulatingCommandClass } from "../commandclass/EncapsulatingCommandClass";
-import { isCommandClassContainer } from "../commandclass/ICommandClassContainer";
-import type { Transaction } from "../driver/Transaction";
-import {
-	FunctionType,
-	MessagePriority,
-	MessageType,
-} from "../message/Constants";
-import type { Message, ResponseRole } from "../message/Message";
-import { NodeStatus } from "../node/Types";
+import type { Driver } from "../driver/Driver.js";
+import { type TransactionQueue } from "../driver/Queue.js";
+import type { Transaction } from "../driver/Transaction.js";
+import { NodeStatus } from "../node/_Types.js";
 
 export const DRIVER_LABEL = "DRIVER";
 const DRIVER_LOGLEVEL = "verbose";
@@ -31,7 +31,7 @@ export interface DriverLogContext extends LogContext<"driver"> {
 }
 
 export class DriverLogger extends ZWaveLoggerBase<DriverLogContext> {
-	constructor(loggers: ZWaveLogContainer) {
+	constructor(private readonly driver: Driver, loggers: ZWaveLogContainer) {
 		super(loggers, DRIVER_LABEL);
 	}
 
@@ -122,7 +122,7 @@ export class DriverLogger extends ZWaveLoggerBase<DriverLogContext> {
 			return;
 		}
 
-		const isCCContainer = isCommandClassContainer(message);
+		const isCCContainer = containsCC(message);
 		const logEntry = message.toLogEntry();
 
 		let msg: string[] = [tagify(logEntry.tags)];
@@ -136,15 +136,14 @@ export class DriverLogger extends ZWaveLoggerBase<DriverLogContext> {
 
 		try {
 			// If possible, include information about the CCs
-			if (isCommandClassContainer(message)) {
+			if (isCCContainer) {
 				// Remove the default payload message and draw a bracket
 				msg = msg.filter((line) => !line.startsWith("│ payload:"));
 
-				let indent = 0;
-				let cc: CommandClass = message.command;
-				while (true) {
-					const isEncapCC = isEncapsulatingCommandClass(cc);
-					const loggedCC = cc.toLogEntry();
+				const logCC = (cc: CommandClass, indent: number = 0) => {
+					const isEncapCC = isEncapsulatingCommandClass(cc)
+						|| isMultiEncapsulatingCommandClass(cc);
+					const loggedCC = cc.toLogEntry(this.driver);
 					msg.push(
 						" ".repeat(indent * 2) + "└─" + tagify(loggedCC.tags),
 					);
@@ -162,69 +161,71 @@ export class DriverLogger extends ZWaveLoggerBase<DriverLogContext> {
 					}
 					// If this is an encap CC, continue
 					if (isEncapsulatingCommandClass(cc)) {
-						cc = cc.encapsulated;
-					} else {
-						break;
+						logCC(cc.encapsulated, indent);
+					} else if (isMultiEncapsulatingCommandClass(cc)) {
+						for (const encap of cc.encapsulated) {
+							logCC(encap, indent);
+						}
 					}
-				}
+				};
+
+				logCC(message.command);
 			}
 
 			this.logger.log({
 				level: DRIVER_LOGLEVEL,
-				secondaryTags:
-					secondaryTags && secondaryTags.length > 0
-						? tagify(secondaryTags)
-						: undefined,
+				secondaryTags: secondaryTags && secondaryTags.length > 0
+					? tagify(secondaryTags)
+					: undefined,
 				message: msg,
 				// Since we are programming a controller, responses are always inbound
 				// (not to confuse with the message type, which may be Request or Response)
 				direction: getDirectionPrefix(direction),
 				context: { source: "driver", direction },
 			});
-		} catch (e) {
-			// When logging fails, send the message to Sentry
-			try {
-				Sentry.captureException(e);
-			} catch {}
-		}
+		} catch {}
 	}
 
-	/** Logs whats currently in the driver's send queue */
-	public sendQueue(queue: SortedList<Transaction>): void {
+	/** Logs what's currently in the driver's send queue */
+	public sendQueue(...queues: TransactionQueue[]): void {
 		if (!this.isSendQueueLogVisible()) return;
 
 		let message = "Send queue:";
-		if (queue.length > 0) {
-			for (const trns of queue) {
-				// TODO: This formatting should be shared with the other logging methods
-				const node = trns.message.getNodeUnsafe();
-				const prefix =
-					trns.message.type === MessageType.Request
+		let length = 0;
+		for (const queue of queues) {
+			length += queue.length;
+			if (queue.length > 0) {
+				for (const trns of queue.transactions) {
+					// TODO: This formatting should be shared with the other logging methods
+					const node = trns.message.tryGetNode(this.driver);
+					const prefix = trns.message.type === MessageType.Request
 						? "[REQ]"
 						: "[RES]";
-				const postfix =
-					node != undefined
-						? ` [Node ${node.id}, ${getEnumMemberName(
+					const postfix = node != undefined
+						? ` [Node ${node.id}, ${
+							getEnumMemberName(
 								NodeStatus,
 								node.status,
-						  )}]`
+							)
+						}]`
 						: "";
-				const command = isCommandClassContainer(trns.message)
-					? ` (${trns.message.command.constructor.name})`
-					: "";
-				message += `\n· ${prefix} ${
-					FunctionType[trns.message.functionType]
-				}${command}${postfix}`;
+					const command = containsCC(trns.message)
+						? `: ${trns.message.command.constructor.name}`
+						: "";
+					message += `\n· ${prefix} ${
+						FunctionType[trns.message.functionType]
+					}${command}${postfix} (P: ${
+						getEnumMemberName(MessagePriority, trns.priority)
+					})`;
+				}
+			} else {
+				message += " (empty)";
 			}
-		} else {
-			message += " (empty)";
 		}
 		this.logger.log({
 			level: SENDQUEUE_LOGLEVEL,
 			message,
-			secondaryTags: `(${queue.length} message${
-				queue.length === 1 ? "" : "s"
-			})`,
+			secondaryTags: `(${length} message${length === 1 ? "" : "s"})`,
 			direction: getDirectionPrefix("none"),
 			context: { source: "driver", direction: "none" },
 		});

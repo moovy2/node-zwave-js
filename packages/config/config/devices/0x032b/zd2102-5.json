@@ -18,10 +18,7 @@
 		{
 			"#": "1",
 			"label": "Configuration - External Switch",
-			"description": "",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
 			"unsigned": true,
 			"allowManualEntry": false,

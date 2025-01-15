@@ -1,18 +1,37 @@
 /** Management class and utils for Security S0 */
 
-import { randomBytes } from "crypto";
-import { ZWaveError, ZWaveErrorCodes } from "../error/ZWaveError";
-import { encryptAES128ECB } from "./crypto";
+import {
+	encryptAES128ECB as encryptAES128ECBAsync,
+	randomBytes,
+} from "../crypto/operations.async.js";
+import { encryptAES128ECB as encryptAES128ECBSync } from "../crypto/operations.sync.js";
+import { ZWaveError, ZWaveErrorCodes } from "../error/ZWaveError.js";
 
-const authKeyBase = Buffer.alloc(16, 0x55);
-const encryptionKeyBase = Buffer.alloc(16, 0xaa);
+const authKeyBase = new Uint8Array(16).fill(0x55);
+const encryptionKeyBase = new Uint8Array(16).fill(0xaa);
 
-export function generateAuthKey(networkKey: Buffer): Buffer {
-	return encryptAES128ECB(authKeyBase, networkKey);
+/** @deprecated Use {@link generateAuthKeyAsync} instead */
+export function generateAuthKeySync(networkKey: Uint8Array): Uint8Array {
+	// eslint-disable-next-line @typescript-eslint/no-deprecated
+	return encryptAES128ECBSync(authKeyBase, networkKey);
 }
 
-export function generateEncryptionKey(networkKey: Buffer): Buffer {
-	return encryptAES128ECB(encryptionKeyBase, networkKey);
+export function generateAuthKeyAsync(
+	networkKey: Uint8Array,
+): Promise<Uint8Array> {
+	return encryptAES128ECBAsync(authKeyBase, networkKey);
+}
+
+/** @deprecated Use {@link generateEncryptionKeyAsync} instead */
+export function generateEncryptionKeySync(networkKey: Uint8Array): Uint8Array {
+	// eslint-disable-next-line @typescript-eslint/no-deprecated
+	return encryptAES128ECBSync(encryptionKeyBase, networkKey);
+}
+
+export function generateEncryptionKeyAsync(
+	networkKey: Uint8Array,
+): Promise<Uint8Array> {
+	return encryptAES128ECBAsync(encryptionKeyBase, networkKey);
 }
 
 interface NonceKey {
@@ -22,13 +41,13 @@ interface NonceKey {
 }
 
 interface NonceEntry {
-	nonce: Buffer;
+	nonce: Uint8Array;
 	/** The node this nonce was created for */
 	receiver: number;
 }
 
 export interface SecurityManagerOptions {
-	networkKey: Buffer;
+	networkKey: Uint8Array;
 	ownNodeId: number;
 	nonceTimeout: number;
 }
@@ -47,11 +66,11 @@ export class SecurityManager {
 	private ownNodeId: number;
 	private nonceTimeout: number;
 
-	private _networkKey!: Buffer;
-	public get networkKey(): Buffer {
+	private _networkKey!: Uint8Array;
+	public get networkKey(): Uint8Array {
 		return this._networkKey;
 	}
-	public set networkKey(v: Buffer) {
+	public set networkKey(v: Uint8Array) {
 		if (v.length !== 16) {
 			throw new ZWaveError(
 				`The network key must be 16 bytes long!`,
@@ -59,17 +78,43 @@ export class SecurityManager {
 			);
 		}
 		this._networkKey = v;
-		this._authKey = generateAuthKey(this._networkKey);
-		this._encryptionKey = generateEncryptionKey(this._networkKey);
+		this._authKey = undefined;
+		this._encryptionKey = undefined;
 	}
 
-	private _authKey!: Buffer;
-	public get authKey(): Buffer {
+	private _authKey: Uint8Array | undefined;
+	/** @deprecated Use {@link getAuthKey} instead */
+	public get authKey(): Uint8Array {
+		if (!this._authKey) {
+			// eslint-disable-next-line @typescript-eslint/no-deprecated
+			this._authKey = generateAuthKeySync(this.networkKey);
+		}
 		return this._authKey;
 	}
 
-	private _encryptionKey!: Buffer;
-	public get encryptionKey(): Buffer {
+	public async getAuthKey(): Promise<Uint8Array> {
+		if (!this._authKey) {
+			this._authKey = await generateAuthKeyAsync(this.networkKey);
+		}
+		return this._authKey;
+	}
+
+	private _encryptionKey: Uint8Array | undefined;
+	/** @deprecated Use {@link getEncryptionKey} instead */
+	public get encryptionKey(): Uint8Array {
+		if (!this._encryptionKey) {
+			// eslint-disable-next-line @typescript-eslint/no-deprecated
+			this._encryptionKey = generateEncryptionKeySync(this.networkKey);
+		}
+		return this._encryptionKey;
+	}
+
+	public async getEncryptionKey(): Promise<Uint8Array> {
+		if (!this._encryptionKey) {
+			this._encryptionKey = await generateEncryptionKeyAsync(
+				this.networkKey,
+			);
+		}
 		return this._encryptionKey;
 	}
 
@@ -94,8 +139,8 @@ export class SecurityManager {
 	}
 
 	/** Generates a nonce for the current node */
-	public generateNonce(receiver: number, length: number): Buffer {
-		let nonce: Buffer;
+	public generateNonce(receiver: number, length: number): Uint8Array {
+		let nonce: Uint8Array;
 		let nonceId: number;
 		do {
 			nonce = randomBytes(length);
@@ -106,7 +151,7 @@ export class SecurityManager {
 		return nonce;
 	}
 
-	public getNonceId(nonce: Buffer): number {
+	public getNonceId(nonce: Uint8Array): number {
 		return nonce[0];
 	}
 
@@ -117,7 +162,7 @@ export class SecurityManager {
 	): void {
 		const key = this.normalizeId(id);
 		if (this._nonceTimers.has(key)) {
-			clearTimeout(this._nonceTimers.get(key)!);
+			clearTimeout(this._nonceTimers.get(key));
 		}
 		this._nonceStore.set(key, entry);
 		if (free) this._freeNonceIDs.add(key);
@@ -129,7 +174,7 @@ export class SecurityManager {
 		);
 	}
 
-	/** Deletes ALL nonces that were issued for a given node, except the given nonce id */
+	/** Deletes ALL nonces that were issued for a given node */
 	public deleteAllNoncesForReceiver(receiver: number): void {
 		for (const [key, entry] of this._nonceStore) {
 			if (entry.receiver === receiver) {
@@ -151,7 +196,7 @@ export class SecurityManager {
 
 	private deleteNonceInternal(key: string) {
 		if (this._nonceTimers.has(key)) {
-			clearTimeout(this._nonceTimers.get(key)!);
+			clearTimeout(this._nonceTimers.get(key));
 		}
 		this._nonceStore.delete(key);
 		this._nonceTimers.delete(key);
@@ -162,7 +207,7 @@ export class SecurityManager {
 		this.deleteNonceInternal(key);
 	}
 
-	public getNonce(id: number | NonceKey): Buffer | undefined {
+	public getNonce(id: number | NonceKey): Uint8Array | undefined {
 		return this._nonceStore.get(this.normalizeId(id))?.nonce;
 	}
 
@@ -170,7 +215,7 @@ export class SecurityManager {
 		return this._nonceStore.has(this.normalizeId(id));
 	}
 
-	public getFreeNonce(nodeId: number): Buffer | undefined {
+	public getFreeNonce(nodeId: number): Uint8Array | undefined {
 		// Iterate through the known free nonce IDs to find one for the given node
 		for (const key of this._freeNonceIDs) {
 			const nonceKey = JSON.parse(key) as NonceKey;

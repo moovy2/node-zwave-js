@@ -1,8 +1,8 @@
 {
-	"manufacturer": "GE/Jasco",
+	"manufacturer": "Jasco",
 	"manufacturerId": "0x0063",
 	"label": "55257 / ZW1002",
-	"description": "In-Wall Tamper Resistant Smart Outlet",
+	"description": "In-Wall Outlet, TR, 500S",
 	"devices": [
 		{
 			"productType": "0x4952",
@@ -33,32 +33,11 @@
 	"paramInformation": [
 		{
 			"#": "3",
-			"label": "LED Light",
-			"description": "LED status when device on or off.",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
-			"defaultValue": 1,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "LED ON when load is OFff",
-					"value": 0
-				},
-				{
-					"label": "LED On when light is turned On",
-					"value": 1
-				},
-				{
-					"label": "LED always Off",
-					"value": 2
-				}
-			]
+			"$import": "~/templates/master_template.json#led_indicator_three_options"
 		}
 	],
 	"compat": {
-		"treatBasicSetAsEvent": true
+		"mapBasicSet": "event"
 	},
 	"metadata": {
 		"inclusion": "1. Follow the instructions for your Z-Wave certified controller to add a device to the Z-Wave network.\n2. Once the controller is ready to add your device, press and release the program button",

@@ -2,7 +2,7 @@
 	"manufacturer": "Heatit",
 	"manufacturerId": "0x019b",
 	"label": "Z Water",
-	"description": "Relay control",
+	"description": "Relay Control",
 	"devices": [
 		{
 			"productType": "0x0003",
@@ -18,17 +18,15 @@
 			"#": "1",
 			"label": "Status LED",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "LED turned off.",
+					"label": "LED turned off",
 					"value": 0
 				},
 				{
-					"label": "LED turned on.",
+					"label": "LED turned on",
 					"value": 1
 				},
 				{
@@ -55,13 +53,11 @@
 			"label": "Thermistor Type Input 1",
 			"description": "This parameter decides which kind of thermistor that is connected to the input..",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "No thermistor, input is disabled.",
+					"label": "No thermistor, input is disabled",
 					"value": 0
 				},
 				{
@@ -75,13 +71,11 @@
 			"label": "Thermistor Type Input 2",
 			"description": "This parameter decides which kind of thermistor that is connected to the input.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "No thermistor, input is disabled.",
+					"label": "No thermistor, input is disabled",
 					"value": 0
 				},
 				{
@@ -95,13 +89,11 @@
 			"label": "Thermistor Type Input 3",
 			"description": "This parameter decides which kind of thermistor that is connected to the input.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "No thermistor, input is disabled.",
+					"label": "No thermistor, input is disabled",
 					"value": 0
 				},
 				{
@@ -115,13 +107,11 @@
 			"label": "Thermistor Type Input 4",
 			"description": "This parameter decides which kind of thermistor that is connected to the input.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "No thermistor, input is disabled.",
+					"label": "No thermistor, input is disabled",
 					"value": 0
 				},
 				{

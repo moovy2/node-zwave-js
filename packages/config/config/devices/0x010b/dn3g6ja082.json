@@ -20,18 +20,15 @@
 			"label": "Enable Switch",
 			"description": "Enable switch of \"alarm notification\" report",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Open/close off",
+					"label": "Open/Close off",
 					"value": 0
 				},
 				{
-					"label": "Open/close on",
+					"label": "Open/Close on",
 					"value": 1
 				}
 			]

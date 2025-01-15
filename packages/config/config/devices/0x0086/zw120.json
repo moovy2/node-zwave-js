@@ -61,10 +61,7 @@
 			"#": "121",
 			"label": "Sensor Report Type",
 			"valueSize": 4,
-			"minValue": 1,
-			"maxValue": 17,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

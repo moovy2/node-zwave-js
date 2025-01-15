@@ -20,8 +20,6 @@
 			"label": "Customer Function",
 			"description": "Customer function switch, using bit control",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 4,
 			"allowManualEntry": false,
 			"options": [
@@ -30,7 +28,7 @@
 					"value": 4
 				},
 				{
-					"label": "Sensor Binary Report",
+					"label": "Binary Sensor Report",
 					"value": 20
 				}
 			]
@@ -39,8 +37,8 @@
 			"#": "10",
 			"label": "Auto Report Battery Time",
 			"description": "The interval time for auto report the battery level",
-			"unit": "30 minutes",
 			"valueSize": 1,
+			"unit": "30 minutes",
 			"minValue": 0,
 			"maxValue": 127,
 			"defaultValue": 12

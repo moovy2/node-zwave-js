@@ -1,4 +1,4 @@
-import { red, yellow } from "ansi-colors";
+import c from "ansi-colors";
 
 interface ReportProblemOptions {
 	severity: "warn" | "error";
@@ -21,12 +21,12 @@ export function reportProblem({
 		console.log(
 			`::${severity}${severity === "warn" ? "ing" : ""} file=${filename}${
 				line != undefined ? `,line=${line}` : ""
-			}::${message.replace(/\n/g, "%0A")}\n`,
+			}::${message.replaceAll("\n", "%0A")}\n`,
 		);
 	} else {
 		console.log(`${filename}${line != undefined ? `:${line}` : ""}:`);
 		console.log(
-			(severity === "warn" ? yellow : red)(
+			(severity === "warn" ? c.yellow : c.red)(
 				`[${severity.toUpperCase()}] ${message}\n`,
 			),
 		);

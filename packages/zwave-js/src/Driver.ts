@@ -1,15 +1,26 @@
-export { Driver } from "./lib/driver/Driver";
-export type { SendMessageOptions } from "./lib/driver/Driver";
-export type { FileSystem } from "./lib/driver/FileSystem";
-export type { ZWaveOptions } from "./lib/driver/ZWaveOptions";
-export {
-	FunctionType,
-	MessagePriority,
-	MessageType,
-} from "./lib/message/Constants";
-export { Message } from "./lib/message/Message";
+export { MessagePriority } from "@zwave-js/core";
+export type { SendMessageOptions } from "@zwave-js/core";
+export type { FileSystem } from "@zwave-js/core";
+export { FunctionType, Message, MessageType } from "@zwave-js/serial";
 export type {
 	MessageOptions,
 	ResponsePredicate,
 	ResponseRole,
-} from "./lib/message/Message";
+} from "@zwave-js/serial";
+export {
+	type CommandRequest,
+	type ContainsCC,
+	type ContainsSerializedCC,
+	type MessageWithCC,
+	containsCC,
+	containsSerializedCC,
+	isCommandRequest,
+	isMessageWithCC,
+} from "@zwave-js/serial/serialapi";
+export { Driver, libName, libVersion } from "./lib/driver/Driver.js";
+export type {
+	EditableZWaveOptions,
+	PartialZWaveOptions,
+	ZWaveOptions,
+} from "./lib/driver/ZWaveOptions.js";
+export type { DriverLogContext } from "./lib/log/Driver.js";

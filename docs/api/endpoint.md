@@ -56,10 +56,10 @@ createCCInstanceUnsafe<T>(cc: CommandClasses): T | undefined
 
 Like [`createCCInstance`](#createCCInstance) but returns `undefined` instead of throwing when a CC is not supported.
 
-### `getNodeUnsafe`
+### `tryGetNode`
 
 ```ts
-getNodeUnsafe(): ZWaveNode | undefined
+tryGetNode(): ZWaveNode | undefined
 ```
 
 Returns the node this endpoint belongs to (or undefined if the node doesn't exist).
@@ -104,6 +104,14 @@ readonly index: number
 
 The index of this endpoint. 0 for the root device, 1+ otherwise.
 
+### `endpointLabel`
+
+```ts
+readonly endpointLabel: string | undefined;
+```
+
+If the device config file contains a label for this endpoint, it is exposed here.
+
 ### `installerIcon`
 
 ```ts
@@ -126,7 +134,7 @@ If the `Z-Wave+` Command Class is supported, this returns the icon to be shown t
 readonly commandClasses(): CCAPIs
 ```
 
-This property provides access to simplified APIs that are taylored to specific CCs.
+This property provides access to simplified APIs that are tailored to specific CCs.
 
 Make sure to check support of each API using `API.isSupported()` before using it, since all other API calls will throw if the API is not supported. Example:
 
@@ -173,6 +181,97 @@ This method determines if the current CC API may be used. If this method returns
 ### `setValue`
 
 The `setValue` method is internally called by `Endpoint.setValue`. You shouldn't use this method yourself, and instead use the `setValue` on the `ZWaveNode` instance.
+
+### `withOptions`
+
+```ts
+withOptions(options: SendCommandOptions): this
+```
+
+Returns an instance of this API which will use the given options for each sent command. Use cases are:
+
+- changing the priority or transmit options of the sent commands
+- expiring commands after a given amount of time in the queue
+- getting notified of the command progress
+
+#### Example
+
+```ts
+// Get the node
+const node2 = driver.controller.nodes.getOrThrow(2);
+
+// Create a Basic CC API with low priority whose commands expire 500ms
+// after sending if not handled by then
+const basicAPI = node2.commandClasses.Basic.withOptions({
+	priority: MessagePriority.Poll,
+	expire: 500,
+});
+
+// Get the current value
+const result = await basicAPI.get();
+
+console.log(result);
+// { currentValue: 0 }
+```
+
+### `withTXReport`
+
+```ts
+withTXReport(): WithTXReport<this>
+```
+
+Creates an instance of this API which (if supported) will return TX reports along with the result. The CC-specific API methods of this instance like `get`, `set`, etc. will now return an object with the following shape instead of the original return value:
+
+```ts
+{
+	result?: /* original return value, if any */,
+	txReport?: TXReport,
+}
+```
+
+#### Example
+
+```ts
+// Get the node
+const node2 = driver.controller.nodes.getOrThrow(2);
+
+// Create a Basic CC API with low priority and TX reports enabled
+const basicAPI = node2.commandClasses.Basic.withOptions({
+	priority: MessagePriority.Poll,
+}).withTXReport();
+
+// Get the current value
+const { result, txReport } = await basicAPI.get();
+
+console.log(result);
+// { currentValue: 0 }
+console.log(txReport);
+// {
+//   txTicks: 1,
+//   numRepeaters: 0,
+//   ackRSSI: -58,
+//   ackRepeaterRSSI: [],
+//   ackChannelNo: 0,
+//   txChannelNo: 0,
+//   routeSchemeState: 3,
+//   repeaterNodeIds: [],
+//   beam1000ms: false,
+//   beam250ms: false,
+//   routeSpeed: 3,
+//   routingAttempts: 1,
+//   failedRouteLastFunctionalNodeId: 0,
+//   failedRouteFirstNonFunctionalNodeId: 0,
+//   measuredNoiseFloor: 127,
+//   destinationAckMeasuredRSSI: 127,
+//   destinationAckMeasuredNoiseFloor: 127
+// }
+```
+
+> [!NOTE] When a command requires multiple messages (e.g. S0-encapsulated commands), only the last TX report will be returned.
+
+The returned API instance no longer includes the `withOptions` or the `withTXReport` method. To specify additional options, call `withOptions` before `withTXReport`.
+
+> [!WARNING] This method is only supported for CC-specific API implementations. When called on an unspecified `CCAPI` class instance, this will throw. When accessing the CC APIs through the `commandClasses` property, this is not a problem though.
 
 ## CC API properties
 

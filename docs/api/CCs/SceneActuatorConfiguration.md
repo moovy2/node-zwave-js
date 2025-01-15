@@ -9,20 +9,21 @@
 ```ts
 async set(
 	sceneId: number,
-	dimmingDuration?: Duration,
+	dimmingDuration?: Duration | string,
 	level?: number,
-): Promise<void>;
+): Promise<SupervisionResult | undefined>;
 ```
 
 ### `getActive`
 
 ```ts
 async getActive(): Promise<
-	| Pick<
+	MaybeNotKnown<
+		Pick<
 			SceneActuatorConfigurationCCReport,
 			"sceneId" | "level" | "dimmingDuration"
-	  >
-	| undefined
+		>
+	>
 >;
 ```
 
@@ -32,7 +33,55 @@ async getActive(): Promise<
 async get(
 	sceneId: number,
 ): Promise<
-	| Pick<SceneActuatorConfigurationCCReport, "level" | "dimmingDuration">
-	| undefined
+	MaybeNotKnown<
+		Pick<
+			SceneActuatorConfigurationCCReport,
+			"level" | "dimmingDuration"
+		>
+	>
 >;
 ```
+
+## Scene Actuator Configuration CC values
+
+### `dimmingDuration(sceneId: number)`
+
+```ts
+{
+	commandClass:
+		CommandClasses["Scene Actuator Configuration"],
+	endpoint: number,
+	property: "dimmingDuration",
+	propertyKey: number,
+}
+```
+
+- **label:** `Dimming duration (${number})`
+- **min. CC version:** 1
+- **readable:** true
+- **writeable:** true
+- **stateful:** true
+- **secret:** false
+- **value type:** `"duration"`
+
+### `level(sceneId: number)`
+
+```ts
+{
+	commandClass:
+		CommandClasses["Scene Actuator Configuration"],
+	endpoint: number,
+	property: "level",
+	propertyKey: number,
+}
+```
+
+- **label:** `Level (${number})`
+- **min. CC version:** 1
+- **readable:** true
+- **writeable:** true
+- **stateful:** true
+- **secret:** false
+- **value type:** `"number"`
+- **min. value:** 0
+- **max. value:** 255

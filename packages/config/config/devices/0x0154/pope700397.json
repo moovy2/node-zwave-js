@@ -2,7 +2,7 @@
 	"manufacturer": "Popp & Co",
 	"manufacturerId": "0x0154",
 	"label": "POPE700397",
-	"description": "Popp Smart Outdoor Plug - IP44 rated",
+	"description": "Popp Smart Outdoor Plug - IP44 Rated",
 	"devices": [
 		{
 			"productType": "0x0003",
@@ -19,8 +19,6 @@
 			"label": "LED Operation Mode",
 			"description": "Defines when the LED shall shine and how",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -29,7 +27,7 @@
 					"value": 0
 				},
 				{
-					"label": "Defined by Parameter 21 and 22",
+					"label": "Defined by parameter 21 and 22",
 					"value": 1
 				}
 			]
@@ -46,11 +44,9 @@
 		},
 		{
 			"#": "3",
-			"label": "Switching behavior",
+			"label": "Switching Behavior",
 			"description": "Switching behavior when receiving wireless OFF",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -59,7 +55,7 @@
 					"value": 0
 				},
 				{
-					"label": "Ignores Off command",
+					"label": "Ignores off command",
 					"value": 1
 				},
 				{
@@ -77,17 +73,15 @@
 			"label": "Button Mode",
 			"description": "This parameter defines if the local button ...",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Controls Load + Scenes",
+					"label": "Controls load + scenes",
 					"value": 0
 				},
 				{
-					"label": "Scene Control Only",
+					"label": "Scene control only",
 					"value": 1
 				}
 			]
@@ -98,10 +92,8 @@
 		},
 		{
 			"#": "21",
-			"label": "LED Color on OFF state",
+			"label": "LED Color on OFF State",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -121,10 +113,8 @@
 		},
 		{
 			"#": "22",
-			"label": "LED Color on ON state",
+			"label": "LED Color on ON State",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [

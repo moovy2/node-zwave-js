@@ -1,0 +1,17 @@
+// tsconfig for IntelliSense - active in all files in the current package
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"plugins": [
+			{
+				"transform": "@zwave-js/transformers/validateArgs/program",
+				"transformProgram": true
+			},
+			{
+				"transform": "@zwave-js/transformers/validateArgs/decorators"
+			}
+		]
+	},
+	"include": ["maintenance/**/*.ts", "maintenance/**/*.mts", "src/**/*.ts"],
+	"exclude": ["build/**", "node_modules/**"]
+}

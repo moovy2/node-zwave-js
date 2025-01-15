@@ -1,6 +1,6 @@
 import type { JSONObject } from "@zwave-js/shared";
 import { clamp } from "alcalzone-shared/math";
-import { ZWaveError, ZWaveErrorCodes } from "../error/ZWaveError";
+import { ZWaveError, ZWaveErrorCodes } from "../error/ZWaveError.js";
 
 export type DurationUnit = "seconds" | "minutes" | "unknown" | "default";
 
@@ -31,11 +31,28 @@ export class Duration {
 		this._value = clamp(v, 0, 127);
 	}
 
+	public static unknown(): Duration {
+		return new Duration(0, "unknown");
+	}
+
+	public static default(): Duration {
+		return new Duration(0, "default");
+	}
+
+	public static isDuration(value: any): value is Duration {
+		return typeof value === "object"
+			&& value != null
+			&& "value" in value
+			&& typeof value.value === "number"
+			&& "unit" in value
+			&& typeof value.unit === "string";
+	}
+
 	/** Parses a duration as represented in Report commands */
 	public static parseReport(payload?: number): Duration | undefined {
 		if (payload == undefined) return undefined;
 		if (payload === 0xff) return undefined; // reserved value
-		if (payload === 0xfe) return new Duration(0, "unknown");
+		if (payload === 0xfe) return Duration.unknown();
 		const isMinutes = !!(payload & 0b1000_0000);
 		const value = (payload & 0b0111_1111) + (isMinutes ? 1 : 0); // minutes start at 1
 		return new Duration(value, isMinutes ? "minutes" : "seconds");
@@ -44,7 +61,7 @@ export class Duration {
 	/** Parses a duration as represented in Set commands */
 	public static parseSet(payload?: number): Duration | undefined {
 		if (payload == undefined) return undefined;
-		if (payload === 0xff) return new Duration(0, "default");
+		if (payload === 0xff) return Duration.default();
 		const isMinutes = !!(payload & 0b1000_0000);
 		const value = (payload & 0b0111_1111) + (isMinutes ? 1 : 0); // minutes start at 1
 		return new Duration(value, isMinutes ? "minutes" : "seconds");
@@ -57,7 +74,7 @@ export class Duration {
 	public static parseString(text: string): Duration | undefined {
 		if (!text.length) return undefined;
 
-		if (text === "default") return new Duration(0, "default");
+		if (text === "default") return Duration.default();
 		// unknown durations shouldn't be parsed from strings because they are only ever reported
 
 		// Try to parse the numeric parts from a duration
@@ -85,8 +102,11 @@ export class Duration {
 	/**
 	 * Takes a user-friendly duration string or a Duration instance and returns a Duration instance (if one was given)
 	 */
+	public static from(input: "default"): Duration;
+	public static from(input?: Duration | string): Duration | undefined;
+
 	public static from(input?: Duration | string): Duration | undefined {
-		if (input instanceof Duration) {
+		if (Duration.isDuration(input)) {
 			return input;
 		} else if (input) {
 			return Duration.parseString(input);
@@ -98,11 +118,12 @@ export class Duration {
 	/** Serializes a duration for a Set command */
 	public serializeSet(): number {
 		if (this.unit === "default") return 0xff;
-		if (this.unit === "unknown")
+		if (this.unit === "unknown") {
 			throw new ZWaveError(
 				"Set commands don't support unknown durations",
 				ZWaveErrorCodes.CC_Invalid,
 			);
+		}
 		const isMinutes = this.unit === "minutes";
 		let payload = isMinutes ? 0b1000_0000 : 0;
 		payload += (this._value - (isMinutes ? 1 : 0)) & 0b0111_1111;
@@ -119,8 +140,9 @@ export class Duration {
 	}
 
 	public toJSON(): string | JSONObject {
-		if (this.unit === "default" || this.unit === "unknown")
+		if (this.unit === "default" || this.unit === "unknown") {
 			return this.unit;
+		}
 		return {
 			value: this.value,
 			unit: this.unit,

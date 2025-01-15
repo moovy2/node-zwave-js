@@ -21,18 +21,14 @@
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 100,
-			"defaultValue": 100,
-			"unsigned": true
+			"defaultValue": 100
 		},
 		{
 			"#": "2",
 			"label": "Discovery Mode",
 			"description": "Start, stop, or get the results of discovery mode. Retrieve the configuration parameter to obtain the results.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -44,11 +40,11 @@
 					"value": 1
 				},
 				{
-					"label": "Timeout (readonly)",
+					"label": "Timeout (Readonly)",
 					"value": 2
 				},
 				{
-					"label": "Failure (readonly)",
+					"label": "Failure (Readonly)",
 					"value": 3
 				}
 			]
@@ -57,10 +53,7 @@
 			"#": "3",
 			"label": "Sleep Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

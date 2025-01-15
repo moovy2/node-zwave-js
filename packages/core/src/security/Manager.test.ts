@@ -1,318 +1,299 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import { randomBytes } from "crypto";
-import { SecurityManager } from "./Manager";
+import { isUint8Array } from "@zwave-js/shared";
+import { randomBytes } from "node:crypto";
+import sinon from "sinon";
+import { test, vi } from "vitest";
+import { SecurityManager } from "./Manager.js";
 
-// prettier-ignore
-const networkKey = Buffer.from([
-	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+const networkKey = Uint8Array.from([
+	1,
+	2,
+	3,
+	4,
+	5,
+	6,
+	7,
+	8,
+	9,
+	10,
+	11,
+	12,
+	13,
+	14,
+	15,
+	16,
 ]);
 const ownNodeId = 1;
 const options = { networkKey, ownNodeId, nonceTimeout: 500 };
 
-describe("lib/security/Manager", () => {
-	beforeAll(() => {
-		jest.useFakeTimers();
-	});
+vi.mock("node:crypto", async () => {
+	const originalCrypto = await vi.importActual("node:crypto");
+	return {
+		...originalCrypto,
+	};
+});
 
-	afterAll(() => {
-		jest.clearAllTimers();
-		jest.useRealTimers();
-	});
+test("constructor() -> should set the network key, auth key and encryption key", async (t) => {
+	const man = new SecurityManager(options);
+	t.expect(man.networkKey).toStrictEqual(networkKey);
+	const authKey = await man.getAuthKey();
+	const encryptionKey = await man.getEncryptionKey();
+	t.expect(isUint8Array(authKey)).toBe(true);
+	t.expect(authKey).toHaveLength(16);
+	t.expect(isUint8Array(encryptionKey)).toBe(true);
+	t.expect(encryptionKey).toHaveLength(16);
+});
 
-	describe("constructor()", () => {
-		it("should set the network key, auth key and encryption key", () => {
-			const man = new SecurityManager(options);
-			expect(man.networkKey).toEqual(networkKey);
-			expect(Buffer.isBuffer(man.authKey)).toBeTrue();
-			expect(man.authKey.length).toBe(16);
-			expect(Buffer.isBuffer(man.encryptionKey)).toBeTrue();
-			expect(man.encryptionKey.length).toBe(16);
-		});
+test("constructor() -> should throw if the network key doesn't have length 16", (t) => {
+	t.expect(
+		() =>
+			new SecurityManager({
+				networkKey: new Uint8Array(),
+				ownNodeId: 1,
+				nonceTimeout: 500,
+			}),
+	).toThrowError("16 bytes");
+});
 
-		it("should throw if the network key doesn't have length 16", () => {
-			expect(
-				() =>
-					new SecurityManager({
-						networkKey: Buffer.from([]),
-						ownNodeId: 1,
-						nonceTimeout: 500,
-					}),
-			).toThrow("16 bytes");
-		});
-	});
+test("generateNonce() should return a random Buffer of the given length", (t) => {
+	const man = new SecurityManager(options);
+	// I know, this is not really checking if the value is random
+	const nonce1 = man.generateNonce(2, 8);
+	const nonce2 = man.generateNonce(2, 8);
+	const nonce3 = man.generateNonce(2, 8);
 
-	describe("generateNonce", () => {
-		it("should return a random Buffer of the given length", () => {
-			const man = new SecurityManager(options);
-			// I know, this is not really checking if the value is random
-			const nonce1 = man.generateNonce(2, 8);
-			const nonce2 = man.generateNonce(2, 8);
-			const nonce3 = man.generateNonce(2, 8);
+	t.expect(isUint8Array(nonce1)).toBe(true);
+	t.expect(isUint8Array(nonce2)).toBe(true);
+	t.expect(isUint8Array(nonce3)).toBe(true);
 
-			expect(Buffer.isBuffer(nonce1)).toBeTrue();
-			expect(Buffer.isBuffer(nonce2)).toBeTrue();
-			expect(Buffer.isBuffer(nonce3)).toBeTrue();
+	t.expect(nonce1.length).toBe(8);
+	t.expect(nonce2.length).toBe(8);
+	t.expect(nonce3.length).toBe(8);
+});
 
-			expect(nonce1.length).toBe(8);
-			expect(nonce2.length).toBe(8);
-			expect(nonce3.length).toBe(8);
-		});
+test("generateNonce() -> should ensure that no collisions happen", async (t) => {
+	// No collisions means that it is possible to generate 256 nonces without reusing the first byte
+	const man = new SecurityManager(options);
+	const generatedNonceIds = new Set<number>();
+	for (let i = 0; i <= 255; i++) {
+		const nonce = man.generateNonce(2, 8);
+		const nonceId = nonce[0];
+		t.expect(generatedNonceIds.has(nonceId)).toBe(false);
+		generatedNonceIds.add(nonceId);
+	}
+});
 
-		it("should ensure that no collisions happen", () => {
-			jest.resetModules();
-			jest.isolateModules(() => {
-				const buf1a = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
-				const buf1b = Buffer.from([1, 2, 3, 4, 5, 6, 7, 9]); // has the same nonce id
-				const buf2 = Buffer.from([2, 2, 3, 4, 5, 6, 7, 8]);
+test("generateNonce() should store nonces for the current node id", (t) => {
+	const man = new SecurityManager(options);
 
-				jest.mock("crypto");
-				const crypto: typeof import("crypto") = require("crypto");
-				const original: typeof import("crypto") =
-					jest.requireActual("crypto");
-				(crypto.randomBytes as jest.Mock)
-					.mockReturnValueOnce(buf1a)
-					.mockReturnValueOnce(buf1b)
-					.mockReturnValueOnce(buf2);
-				crypto.createCipheriv = original.createCipheriv;
-				crypto.createDecipheriv = original.createDecipheriv;
-				const SM: typeof SecurityManager =
-					require("./Manager").SecurityManager;
+	const nonce1 = man.generateNonce(2, 8);
+	const nonce2 = man.generateNonce(2, 8);
+	const nonce3 = man.generateNonce(2, 8);
 
-				const man = new SM(options);
-				const nonce1 = man.generateNonce(2, 8);
-				const nonce2 = man.generateNonce(2, 8);
-				expect(nonce1).toEqual(buf1a);
-				expect(nonce2).toEqual(buf2);
+	t.expect(
+		man.getNonce({ issuer: 2, nonceId: man.getNonceId(nonce1) }),
+	).toBeUndefined();
+	t.expect(
+		man.getNonce({ issuer: 2, nonceId: man.getNonceId(nonce2) }),
+	).toBeUndefined();
+	t.expect(
+		man.getNonce({ issuer: 2, nonceId: man.getNonceId(nonce3) }),
+	).toBeUndefined();
+});
 
-				expect(man.getNonce(1)).toEqual(buf1a);
-				expect(man.getNonce(2)).toEqual(buf2);
-				jest.resetModules();
-			});
-		});
+test("generateNonce() -> the nonces should expire after the given timeout", (t) => {
+	const clock = sinon.useFakeTimers(Date.now());
+	const man = new SecurityManager(options);
+	const nonce = man.generateNonce(2, 8);
+	const nonceId = nonce[0];
+	t.expect(man.getNonce(nonceId)).toStrictEqual(nonce);
+	clock.tick(options.nonceTimeout + 50);
+	t.expect(man.getNonce(nonceId)).toBeUndefined();
 
-		it("should store nonces for the current node id", () => {
-			const man = new SecurityManager(options);
+	clock.restore();
+});
 
-			const nonce1 = man.generateNonce(2, 8);
-			const nonce2 = man.generateNonce(2, 8);
-			const nonce3 = man.generateNonce(2, 8);
+test(`generateNonce() -> should be marked as "reserved"`, (t) => {
+	const man = new SecurityManager(options);
+	man.generateNonce(2, 8);
+	t.expect(man.getFreeNonce(ownNodeId)).toBeUndefined();
+});
 
-			expect(
-				man.getNonce({ issuer: 2, nonceId: man.getNonceId(nonce1) }),
-			).toBeUndefined();
-			expect(
-				man.getNonce({ issuer: 2, nonceId: man.getNonceId(nonce2) }),
-			).toBeUndefined();
-			expect(
-				man.getNonce({ issuer: 2, nonceId: man.getNonceId(nonce3) }),
-			).toBeUndefined();
-		});
+test("getNonceId() -> should return the first byte of the nonce", (t) => {
+	const man = new SecurityManager(options);
 
-		it("the nonces should expire after the given timeout", () => {
-			const man = new SecurityManager(options);
-			const nonce = man.generateNonce(2, 8);
-			const nonceId = nonce[0];
-			expect(man.getNonce(nonceId)).toEqual(nonce);
+	const nonce1 = man.generateNonce(2, 8);
+	const nonce2 = man.generateNonce(2, 8);
+	const nonce3 = man.generateNonce(2, 8);
 
-			jest.advanceTimersByTime(options.nonceTimeout + 50);
-			expect(man.getNonce(nonceId)).toBeUndefined();
-		});
+	t.expect(man.getNonceId(nonce1)).toBe(nonce1[0]);
+	t.expect(man.getNonceId(nonce2)).toBe(nonce2[0]);
+	t.expect(man.getNonceId(nonce3)).toBe(nonce3[0]);
+});
 
-		it(`the nonce should be marked as "reserved"`, () => {
-			const man = new SecurityManager(options);
-			man.generateNonce(2, 8);
-			expect(man.getFreeNonce(ownNodeId)).toBeUndefined();
-		});
-	});
+test("getNonce() should return a previously generated nonce with the same id", (t) => {
+	const man = new SecurityManager(options);
 
-	describe("getNonceId", () => {
-		it("should return the first byte of the nonce", () => {
-			const man = new SecurityManager(options);
+	const nonce1 = man.generateNonce(2, 8);
+	const nonce2 = man.generateNonce(2, 8);
+	const nonce3 = man.generateNonce(2, 8);
 
-			const nonce1 = man.generateNonce(2, 8);
-			const nonce2 = man.generateNonce(2, 8);
-			const nonce3 = man.generateNonce(2, 8);
+	const nonceId1 = man.getNonceId(nonce1);
+	const nonceId2 = man.getNonceId(nonce2);
+	const nonceId3 = man.getNonceId(nonce3);
 
-			expect(man.getNonceId(nonce1)).toBe(nonce1[0]);
-			expect(man.getNonceId(nonce2)).toBe(nonce2[0]);
-			expect(man.getNonceId(nonce3)).toBe(nonce3[0]);
-		});
-	});
+	t.expect(nonce1).toStrictEqual(man.getNonce(nonceId1));
+	t.expect(nonce2).toStrictEqual(man.getNonce(nonceId2));
+	t.expect(nonce3).toStrictEqual(man.getNonce(nonceId3));
+});
 
-	describe("getNonce", () => {
-		it("should return a previously generated nonce with the same id", () => {
-			const man = new SecurityManager(options);
+test("setNonce() -> should store a given nonce to be retrieved later", (t) => {
+	const man = new SecurityManager(options);
 
-			const nonce1 = man.generateNonce(2, 8);
-			const nonce2 = man.generateNonce(2, 8);
-			const nonce3 = man.generateNonce(2, 8);
+	t.expect(man.getNonce(1)).toBeUndefined();
+	const nonce = randomBytes(8);
+	nonce[0] = 1;
+	man.setNonce(1, { nonce, receiver: 2 });
+	t.expect(man.getNonce(1)).toStrictEqual(nonce);
+});
 
-			const nonceId1 = man.getNonceId(nonce1);
-			const nonceId2 = man.getNonceId(nonce2);
-			const nonceId3 = man.getNonceId(nonce3);
+test("setNonce -> the nonces should timeout after the given timeout", (t) => {
+	const clock = sinon.useFakeTimers(Date.now());
+	const man = new SecurityManager(options);
+	const nonce = randomBytes(8);
+	const nonceId = nonce[0];
+	man.setNonce(nonceId, { nonce, receiver: 2 });
+	t.expect(man.getNonce(nonceId)).toStrictEqual(nonce);
+	clock.tick(options.nonceTimeout + 50);
+	t.expect(man.getNonce(nonceId)).toBeUndefined();
 
-			expect(nonce1).toEqual(man.getNonce(nonceId1));
-			expect(nonce2).toEqual(man.getNonce(nonceId2));
-			expect(nonce3).toEqual(man.getNonce(nonceId3));
-		});
-	});
+	clock.restore();
+});
 
-	describe("setNonce", () => {
-		it("should store a given nonce to be retrieved later", () => {
-			const man = new SecurityManager(options);
+test("setNonce -> should mark the nonce as free", (t) => {
+	const man = new SecurityManager(options);
+	const nonce = randomBytes(8);
+	nonce[0] = 1;
+	man.setNonce(
+		{
+			issuer: 2,
+			nonceId: 1,
+		},
+		{ nonce, receiver: options.ownNodeId },
+	);
+	// Wrong node
+	t.expect(man.getFreeNonce(1)).toBeUndefined();
+	t.expect(man.getFreeNonce(2)).toStrictEqual(nonce);
+});
 
-			expect(man.getNonce(1)).toBeUndefined();
+test("setNonce -> when a free nonce expires, it should no longer be free", (t) => {
+	const clock = sinon.useFakeTimers(Date.now());
+	const man = new SecurityManager(options);
+	const nonce = randomBytes(8);
+	man.setNonce(
+		{
+			issuer: 2,
+			nonceId: 1,
+		},
+		{ nonce, receiver: options.ownNodeId },
+	);
 
-			const nonce: Buffer = randomBytes(8);
-			nonce[0] = 1;
-			man.setNonce(1, { nonce, receiver: 2 });
-			expect(man.getNonce(1)).toEqual(nonce);
-		});
+	clock.tick(options.nonceTimeout + 50);
+	t.expect(man.getFreeNonce(2)).toBeUndefined();
 
-		it("the nonces should timeout after the given timeout", () => {
-			const man = new SecurityManager(options);
-			const nonce: Buffer = randomBytes(8);
-			const nonceId = nonce[0];
-			man.setNonce(nonceId, { nonce, receiver: 2 });
-			expect(man.getNonce(nonceId)).toEqual(nonce);
+	clock.restore();
+});
 
-			jest.advanceTimersByTime(options.nonceTimeout + 50);
+test("hasNonce() -> should return whether a nonce id is in the database", (t) => {
+	const man = new SecurityManager(options);
 
-			expect(man.getNonce(nonceId)).toBeUndefined();
-		});
+	// Manually set
+	t.expect(man.hasNonce(1)).toBe(false);
+	const nonce1 = randomBytes(8);
+	nonce1[0] = 1;
+	man.setNonce(1, { nonce: nonce1, receiver: 2 });
+	t.expect(man.hasNonce(1)).toBe(true);
 
-		it("should mark the nonce as free", () => {
-			const man = new SecurityManager(options);
-			const nonce: Buffer = randomBytes(8);
-			nonce[0] = 1;
-			man.setNonce(
-				{
-					issuer: 2,
-					nonceId: 1,
-				},
-				{ nonce, receiver: options.ownNodeId },
-			);
-			// Wrong node
-			expect(man.getFreeNonce(1)).toBeUndefined();
-			expect(man.getFreeNonce(2)).toEqual(nonce);
-		});
+	// And generated
+	const nonce2 = man.generateNonce(2, 8);
+	const nonceId2 = man.getNonceId(nonce2);
+	t.expect(man.hasNonce(nonceId2)).toBe(true);
+});
 
-		it("when a free nonce expires, it should no longer be free", () => {
-			const man = new SecurityManager(options);
-			const nonce: Buffer = randomBytes(8);
-			man.setNonce(
-				{
-					issuer: 2,
-					nonceId: 1,
-				},
-				{ nonce, receiver: options.ownNodeId },
-			);
+test("deleteNonce() -> should remove a nonce from the database", (t) => {
+	const man = new SecurityManager(options);
 
-			jest.advanceTimersByTime(options.nonceTimeout + 50);
-			expect(man.getFreeNonce(2)).toBeUndefined();
-		});
-	});
+	const nonce = man.generateNonce(2, 8);
+	const nonceId = man.getNonceId(nonce);
 
-	describe("hasNonce", () => {
-		it("should return whether a nonce id is in the database", () => {
-			const man = new SecurityManager(options);
+	man.deleteNonce(nonceId);
+	t.expect(man.getNonce(nonceId)).toBeUndefined();
+	t.expect(man.hasNonce(nonceId)).toBe(false);
+});
 
-			// Manually set
-			expect(man.hasNonce(1)).toBeFalse();
-			const nonce1: Buffer = randomBytes(8);
-			nonce1[0] = 1;
-			man.setNonce(1, { nonce: nonce1, receiver: 2 });
-			expect(man.hasNonce(1)).toBeTrue();
+test("deleteNonce() -> and all other nonces that were created for the same receiver", (t) => {
+	const man = new SecurityManager(options);
 
-			// And generated
-			const nonce2 = man.generateNonce(2, 8);
-			const nonceId2 = man.getNonceId(nonce2);
-			expect(man.hasNonce(nonceId2)).toBeTrue();
-		});
-	});
+	const nonce1 = man.generateNonce(2, 8);
+	const nonceId1 = man.getNonceId(nonce1);
+	const nonce2 = man.generateNonce(2, 8);
+	const nonceId2 = man.getNonceId(nonce2);
 
-	describe("deleteNonce", () => {
-		it("should remove a nonce from the database", () => {
-			const man = new SecurityManager(options);
+	man.deleteNonce(nonceId1);
+	t.expect(man.getNonce(nonceId1)).toBeUndefined();
+	t.expect(man.hasNonce(nonceId1)).toBe(false);
+	t.expect(man.getNonce(nonceId2)).toBeUndefined();
+	t.expect(man.hasNonce(nonceId2)).toBe(false);
+});
 
-			const nonce = man.generateNonce(2, 8);
-			const nonceId = man.getNonceId(nonce);
+test("deleteAllNoncesForReceiver -> should only delete the nonces for the given receiver", (t) => {
+	const man = new SecurityManager(options);
 
-			man.deleteNonce(nonceId);
-			expect(man.getNonce(nonceId)).toBeUndefined();
-			expect(man.hasNonce(nonceId)).toBeFalse();
-		});
+	const nonce1 = man.generateNonce(2, 8);
+	const nonceId1 = man.getNonceId(nonce1);
+	const nonce2 = man.generateNonce(2, 8);
+	const nonceId2 = man.getNonceId(nonce2);
+	// different receiver
+	const nonce3 = man.generateNonce(3, 8);
+	const nonceId3 = man.getNonceId(nonce3);
 
-		it("and all other nonces that were created for the same receiver", () => {
-			const man = new SecurityManager(options);
+	man.deleteAllNoncesForReceiver(2);
+	t.expect(man.getNonce(nonceId1)).toBeUndefined();
+	t.expect(man.hasNonce(nonceId1)).toBe(false);
+	t.expect(man.getNonce(nonceId2)).toBeUndefined();
+	t.expect(man.hasNonce(nonceId2)).toBe(false);
+	t.expect(man.getNonce(nonceId3)).toBeDefined();
+	t.expect(man.hasNonce(nonceId3)).toBe(true);
+});
 
-			const nonce1 = man.generateNonce(2, 8);
-			const nonceId1 = man.getNonceId(nonce1);
-			const nonce2 = man.generateNonce(2, 8);
-			const nonceId2 = man.getNonceId(nonce2);
+test("getFreeNonce() -> should reserve the nonce", (t) => {
+	const man = new SecurityManager(options);
+	const nonce = randomBytes(8);
+	nonce[0] = 1;
+	man.setNonce(
+		{
+			issuer: 2,
+			nonceId: 1,
+		},
+		{ nonce, receiver: options.ownNodeId },
+	);
+	t.expect(man.getFreeNonce(2)).toStrictEqual(nonce);
+	t.expect(man.getFreeNonce(2)).toBeUndefined();
+});
 
-			man.deleteNonce(nonceId1);
-			expect(man.getNonce(nonceId1)).toBeUndefined();
-			expect(man.hasNonce(nonceId1)).toBeFalse();
-			expect(man.getNonce(nonceId2)).toBeUndefined();
-			expect(man.hasNonce(nonceId2)).toBeFalse();
-		});
-	});
+test("nonces should be stored separately for each node", (t) => {
+	const man = new SecurityManager(options);
 
-	describe("deleteAllNoncesForReceiver", () => {
-		it("should only delete the nonces for the given receiver", () => {
-			const man = new SecurityManager(options);
+	const nonce1 = man.generateNonce(3, 8);
+	const nonceId1 = man.getNonceId(nonce1);
+	// Create a nonce with the same nonceId but with another issuer
+	const nonce2 = randomBytes(8);
+	nonce2[0] = nonceId1;
 
-			const nonce1 = man.generateNonce(2, 8);
-			const nonceId1 = man.getNonceId(nonce1);
-			const nonce2 = man.generateNonce(2, 8);
-			const nonceId2 = man.getNonceId(nonce2);
-			// different receiver
-			const nonce3 = man.generateNonce(3, 8);
-			const nonceId3 = man.getNonceId(nonce3);
+	const id2 = { issuer: 4, nonceId: nonceId1 };
+	t.expect(man.hasNonce(id2)).toBe(false);
+	t.expect(man.getNonce(id2)).toBeUndefined();
 
-			man.deleteAllNoncesForReceiver(2);
-			expect(man.getNonce(nonceId1)).toBeUndefined();
-			expect(man.hasNonce(nonceId1)).toBeFalse();
-			expect(man.getNonce(nonceId2)).toBeUndefined();
-			expect(man.hasNonce(nonceId2)).toBeFalse();
-			expect(man.getNonce(nonceId3)).not.toBeUndefined();
-			expect(man.hasNonce(nonceId3)).not.toBeFalse();
-		});
-	});
-
-	describe("getFreeNonce", () => {
-		it("should reserve the nonce", () => {
-			const man = new SecurityManager(options);
-			const nonce: Buffer = randomBytes(8);
-			nonce[0] = 1;
-			man.setNonce(
-				{
-					issuer: 2,
-					nonceId: 1,
-				},
-				{ nonce, receiver: options.ownNodeId },
-			);
-			expect(man.getFreeNonce(2)).toEqual(nonce);
-			expect(man.getFreeNonce(2)).toBeUndefined();
-		});
-	});
-
-	it("nonces should be stored separately for each node", () => {
-		const man = new SecurityManager(options);
-
-		const nonce1 = man.generateNonce(3, 8);
-		const nonceId1 = man.getNonceId(nonce1);
-		// Create a nonce with the same nonceId but with another issuer
-		const nonce2: Buffer = randomBytes(8);
-		nonce2[0] = nonceId1;
-
-		const id2 = { issuer: 4, nonceId: nonceId1 };
-		expect(man.hasNonce(id2)).toBeFalse();
-		expect(man.getNonce(id2)).toBeUndefined();
-
-		man.setNonce(id2, { nonce: nonce2, receiver: 1 });
-		expect(man.hasNonce(id2)).toBeTrue();
-		expect(man.getNonce(id2)).toEqual(nonce2);
-	});
+	man.setNonce(id2, { nonce: nonce2, receiver: 1 });
+	t.expect(man.hasNonce(id2)).toBe(true);
+	t.expect(man.getNonce(id2)).toStrictEqual(nonce2);
 });

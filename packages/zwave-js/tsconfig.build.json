@@ -3,9 +3,19 @@
 	"extends": "./tsconfig.json",
 	"compilerOptions": {
 		"rootDir": "src",
-		"outDir": "build"
+		"outDir": "build/esm",
+		"typeRoots": [
+			"src/lib/@types",
+			"node_modules/@types",
+			"../../node_modules/@types"
+		],
+		// Do not use the @@dev export for compiling
+		"customConditions": []
 	},
 	"references": [
+		{
+			"path": "../cc/tsconfig.build.json"
+		},
 		{
 			"path": "../config/tsconfig.build.json"
 		},
@@ -13,10 +23,25 @@
 			"path": "../core/tsconfig.build.json"
 		},
 		{
+			"path": "../host/tsconfig.build.json"
+		},
+		{
+			"path": "../nvmedit/tsconfig.build.json"
+		},
+		{
 			"path": "../serial/tsconfig.build.json"
 		},
 		{
 			"path": "../shared/tsconfig.build.json"
+		},
+		{
+			"path": "../testing/tsconfig.build.json"
+		},
+		{
+			"path": "../maintenance/tsconfig.build.json"
+		},
+		{
+			"path": "../transformers/tsconfig.build.json"
 		}
 	],
 	"include": ["src/**/*.ts"],

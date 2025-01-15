@@ -30,8 +30,6 @@
 			"#": "1",
 			"label": "Switch All",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 255,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -54,5 +52,9 @@
 				}
 			]
 		}
-	]
+	],
+	"compat": {
+		// The device only sends Binary Switch Reports as broadcast (not routed) and Basic Sets
+		"mapBasicSet": "auto"
+	}
 }

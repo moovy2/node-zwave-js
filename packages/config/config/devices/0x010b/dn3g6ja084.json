@@ -20,10 +20,7 @@
 			"label": "Enable Switch",
 			"description": "Enable switch of \"alarm notification\" report",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

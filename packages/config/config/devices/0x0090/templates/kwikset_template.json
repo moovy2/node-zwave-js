@@ -227,17 +227,19 @@
 		"label": "SKU Number (First 4 Bytes)",
 		"valueSize": 4,
 		"minValue": 0,
-		"maxValue": 0,
+		"maxValue": 4294967295,
 		"defaultValue": 0,
-		"unsigned": true
+		"unsigned": true,
+		"readOnly": true
 	},
 	"dipswitch_sku_lastfour": {
 		"label": "SKU Number (Last 4 Bytes)",
 		"valueSize": 4,
 		"minValue": 0,
-		"maxValue": 0,
+		"maxValue": 4294967295,
 		"defaultValue": 0,
-		"unsigned": true
+		"unsigned": true,
+		"readOnly": true
 	},
 	"reset": {
 		"label": "Reset to Default",
@@ -388,11 +390,28 @@
 	},
 	"alarm_map_low_battery": {
 		"from": {
+			// Low battery <= 4.8 V
 			"alarmType": 167
 		},
 		"to": {
 			"notificationType": 8, // Power Management
-			"notificationEvent": 10 // Replace battery soon
+			"notificationEvent": 14, // Charge battery soon
+			"eventParameters": {
+				"batteryLevel": "alarmLevel"
+			}
+		}
+	},
+	"alarm_map_critical_battery": {
+		"from": {
+			// Low battery <= 4.5 V
+			"alarmType": 168
+		},
+		"to": {
+			"notificationType": 8, // Power Management
+			"notificationEvent": 15, // Charge battery now
+			"eventParameters": {
+				"batteryLevel": "alarmLevel"
+			}
 		}
 	}
 }

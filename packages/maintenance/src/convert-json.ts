@@ -3,11 +3,16 @@
  * Execute with `yarn ts packages/maintenance/src/convert-json.ts`
  */
 
+import { fs } from "@zwave-js/core/bindings/fs/node";
 import { enumFilesRecursive } from "@zwave-js/shared";
-import fs from "fs-extra";
-import path from "path";
+import esMain from "es-main";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Project, ts } from "ts-morph";
-import { formatWithPrettier } from "./prettier";
+import { formatWithDprint } from "./dprint.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function main() {
 	const project = new Project();
@@ -15,16 +20,17 @@ async function main() {
 	const devicesDir = path.join(__dirname, "../../config/config/devices");
 
 	const configFiles = await enumFilesRecursive(
+		fs,
 		devicesDir,
 		(file) =>
-			file.endsWith(".json") &&
-			!file.endsWith("index.json") &&
-			!file.includes("/templates/") &&
-			!file.includes("\\templates\\"),
+			file.endsWith(".json")
+			&& !file.endsWith("index.json")
+			&& !file.includes("/templates/")
+			&& !file.includes("\\templates\\"),
 	);
 
 	for (const filename of configFiles) {
-		const content = await fs.readFile(filename, "utf8");
+		const content = await fsp.readFile(filename, "utf8");
 		const sourceFile = project.createSourceFile(filename, content, {
 			overwrite: true,
 			scriptKind: ts.ScriptKind.JSON,
@@ -39,6 +45,7 @@ async function main() {
 
 		root.transform((traversal) => {
 			const node = traversal.currentNode;
+			const f = traversal.factory;
 
 			// Only look for the paramInformation property
 			if (node === root.compilerNode) return traversal.visitChildren();
@@ -48,16 +55,17 @@ async function main() {
 			if (!ts.isObjectLiteralExpression(node.initializer)) return node;
 
 			const children = node.initializer.properties.flatMap((prop) => {
-				if (!ts.isPropertyAssignment(prop))
+				if (!ts.isPropertyAssignment(prop)) {
 					throw new Error("Can't touch this!");
+				}
 				// We can have arrays or objects as params
 				if (ts.isObjectLiteralExpression(prop.initializer)) {
 					// Objects are simple, we just add the param no. there
 					return [
-						ts.createObjectLiteral([
-							ts.createPropertyAssignment(
+						f.createObjectLiteralExpression([
+							f.createPropertyAssignment(
 								`"#"`,
-								ts.createStringLiteral(
+								f.createStringLiteral(
 									prop.name.getText().slice(1, -1),
 								),
 							),
@@ -67,13 +75,14 @@ async function main() {
 				} else if (ts.isArrayLiteralExpression(prop.initializer)) {
 					// Arrays need to be unwrapped
 					return prop.initializer.elements.map((item) => {
-						if (!ts.isObjectLiteralExpression(item))
+						if (!ts.isObjectLiteralExpression(item)) {
 							throw new Error("Can't touch this!");
+						}
 
-						return ts.createObjectLiteral([
-							ts.createPropertyAssignment(
+						return f.createObjectLiteralExpression([
+							f.createPropertyAssignment(
 								`"#"`,
-								ts.createStringLiteral(
+								f.createStringLiteral(
 									prop.name.getText().slice(1, -1),
 								),
 							),
@@ -85,21 +94,21 @@ async function main() {
 			});
 
 			didChange = true;
-			return ts.updatePropertyAssignment(
+			return f.updatePropertyAssignment(
 				node,
 				node.name,
-				ts.createArrayLiteral(children),
+				f.createArrayLiteralExpression(children),
 			);
 		});
 
 		if (didChange) {
 			let output = sourceFile.getFullText();
-			output = formatWithPrettier(filename, output);
-			await fs.writeFile(filename, output, "utf8");
+			output = formatWithDprint(filename, output);
+			await fsp.writeFile(filename, output, "utf8");
 		}
 	}
 }
 
-if (require.main === module) {
+if (esMain(import.meta)) {
 	void main();
 }

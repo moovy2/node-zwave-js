@@ -10,7 +10,7 @@
 async set(
 	weekday: Weekday,
 	switchPoints: Switchpoint[],
-): Promise<void>;
+): Promise<SupervisionResult | undefined>;
 ```
 
 ### `get`
@@ -18,13 +18,13 @@ async set(
 ```ts
 async get(
 	weekday: Weekday,
-): Promise<readonly Switchpoint[] | undefined>;
+): Promise<MaybeNotKnown<readonly Switchpoint[]>>;
 ```
 
 ### `getChangeCounter`
 
 ```ts
-async getChangeCounter(): Promise<number | undefined>;
+async getChangeCounter(): Promise<MaybeNotKnown<number>>;
 ```
 
 ### `getOverride`
@@ -39,5 +39,63 @@ async getOverride(): Promise<{ type: ScheduleOverrideType; state: SetbackState; 
 async setOverride(
 	type: ScheduleOverrideType,
 	state: SetbackState,
-): Promise<void>;
+): Promise<SupervisionResult | undefined>;
 ```
+
+## Climate Control Schedule CC values
+
+### `overrideState`
+
+```ts
+{
+	commandClass: CommandClasses["Climate Control Schedule"],
+	endpoint: number,
+	property: "overrideState",
+}
+```
+
+- **label:** Override state
+- **min. CC version:** 1
+- **readable:** true
+- **writeable:** true
+- **stateful:** true
+- **secret:** false
+- **value type:** `"number"`
+- **min. value:** -12.8
+
+### `overrideType`
+
+```ts
+{
+	commandClass: CommandClasses["Climate Control Schedule"],
+	endpoint: number,
+	property: "overrideType",
+}
+```
+
+- **label:** Override type
+- **min. CC version:** 1
+- **readable:** true
+- **writeable:** true
+- **stateful:** true
+- **secret:** false
+- **value type:** `"number"`
+
+### `schedule(weekday: Weekday)`
+
+```ts
+{
+	commandClass: CommandClasses["Climate Control Schedule"],
+	endpoint: number,
+	property: "schedule",
+	propertyKey: Weekday,
+}
+```
+
+- **label:** `Schedule (${string})`
+- **min. CC version:** 1
+- **readable:** true
+- **writeable:** true
+- **stateful:** true
+- **secret:** false
+- **value type:** `"any"`

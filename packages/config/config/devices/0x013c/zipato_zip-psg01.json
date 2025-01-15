@@ -18,17 +18,15 @@
 			"#": "7",
 			"label": "Customer Function",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 16,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Notification Type, Using Notification Report.",
+					"label": "Notification type, using Notification Report",
 					"value": 0
 				},
 				{
-					"label": "Notification Type, Using Sensor Binary Report.",
+					"label": "Notification type, using Binary Sensor Report",
 					"value": 16
 				}
 			]

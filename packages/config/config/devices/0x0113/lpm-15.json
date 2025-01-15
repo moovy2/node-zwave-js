@@ -2,7 +2,7 @@
 	"manufacturer": "Evolve",
 	"manufacturerId": "0x0113",
 	"label": "LPM-15",
-	"description": "Appliance module",
+	"description": "Appliance Module",
 	"devices": [
 		{
 			"productType": "0x5250",
@@ -19,18 +19,15 @@
 			"label": "Night Light",
 			"description": "Defines the behavior of the blue LED; default has LED on when switch is off.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "LED on when switch is OFF",
+					"label": "LED on when switch is off",
 					"value": 0
 				},
 				{
-					"label": "LED on when switch is ON",
+					"label": "LED on when switch is on",
 					"value": 1
 				},
 				{
@@ -44,10 +41,7 @@
 			"label": "Invert Switch",
 			"description": "Change the top of the switch to OFF and the bottom of the switch to ON.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -62,6 +56,6 @@
 		}
 	],
 	"compat": {
-		"treatBasicSetAsEvent": true
+		"mapBasicSet": "event"
 	}
 }

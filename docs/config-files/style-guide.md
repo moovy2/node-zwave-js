@@ -17,7 +17,7 @@ Our device files are parsed as JSON5 and may contain comments. Comments may (and
 	// ...
 	"compat": {
 		// The device is a Binary Sensor, but uses Basic Sets to report its status
-		"enableBasicSetMapping": true
+		"mapBasicSet": "auto"
 	}
 }
 ```
@@ -81,7 +81,7 @@ The primary reporting group (usually group 1 for Z-Wave Plus) **must** be called
 
 Shorten labels wherever possible. E.g. `Threshold at which to send a battery report` becomes `Battery Report Threshold`.
 
-Labels should be clear and concise. They should clearly explain what the parameter does while avoiding unnnecessary technical jargon:
+Labels should be clear and concise. They should clearly explain what the parameter does while avoiding unnecessary technical jargon:
 
 ?> Labels should be **Title Case**.
 
@@ -233,7 +233,30 @@ or
 
 ### Special Note: Enable/Disable
 
-Whenever a parameter only allows two options, formulate the label and/or description in a way that allows the options to be `Enable/Disable` if possible. Ultimately some UIs may choose to present these parameters using a simple switch. Avoid `Yes/No`, `True/False`, etc.
+Whenever a parameter only allows two options, formulate the label and/or description in a way that allows the options to be `Enable/Disable` if possible. Ultimately some UIs may choose to present these parameters using a simple switch. Avoid `Yes/No`, `True/False`, etc. Avoid using `Enable` or `Disable` in the label, eg:
+
+```diff
+	{
+		"#": "8",
++		"label": "Auto-Off (Left Outlet)",
+-		"label": "Enable Auto-Off (Left Outlet)",
+		"valueSize": 1,
+		"minValue": 0,
+		"maxValue": 1,
+		"defaultValue": 0,
+		"allowManualEntry": false,
+		"options": [
+			{
+				"label": "Disable",
+				"value": 0
+			},
+			{
+				"label": "Enable",
+				"value": 1
+			}
+		]
+	},
+```
 
 ### Min/Max Values
 
@@ -245,34 +268,34 @@ An exception is parameters that accept a single special value outside the normal
 
 Whenever possible, a unit should be defined for configuration parameters. Unit symbols should be used instead of full words where they are more common, e.g.:
 
--   `%` instead of `percent`/`percentage`/...
--   `°C` instead of `degrees Celsius`/...
--   `°F` instead of `Fahrenheit`/...
--   `W`/`V`/`A`/... instead of `watts`/`volts`/`Ampere`/...
+- `%` instead of `percent`/`percentage`/...
+- `°C` instead of `degrees Celsius`/...
+- `°F` instead of `Fahrenheit`/...
+- `W`/`V`/`A`/... instead of `watts`/`volts`/`Ampere`/...
 
 Time units (`seconds`, `minutes`, `hours`) should not be abbreviated. `ms` for `milliseconds` is an exception to keep the units short.
 
 Some devices use multiples of the base units - these should be represented as a decimal number in front of the base unit, e.g.
 
--   `0.01 V`
--   `10 seconds`
--   `100 ms`
+- `0.01 V`
+- `10 seconds`
+- `100 ms`
 
 ```json
-	"1": {
-		"label": "Countdown Timer",
-		"valueSize": 1,
-		"unit": "minutes",
-		"minValue": 0,
-		"maxValue": 254,
-		"defaultValue": 0,
-		"unsigned": true
-	}
+"1": {
+	"label": "Countdown Timer",
+	"valueSize": 1,
+	"unit": "minutes",
+	"minValue": 0,
+	"maxValue": 254,
+	"defaultValue": 0,
+	"unsigned": true
+}
 ```
 
 > [!NOTE] The range 0-99 should **not** be defined as a percent. Why?
 >
-> Well, it is a little unfortunate, but the Z-Wave standard defines most multilevel values as 0-99. We don't know why this range was chosen when 0-100 was an option, but we're stuck with it now.  
+> Well, it is a little unfortunate, but the Z-Wave standard defines most multilevel values as 0-99. We don't know why this range was chosen when 0-100 was an option, but we're stuck with it now.\
 > Although it is very close, this is not the same as 0% - 100%, so we're not going to define the range 0-99 as percentages. Granted, it is a little subjective, but the maintainer does not like mathematical inaccuracies 🤓. Just roll with it.
 
 ### Read/Write Only

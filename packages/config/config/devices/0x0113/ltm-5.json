@@ -27,10 +27,7 @@
 			"label": "Ignore Start Level (Transmitting)",
 			"description": "Dimmers controlled by this switch will start dimming from their current level.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -48,10 +45,7 @@
 			"label": "Night Light",
 			"description": "In night-light mode the LED on the switch will turn ON when the switch is turned OFF.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -69,10 +63,7 @@
 			"label": "Invert Switch",
 			"description": "Change the top of the switch to OFF and the bottom of the switch to ON.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -90,10 +81,7 @@
 			"label": "Ignore Start-Level (Receiving)",
 			"description": "The dimmer will start dimming from its current level.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -111,22 +99,19 @@
 			"label": "Transmission Indication",
 			"description": "Flicker LED while transmitting.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 2,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "No Flicker",
+					"label": "No flicker",
 					"value": 0
 				},
 				{
-					"label": "Flicker Whole Transmission",
+					"label": "Flicker whole transmission",
 					"value": 1
 				},
 				{
-					"label": "Flicker 1 Second",
+					"label": "Flicker 1 second",
 					"value": 2
 				}
 			]
@@ -146,10 +131,7 @@
 			"label": "Poll First Node",
 			"description": "Poll only the first node in Group 1.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

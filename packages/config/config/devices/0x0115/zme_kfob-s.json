@@ -20,12 +20,9 @@
 	"paramInformation": [
 		{
 			"#": "1",
-			"label": "Button 1 and 3 pair mode",
+			"label": "Button 1 and 3 Pair Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -44,12 +41,9 @@
 		},
 		{
 			"#": "2",
-			"label": "Button 2 and 4 pair mode",
+			"label": "Button 2 and 4 Pair Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -70,10 +64,7 @@
 			"#": "11",
 			"label": "Command to Control Group A",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 8,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -81,23 +72,23 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off and Dim",
+					"label": "Switch on/off and dim",
 					"value": 1
 				},
 				{
-					"label": "Switch On/Off only (send Basic Set)",
+					"label": "Switch on/off only (Send Basic Set)",
 					"value": 2
 				},
 				{
-					"label": "Switch All",
+					"label": "Switch all",
 					"value": 3
 				},
 				{
-					"label": "Send Scenes",
+					"label": "Send scenes",
 					"value": 4
 				},
 				{
-					"label": "Send Preconfigured Scenes",
+					"label": "Send preconfigured scenes",
 					"value": 5
 				},
 				{
@@ -105,11 +96,11 @@
 					"value": 6
 				},
 				{
-					"label": "Control DoorLock",
+					"label": "Control doorLock",
 					"value": 7
 				},
 				{
-					"label": "Central Scene to Gateway",
+					"label": "Central Scene to gateway",
 					"value": 8
 				}
 			]
@@ -118,10 +109,7 @@
 			"#": "12",
 			"label": "Command to Control Group B",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 8,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -129,23 +117,23 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off and Dim",
+					"label": "Switch on/off and dim",
 					"value": 1
 				},
 				{
-					"label": "Switch On/Off only (send Basic Set)",
+					"label": "Switch on/off only (Send Basic Set)",
 					"value": 2
 				},
 				{
-					"label": "Switch All",
+					"label": "Switch all",
 					"value": 3
 				},
 				{
-					"label": "Send Scenes",
+					"label": "Send scenes",
 					"value": 4
 				},
 				{
-					"label": "Send Preconfigured Scenes",
+					"label": "Send preconfigured scenes",
 					"value": 5
 				},
 				{
@@ -153,11 +141,11 @@
 					"value": 6
 				},
 				{
-					"label": "Control DoorLock",
+					"label": "Control doorLock",
 					"value": 7
 				},
 				{
-					"label": "Central Scene to Gateway",
+					"label": "Central Scene to gateway",
 					"value": 8
 				}
 			]
@@ -166,10 +154,7 @@
 			"#": "13",
 			"label": "Command to Control Group C",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 8,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -177,23 +162,23 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off and Dim",
+					"label": "Switch on/off and dim",
 					"value": 1
 				},
 				{
-					"label": "Switch On/Off only (send Basic Set)",
+					"label": "Switch on/off only (Send Basic Set)",
 					"value": 2
 				},
 				{
-					"label": "Switch All",
+					"label": "Switch all",
 					"value": 3
 				},
 				{
-					"label": "Send Scenes",
+					"label": "Send scenes",
 					"value": 4
 				},
 				{
-					"label": "Send Preconfigured Scenes",
+					"label": "Send preconfigured scenes",
 					"value": 5
 				},
 				{
@@ -201,11 +186,11 @@
 					"value": 6
 				},
 				{
-					"label": "Control DoorLock",
+					"label": "Control doorLock",
 					"value": 7
 				},
 				{
-					"label": "Central Scene to Gateway",
+					"label": "Central Scene to gateway",
 					"value": 8
 				}
 			]
@@ -214,10 +199,7 @@
 			"#": "14",
 			"label": "Command to Control Group D",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 8,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -225,23 +207,23 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off and Dim",
+					"label": "Switch on/off and dim",
 					"value": 1
 				},
 				{
-					"label": "Switch On/Off only (send Basic Set)",
+					"label": "Switch on/off only (Send Basic Set)",
 					"value": 2
 				},
 				{
-					"label": "Switch All",
+					"label": "Switch all",
 					"value": 3
 				},
 				{
-					"label": "Send Scenes",
+					"label": "Send scenes",
 					"value": 4
 				},
 				{
-					"label": "Send Preconfigured Scenes",
+					"label": "Send preconfigured scenes",
 					"value": 5
 				},
 				{
@@ -249,21 +231,19 @@
 					"value": 6
 				},
 				{
-					"label": "Control DoorLock",
+					"label": "Control doorLock",
 					"value": 7
 				},
 				{
-					"label": "Central Scene to Gateway",
+					"label": "Central Scene to gateway",
 					"value": 8
 				}
 			]
 		},
 		{
 			"#": "21",
-			"label": "Send the following Switch All commands",
+			"label": "Send the Following Switch All Commands",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -284,12 +264,9 @@
 		},
 		{
 			"#": "22",
-			"label": "Invert buttons",
+			"label": "Invert Buttons",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -304,12 +281,9 @@
 		},
 		{
 			"#": "25",
-			"label": "Blocks wakeup even when wakeup interval is set",
+			"label": "Blocks Wakeup Even When Wakeup Interval Is Set",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -324,12 +298,9 @@
 		},
 		{
 			"#": "30",
-			"label": "Send unsolicited Battery Report on Wake Up",
+			"label": "Send Unsolicited Battery Report on Wake Up",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

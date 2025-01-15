@@ -2,7 +2,7 @@
 	"manufacturer": "Z-Wave.Me",
 	"manufacturerId": "0x0115",
 	"label": "KFOB",
-	"description": "4 button keyfob",
+	"description": "4 Button Keyfob",
 	"devices": [
 		{
 			"productType": "0x0100",
@@ -48,12 +48,9 @@
 	"paramInformation": [
 		{
 			"#": "1",
-			"label": "Button 1 and 3 pair mode",
+			"label": "Button 1 and 3 Pair Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -72,12 +69,9 @@
 		},
 		{
 			"#": "2",
-			"label": "Button 2 and 4 pair mode",
+			"label": "Button 2 and 4 Pair Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -96,12 +90,9 @@
 		},
 		{
 			"#": "11",
-			"label": "Action on group A",
+			"label": "Action on Group A",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -109,11 +100,11 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off and Dim",
+					"label": "Switch on/off and dim",
 					"value": 1
 				},
 				{
-					"label": "Switch On/Off only (send Basic Set)",
+					"label": "Switch on/off only (Send Basic Set)",
 					"value": 2
 				},
 				{
@@ -121,11 +112,11 @@
 					"value": 3
 				},
 				{
-					"label": "Send Scenes",
+					"label": "Send scenes",
 					"value": 4
 				},
 				{
-					"label": "Send Preconfigured Scenes",
+					"label": "Send preconfigured scenes",
 					"value": 5
 				},
 				{
@@ -136,12 +127,9 @@
 		},
 		{
 			"#": "12",
-			"label": "Action on group B",
+			"label": "Action on Group B",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -149,11 +137,11 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off and Dim",
+					"label": "Switch on/off and dim",
 					"value": 1
 				},
 				{
-					"label": "Switch On/Off only (send Basic Set)",
+					"label": "Switch on/off only (Send Basic Set)",
 					"value": 2
 				},
 				{
@@ -161,11 +149,11 @@
 					"value": 3
 				},
 				{
-					"label": "Send Scenes",
+					"label": "Send scenes",
 					"value": 4
 				},
 				{
-					"label": "Send Preconfigured Scenes",
+					"label": "Send preconfigured scenes",
 					"value": 5
 				},
 				{
@@ -176,12 +164,9 @@
 		},
 		{
 			"#": "13",
-			"label": "Action on group C",
+			"label": "Action on Group C",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -189,11 +174,11 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off and Dim",
+					"label": "Switch on/off and dim",
 					"value": 1
 				},
 				{
-					"label": "Switch On/Off only (send Basic Set)",
+					"label": "Switch on/off only (Send Basic Set)",
 					"value": 2
 				},
 				{
@@ -201,11 +186,11 @@
 					"value": 3
 				},
 				{
-					"label": "Send Scenes",
+					"label": "Send scenes",
 					"value": 4
 				},
 				{
-					"label": "Send Preconfigured Scenes",
+					"label": "Send preconfigured scenes",
 					"value": 5
 				},
 				{
@@ -216,12 +201,9 @@
 		},
 		{
 			"#": "14",
-			"label": "Action on group D",
+			"label": "Action on Group D",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -229,11 +211,11 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off and Dim",
+					"label": "Switch on/off and dim",
 					"value": 1
 				},
 				{
-					"label": "Switch On/Off only (send Basic Set)",
+					"label": "Switch on/off only (Send Basic Set)",
 					"value": 2
 				},
 				{
@@ -241,11 +223,11 @@
 					"value": 3
 				},
 				{
-					"label": "Send Scenes",
+					"label": "Send scenes",
 					"value": 4
 				},
 				{
-					"label": "Send Preconfigured Scenes",
+					"label": "Send preconfigured scenes",
 					"value": 5
 				},
 				{
@@ -256,8 +238,8 @@
 		},
 		{
 			"#": "20",
-			"label": "Typical click timeout",
-			"description": "Typical time used to differenciate click, hold and double clicks in 10ms units",
+			"label": "Typical Click Timeout",
+			"description": "Typical time used to differentiate click, hold and double clicks in 10ms units",
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 255,
@@ -266,10 +248,8 @@
 		},
 		{
 			"#": "21",
-			"label": "Send the following Switch All commands",
+			"label": "Send the Following Switch All Commands",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 255,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -279,23 +259,20 @@
 					"value": 255
 				},
 				{
-					"label": "NO (Normal Open)",
+					"label": "NO (Normal open)",
 					"value": 1
 				},
 				{
-					"label": "NC (Normal Close)",
+					"label": "NC (Normal close)",
 					"value": 2
 				}
 			]
 		},
 		{
 			"#": "22",
-			"label": "Invert buttons",
+			"label": "Invert Buttons",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -310,12 +287,9 @@
 		},
 		{
 			"#": "24",
-			"label": "LED confirmation mode",
+			"label": "LED Confirmation Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 2,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -334,12 +308,9 @@
 		},
 		{
 			"#": "30",
-			"label": "Send unsolicited Battery Report on Wake Up",
+			"label": "Send Unsolicited Battery Report on Wake Up",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

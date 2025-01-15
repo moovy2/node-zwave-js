@@ -2,7 +2,7 @@
 	"manufacturer": "McoHome Technology Co., Ltd.",
 	"manufacturerId": "0x015f",
 	"label": "MH-S212",
-	"description": "Mini Combo Switch Two-load",
+	"description": "Mini Combo Switch Two-Load",
 	"devices": [
 		{
 			"productType": "0x2121",
@@ -33,17 +33,15 @@
 			"#": "2",
 			"label": "External Switch Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Momentary Buttons",
+					"label": "Momentary buttons",
 					"value": 0
 				},
 				{
-					"label": "2-State Switches",
+					"label": "2-State switches",
 					"value": 1
 				}
 			]
@@ -52,17 +50,15 @@
 			"#": "3",
 			"label": "2-State Switches",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Toggle Switch without specified on/off position",
+					"label": "Toggle switch without specified on/off position",
 					"value": 0
 				},
 				{
-					"label": "Toggle Switch with specified on/off position",
+					"label": "Toggle switch with specified on/off position",
 					"value": 1
 				}
 			]
@@ -71,8 +67,6 @@
 			"#": "4",
 			"label": "Switch 1 - Operation Report to Association Group 1",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -94,8 +88,6 @@
 			"#": "5",
 			"label": "Switch 1 - Off Timer",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -112,8 +104,8 @@
 		{
 			"#": "6",
 			"label": "Switch 1 - Off Timer Interval",
-			"unit": "100ms",
 			"valueSize": 2,
+			"unit": "100ms",
 			"minValue": 0,
 			"maxValue": 32767,
 			"defaultValue": 0
@@ -122,17 +114,15 @@
 			"#": "7",
 			"label": "Switch 1 - Operation Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Switch Immediately",
+					"label": "Switch immediately",
 					"value": 0
 				},
 				{
-					"label": "Zero Crossing Switch",
+					"label": "Zero crossing switch",
 					"value": 1
 				}
 			]
@@ -141,8 +131,6 @@
 			"#": "8",
 			"label": "Switch 2 - Operation Report to Association Group 2",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -164,10 +152,7 @@
 			"#": "255",
 			"label": "Factory Reset",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 85,
 			"defaultValue": 0,
-			"unsigned": true,
 			"writeOnly": true,
 			"allowManualEntry": false,
 			"options": [
@@ -176,7 +161,7 @@
 					"value": 0
 				},
 				{
-					"label": "Factory Reset",
+					"label": "Factory reset",
 					"value": 85
 				}
 			]

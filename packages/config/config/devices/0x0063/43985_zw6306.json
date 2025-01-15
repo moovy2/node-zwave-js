@@ -1,8 +1,8 @@
 {
-	"manufacturer": "GE/Jasco",
+	"manufacturer": "Jasco",
 	"manufacturerId": "0x0063",
 	"label": "43985 / ZW6306",
-	"description": "Smart Flood/Freeze Sensor",
+	"description": "Flood+Freeze Sensor, 500S",
 	"devices": [
 		{
 			"productType": "0x4953",
@@ -17,53 +17,32 @@
 	"paramInformation": [
 		{
 			"#": "19",
-			"label": "Alternate Exclusion",
-			"description": "When enabled, press the button three times quickly when prompted to remove device",
-			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Press the button once when prompted to remove device",
-					"value": 0
-				},
-				{
-					"label": "Press the button three times quickly when prompted to remove device",
-					"value": 1
-				}
-			]
+			"$import": "templates/jasco_template.json#alternate_exclusion_h"
 		},
 		{
 			"#": "21",
 			"label": "Reverse Detection of Wet/Dry",
 			"valueSize": 2,
-			"minValue": 1,
-			"maxValue": 2,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Normal detection(water detected)",
+					"label": "Normal detection(Water detected)",
 					"value": 1
 				},
 				{
-					"label": "Reverse detection(dry detected)",
+					"label": "Reverse detection(Dry detected)",
 					"value": 2
 				}
 			]
 		},
 		{
 			"#": "22",
-			"label": "Temperature Report Interval (when Battery Operated)",
+			"label": "Temperature Report Interval (When Battery Operated)",
 			"valueSize": 2,
 			"minValue": 5,
 			"maxValue": 1440,
 			"defaultValue": 60,
-			"unsigned": true,
 			"options": [
 				{
 					"label": "Hourly",
@@ -90,7 +69,6 @@
 			"minValue": 5,
 			"maxValue": 1440,
 			"defaultValue": 1440,
-			"unsigned": true,
 			"options": [
 				{
 					"label": "5-60 minutes",
@@ -130,25 +108,21 @@
 		},
 		{
 			"#": "52",
-			"label": "Temperature Report Interval (when Usb Operated)",
+			"label": "Temperature Report Interval (When USB Operated)",
 			"valueSize": 2,
 			"minValue": 5,
 			"maxValue": 360,
-			"defaultValue": 60,
-			"unsigned": true
+			"defaultValue": 60
 		},
 		{
 			"#": "53",
 			"label": "Tamper Alert Configuration",
 			"valueSize": 2,
-			"minValue": 1,
-			"maxValue": 5,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "(default) - red LED continuous flash and beeps",
+					"label": "Red LED continuous flash and beeps",
 					"value": 1
 				},
 				{
@@ -164,7 +138,7 @@
 					"value": 4
 				},
 				{
-					"label": "No led, no beeps",
+					"label": "No LED, no beeps",
 					"value": 5
 				}
 			]

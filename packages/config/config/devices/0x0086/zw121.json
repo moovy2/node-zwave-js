@@ -38,10 +38,7 @@
 			"#": "32",
 			"label": "Report Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -79,7 +76,7 @@
 		},
 		{
 			"#": "35",
-			"$import": "~/templates/master_template.json#base_0-1_nounit",
+			"$import": "~/templates/master_template.json#base_options_nounit",
 			"label": "Cold/Warm White Display Mode",
 			"defaultValue": 1,
 			"options": [
@@ -97,15 +94,12 @@
 			"#": "36",
 			"label": "Reboot/Save/Exit Colorful Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
-			"unsigned": true,
 			"writeOnly": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Un-reboot colorful mode",
+					"label": "Un-Reboot colorful mode",
 					"value": 0
 				},
 				{
@@ -126,9 +120,8 @@
 			"#": "37[0xe0]",
 			"label": "Time Base of Color Change Speed",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -153,6 +146,7 @@
 			"minValue": 0,
 			"maxValue": 31,
 			"defaultValue": 0,
+			"unsigned": true,
 			"options": [
 				{
 					"label": "Constant speed",
@@ -171,6 +165,7 @@
 			"description": "Allowable range: 1-254",
 			"valueSize": 4,
 			"defaultValue": 0,
+			"unsigned": true,
 			"options": [
 				{
 					"label": "Unlimited",
@@ -188,6 +183,7 @@
 			"label": "Brightness",
 			"description": "Allowable range: 1-99",
 			"valueSize": 4,
+			"unsigned": true,
 			"options": [
 				{
 					"label": "Inactive",
@@ -199,9 +195,8 @@
 			"#": "37[0x07000000]",
 			"label": "Color Display Cycle",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 4,
 			"defaultValue": 0,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -217,7 +212,7 @@
 					"value": 2
 				},
 				{
-					"label": "Random Mode",
+					"label": "Random mode",
 					"value": 3
 				},
 				{
@@ -230,9 +225,8 @@
 			"#": "37[0x38000000]",
 			"label": "Color Change Speed Option",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 0,
 			"defaultValue": 0,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -245,17 +239,16 @@
 			"#": "37[0xc0000000]",
 			"label": "Color Transition Style",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Smooth Color Transition",
+					"label": "Smooth color transition",
 					"value": 0
 				},
 				{
-					"label": "Fast/Direct Color Transition",
+					"label": "Fast/Direct color transition",
 					"value": 1
 				}
 			]
@@ -314,10 +307,7 @@
 			"#": "40",
 			"label": "Colorful Mode Configuration",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 5,
 			"defaultValue": 1,
-			"unsigned": true,
 			"writeOnly": true,
 			"allowManualEntry": false,
 			"options": [
@@ -330,15 +320,15 @@
 					"value": 2
 				},
 				{
-					"label": "Fade out and fade in (red)",
+					"label": "Fade out and fade in (Red)",
 					"value": 3
 				},
 				{
-					"label": "Fade out and fade in (green)",
+					"label": "Fade out and fade in (Green)",
 					"value": 4
 				},
 				{
-					"label": "Fade out and fade in (blue)",
+					"label": "Fade out and fade in (Blue)",
 					"value": 5
 				}
 			]
@@ -351,10 +341,7 @@
 			"#": "112",
 			"label": "Dimmer Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -366,7 +353,8 @@
 					"value": 1
 				},
 				{
-					"label": "(Parabolic + Index) / 2",
+					// eslint-disable-next-line @zwave-js/consistent-config-string-case
+					"label": "(Parabolic + index) / 2",
 					"value": 2
 				},
 				{

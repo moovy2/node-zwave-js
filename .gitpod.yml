@@ -1,36 +1,32 @@
 # Commands to start on workspace startup
+env:
+  # Avoids cross-link issues due to different filesystems between /home and /workspaces
+  YARN_GLOBAL_FOLDER: '.yarn/global'
+  YARN_CACHE_FOLDER: '.yarn/cache'
+  YARN_ENABLE_GLOBAL_CACHE: 'false'
+  # Avoids interactive prompt causing container creation to hang
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+
 tasks:
-  - before: |
-      # set env variables for this terminal
-      export YARN_CACHE_FOLDER=".yarn/cache"
-      export YARN_ENABLE_GLOBAL_CACHE="false"
-      # Persist the env variables for other terminals
-      echo "export YARN_CACHE_FOLDER=\".yarn/cache\"" >> ~/.bashrc
-      echo "export YARN_ENABLE_GLOBAL_CACHE=\"false\"" >> ~/.bashrc
-    init: |
-      yarn install
-      yarn build
+  - init: |
+      corepack enable
+      yarn
+      yarn bootstrap
     command: |
       bash .gitpod/setup-git.sh
       gp sync-done prepare
 
   - name: Print help
     openMode: split-right
-    before: |
-      # set env variables for this terminal
-      export YARN_CACHE_FOLDER=".yarn/cache"
-      export YARN_ENABLE_GLOBAL_CACHE="false"
     command: bash .gitpod/help.sh
 
 # Auto-install VSCode extensions
 vscode:
   extensions:
-    # - rebornix.project-snippets # disabled because not available
-    # - Orta.vscode-jest          # disabled because it is annoying on gitpod
+    - dprint.dprint
     - dbaeumer.vscode-eslint
-    - esbenp.prettier-vscode
     - EditorConfig.EditorConfig
-    - arcanis.vscode-zipfs
+    - zwave-js.config-editor
 
 # Configure prebuilds
 github:

@@ -34,10 +34,9 @@
 			"#": "200",
 			"label": "Partner ID",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 4,
 			"defaultValue": 0,
 			"allowManualEntry": false,
+			/* eslint-disable @zwave-js/consistent-config-string-case */
 			"options": [
 				{
 					"label": "Aeon Labs",
@@ -60,6 +59,7 @@
 					"value": 4
 				}
 			]
+			/* eslint-enable @zwave-js/consistent-config-string-case */
 		},
 		{
 			"#": "254",

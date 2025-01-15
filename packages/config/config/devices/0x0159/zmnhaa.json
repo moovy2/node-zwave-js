@@ -2,7 +2,7 @@
 	"manufacturer": "Qubino",
 	"manufacturerId": "0x0159",
 	"label": "ZMNHAA",
-	"description": "Flush 1 relay",
+	"description": "Flush 1 Relay",
 	"devices": [
 		{
 			"productType": "0x0002",
@@ -15,22 +15,19 @@
 	},
 	"associations": {
 		"1": {
-			"label": "basic on/off",
-			"description": "triggered at change of the output Q state and reflecting its state",
+			"label": "Basic on/off - output Q",
 			"maxNodes": 16
 		},
 		"2": {
-			"label": "basic on/off - input I2",
-			"description": "(triggered at change of the input I2 state and reflecting its state)",
+			"label": "Basic on/off - input I2",
 			"maxNodes": 16
 		},
 		"3": {
-			"label": "basic on/off - input I3",
-			"description": "ttriggered at change of the input I3 state and reflecting its state)",
+			"label": "Basic on/off - input I3",
 			"maxNodes": 16
 		},
 		"4": {
-			"label": "Controller Updates",
+			"label": "Lifeline",
 			"maxNodes": 1,
 			"isLifeline": true
 		}
@@ -38,95 +35,84 @@
 	"paramInformation": [
 		{
 			"#": "1",
-			"label": "Input 1 switch type",
+			"label": "Input 1 Switch Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "mono-stable switch type (push button)",
+					"label": "Mono-Stable switch type (Push button)",
 					"value": 0
 				},
 				{
-					"label": "bi-stable switch type",
+					"label": "Bi-Stable switch type",
 					"value": 1
 				}
 			]
 		},
 		{
 			"#": "2",
-			"label": "Input 2 contact type",
+			"label": "Input 2 Contact Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "NO (normaly open) input type",
+					"label": "NO (Normally open) input type",
 					"value": 0
 				},
 				{
-					"label": "NC (normaly close) input type",
+					"label": "NC (Normally close) input type",
 					"value": 1
 				}
 			]
 		},
 		{
 			"#": "3",
-			"label": "Input 3 contact type",
+			"label": "Input 3 Contact Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "NO (normaly open) input type",
+					"label": "NO (Normally open) input type",
 					"value": 0
 				},
 				{
-					"label": "NC (normaly close) input type",
+					"label": "NC (Normally close) input type",
 					"value": 1
 				}
 			]
 		},
 		{
 			"#": "10",
-			"label": "Activate / deactivate functions ALL ON/ALL OFF",
+			"label": "Activate / Deactivate Functions ALL ON/ALL OFF",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 255,
 			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "ALL ON is not active ALL OFF is not active",
+					"label": "All on is not active all off is not active",
 					"value": 0
 				},
 				{
-					"label": "ALL ON is not active ALL OFF active",
+					"label": "All on is not active all off active",
 					"value": 1
 				},
 				{
-					"label": "ALL ON active ALL OFF is not active",
+					"label": "All on active all off is not active",
 					"value": 2
 				},
 				{
-					"label": "ALL ON active, ALL OFF active",
+					"label": "All on active, all off active",
 					"value": 255
 				}
 			]
 		},
 		{
 			"#": "11",
-			"label": "Automatic turning off relay after set time",
+			"label": "Automatic Turning Off Relay After Set Time",
 			"valueSize": 2,
 			"minValue": 0,
 			"maxValue": 65535,
@@ -139,7 +125,7 @@
 		},
 		{
 			"#": "40",
-			"label": "Power reporting in Watts on percentage change",
+			"label": "Power Reporting in Watts on Percentage Change",
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 255,
@@ -148,12 +134,28 @@
 		},
 		{
 			"#": "42",
-			"label": "Power reporting in Watts on power change",
+			"label": "Power Reporting in Watts on Power Change",
 			"valueSize": 2,
 			"minValue": 0,
 			"maxValue": 65535,
 			"defaultValue": 300,
 			"unsigned": true
 		}
-	]
+	],
+	"compat": {
+		"commandClasses": {
+			"add": {
+				"Manufacturer Specific": {
+					// Manufacturer Specific CC is supported, but comes back as version 0
+					"version": 1,
+					"isSupported": true
+				},
+				"Association": {
+					// Association CC is supported, but comes back as version 0
+					"version": 1,
+					"isSupported": true
+				}
+			}
+		}
+	}
 }

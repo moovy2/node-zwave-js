@@ -4,20 +4,13 @@
 
 ## Supervision CC methods
 
-### `sendEncapsulated`
-
-```ts
-async sendEncapsulated(
-	encapsulated: CommandClass,
-	// If possible, keep us updated about the progress
-	requestStatusUpdates: boolean = true,
-): Promise<void>;
-```
-
 ### `sendReport`
 
 ```ts
 async sendReport(
-	options: SupervisionCCReportOptions & { secure?: boolean },
+	options: SupervisionCCReportOptions & {
+		encapsulationFlags?: EncapsulationFlags;
+		lowPriority?: boolean;
+	},
 ): Promise<void>;
 ```

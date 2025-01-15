@@ -87,10 +87,7 @@
 			"#": "10",
 			"label": "Single Click - Association Group 2: Command Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 3,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -119,7 +116,6 @@
 			"minValue": 1,
 			"maxValue": 255,
 			"defaultValue": 255,
-			"unsigned": true,
 			"options": [
 				{
 					"label": "Prior state",
@@ -131,10 +127,7 @@
 			"#": "20",
 			"label": "Single Click - Association Group 3: Command Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 3,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -163,10 +156,9 @@
 			"minValue": 1,
 			"maxValue": 255,
 			"defaultValue": 99,
-			"unsigned": true,
 			"options": [
 				{
-					"label": "Prior State",
+					"label": "Prior state",
 					"value": 255
 				}
 			]
@@ -181,10 +173,7 @@
 			"#": "12",
 			"label": "Double Click - Association Group 2: Command Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -213,10 +202,9 @@
 			"minValue": 1,
 			"maxValue": 255,
 			"defaultValue": 99,
-			"unsigned": true,
 			"options": [
 				{
-					"label": "Prior State",
+					"label": "Prior state",
 					"value": 255
 				}
 			]
@@ -225,10 +213,7 @@
 			"#": "22",
 			"label": "Double Click - Association Group 3: Command Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -257,10 +242,9 @@
 			"minValue": 1,
 			"maxValue": 255,
 			"defaultValue": 99,
-			"unsigned": true,
 			"options": [
 				{
-					"label": "Prior State",
+					"label": "Prior state",
 					"value": 255
 				}
 			]
@@ -275,10 +259,7 @@
 			"#": "14",
 			"label": "Triple Click - Association Group 2: Command Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -307,10 +288,9 @@
 			"minValue": 1,
 			"maxValue": 255,
 			"defaultValue": 99,
-			"unsigned": true,
 			"options": [
 				{
-					"label": "Prior State",
+					"label": "Prior state",
 					"value": 255
 				}
 			]
@@ -319,10 +299,7 @@
 			"#": "24",
 			"label": "Triple Click - Association Group 3: Command Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -351,10 +328,9 @@
 			"minValue": 1,
 			"maxValue": 255,
 			"defaultValue": 99,
-			"unsigned": true,
 			"options": [
 				{
-					"label": "Prior State",
+					"label": "Prior state",
 					"value": 255
 				}
 			]
@@ -393,10 +369,7 @@
 			"#": "29",
 			"label": "Key Held - Association Group 3: Command Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 3,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

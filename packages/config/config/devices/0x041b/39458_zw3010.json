@@ -2,7 +2,7 @@
 	"manufacturer": "Resideo",
 	"manufacturerId": "0x041b",
 	"label": "39458 / ZW3010",
-	"description": "In-Wall Smart Dimmer",
+	"description": "In-Wall Paddle Dimmer, QFSW, 500S",
 	"devices": [
 		{
 			"productType": "0x4944",
@@ -36,10 +36,7 @@
 			"label": "LED Light",
 			"description": "LED status when device on or off.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -55,20 +52,17 @@
 					"value": 2
 				},
 				{
-					"label": "LED Always on",
+					"label": "LED always on",
 					"value": 3
 				}
 			]
 		},
 		{
 			"#": "6",
-			"label": "Dim up/down rate",
+			"label": "Dim Up/down Rate",
 			"description": "Adjust the speed at which the ramps to a specific value",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -85,10 +79,7 @@
 			"#": "16",
 			"label": "Switch Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -105,14 +96,11 @@
 			"#": "19",
 			"label": "Alternate Exclusion",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Press any button on the Dimmer",
+					"label": "Press any button on the dimmer",
 					"value": 0
 				},
 				{
@@ -128,8 +116,7 @@
 			"unit": "%",
 			"minValue": 1,
 			"maxValue": 99,
-			"defaultValue": 1,
-			"unsigned": true
+			"defaultValue": 1
 		},
 		{
 			"#": "31",
@@ -138,8 +125,7 @@
 			"unit": "%",
 			"minValue": 99,
 			"maxValue": 99,
-			"defaultValue": 99,
-			"unsigned": true
+			"defaultValue": 99
 		},
 		{
 			"#": "32",
@@ -149,12 +135,11 @@
 			"unit": "%",
 			"minValue": 0,
 			"maxValue": 99,
-			"defaultValue": 0,
-			"unsigned": true
+			"defaultValue": 0
 		}
 	],
 	"compat": {
-		"treatBasicSetAsEvent": true
+		"mapBasicSet": "event"
 	},
 	"metadata": {
 		"inclusion": "This dimmer is SmartStart enabled. If your controller supports SmartStart inclusion, this dimmer can be added into the Z-Wave network by following the instructions for your controller or hub and scanning the Z-Wave QR Code on the front or on the package when instructed. No further action is required, and the dimmer will be added automatically within 10 minutes of being powered up while in range Z-Wave network.",

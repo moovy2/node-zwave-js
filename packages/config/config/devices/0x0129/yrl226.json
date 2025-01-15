@@ -11,7 +11,7 @@
 		}
 	],
 	"firmwareVersion": {
-		"min": "1.78",
+		"min": "0.0",
 		"max": "255.255"
 	},
 	"paramInformation": [
@@ -41,7 +41,7 @@
 		},
 		{
 			"#": "8",
-			"$import": "templates/yale_template.json#operating_mode"
+			"$import": "templates/yale_template.json#operating_mode_normal_vacation_privacy"
 		},
 		{
 			"#": "11",

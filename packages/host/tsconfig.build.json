@@ -1,0 +1,23 @@
+// tsconfig for building - only applies to the src directory
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "src",
+		"outDir": "build/esm",
+		// Do not use the @@dev export for compiling
+		"customConditions": []
+	},
+	"references": [
+		{
+			"path": "../config/tsconfig.build.json"
+		},
+		{
+			"path": "../core/tsconfig.build.json"
+		},
+		{
+			"path": "../shared/tsconfig.build.json"
+		}
+	],
+	"include": ["src/**/*.ts"],
+	"exclude": ["src/**/*.test.ts"]
+}

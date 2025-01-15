@@ -1,26 +1,61 @@
 import {
-	actuatorCCs,
-	CommandClasses,
-	isZWaveError,
-	TranslatedValueID,
-	ValueID,
-	valueIdToString,
-	ValueMetadata,
-	ValueMetadataNumeric,
+	BasicCCValues,
+	type CCAPI,
+	type SetValueAPIOptions,
+	type ValueIDProperties,
+} from "@zwave-js/cc";
+import {
+	type SetValueResult,
+	SetValueStatus,
+	supervisionResultToSetValueResult,
+} from "@zwave-js/cc/safe";
+import {
+	SecurityClass,
+	SupervisionStatus,
+	type TranslatedValueID,
+	type ValueID,
+	type ValueMetadata,
+	type ValueMetadataNumeric,
 	ZWaveError,
 	ZWaveErrorCodes,
+	actuatorCCs,
+	getCCName,
+	isSupervisionResult,
+	isZWaveError,
+	normalizeValueID,
+	supervisedCommandSucceeded,
+	valueIdToString,
 } from "@zwave-js/core";
 import { distinct } from "alcalzone-shared/arrays";
-import type { CCAPI, SetValueAPIOptions } from "../commandclass/API";
-import type { Driver } from "../driver/Driver";
-import type { ZWaveNode } from "./Node";
-import { VirtualEndpoint } from "./VirtualEndpoint";
+import type { Driver } from "../driver/Driver.js";
+import type { ZWaveNode } from "./Node.js";
+import { VirtualEndpoint } from "./VirtualEndpoint.js";
 
 export interface VirtualValueID extends TranslatedValueID {
 	/** The metadata that belongs to this virtual value ID */
 	metadata: ValueMetadata;
 	/** The maximum supported CC version among all nodes targeted by this virtual value ID */
 	ccVersion: number;
+}
+
+function groupNodesBySecurityClass(
+	nodes: Iterable<ZWaveNode>,
+): Map<SecurityClass, ZWaveNode[]> {
+	const ret = new Map<SecurityClass, ZWaveNode[]>();
+
+	for (const node of nodes) {
+		const secClass = node.getHighestSecurityClass();
+		if (secClass === SecurityClass.Temporary || secClass == undefined) {
+			continue;
+		}
+
+		if (!ret.has(secClass)) {
+			ret.set(secClass, []);
+		}
+		ret.get(secClass)!.push(node);
+	}
+
+	return ret;
 }
 
 export class VirtualNode extends VirtualEndpoint {
@@ -35,12 +70,29 @@ export class VirtualNode extends VirtualEndpoint {
 		// Set the reference to this and the physical nodes
 		super.setNode(this);
 		this.physicalNodes = [...physicalNodes].filter(
-			// And avoid including the controller node in the support checks
-			(n) => n.id !== driver.controller.ownNodeId,
+			(n) =>
+				// And avoid including the controller node in the support checks
+				n.id !== driver.controller.ownNodeId
+				// And omit nodes using Security S0 which does not support broadcast / multicast
+				&& n.getHighestSecurityClass() !== SecurityClass.S0_Legacy,
 		);
+		this.nodesBySecurityClass = groupNodesBySecurityClass(
+			this.physicalNodes,
+		);
+
+		// If broadcasting is attempted with mixed security classes, automatically fall back to multicast
+		if (this.hasMixedSecurityClasses) this.id = undefined;
 	}
 
-	public readonly physicalNodes: ZWaveNode[];
+	public readonly physicalNodes: readonly ZWaveNode[];
+	public readonly nodesBySecurityClass: ReadonlyMap<
+		SecurityClass,
+		readonly ZWaveNode[]
+	>;
+
+	public get hasMixedSecurityClasses(): boolean {
+		return this.nodesBySecurityClass.size > 1;
+	}
 
 	/**
 	 * Updates a value for a given property of a given CommandClass.
@@ -50,61 +102,152 @@ export class VirtualNode extends VirtualEndpoint {
 		valueId: ValueID,
 		value: unknown,
 		options?: SetValueAPIOptions,
-	): Promise<boolean> {
+	): Promise<SetValueResult> {
+		// Ensure we're dealing with a valid value ID, with no extra properties
+		valueId = normalizeValueID(valueId);
+
 		// Try to retrieve the corresponding CC API
 		try {
 			// Access the CC API by name
 			const endpointInstance = this.getEndpoint(valueId.endpoint || 0);
-			if (!endpointInstance) return false;
-			const api = (endpointInstance.commandClasses as any)[
+			if (!endpointInstance) {
+				return {
+					status: SetValueStatus.EndpointNotFound,
+					message:
+						`Endpoint ${valueId.endpoint} does not exist on virtual node ${
+							this.id ?? "??"
+						}`,
+				};
+			}
+			let api = (endpointInstance.commandClasses as any)[
 				valueId.commandClass
 			] as CCAPI;
 			// Check if the setValue method is implemented
-			if (!api.setValue) return false;
+			if (!api.setValue) {
+				return {
+					status: SetValueStatus.NotImplemented,
+					message: `The ${
+						getCCName(
+							valueId.commandClass,
+						)
+					} CC does not support setting values`,
+				};
+			}
+
+			const valueIdProps: ValueIDProperties = {
+				property: valueId.property,
+				propertyKey: valueId.propertyKey,
+			};
+
+			const hooks = api.setValueHooks?.(valueIdProps, value, options);
+
+			if (hooks?.supervisionDelayedUpdates) {
+				api = api.withOptions({
+					requestStatusUpdates: true,
+					onUpdate: async (update) => {
+						try {
+							if (update.status === SupervisionStatus.Success) {
+								await hooks.supervisionOnSuccess();
+							} else if (
+								update.status === SupervisionStatus.Fail
+							) {
+								await hooks.supervisionOnFailure();
+							}
+						} catch {
+							// TODO: Log error?
+						}
+					},
+				});
+			}
+
+			// If the caller wants progress updates, they shall have them
+			if (typeof options?.onProgress === "function") {
+				api = api.withOptions({
+					onProgress: options.onProgress,
+				});
+			}
+
 			// And call it
-			await api.setValue(
-				{
-					property: valueId.property,
-					propertyKey: valueId.propertyKey,
-				},
+			const result = await api.setValue!.call(
+				api,
+				valueIdProps,
 				value,
 				options,
 			);
+
 			if (api.isSetValueOptimistic(valueId)) {
 				// If the call did not throw, assume that the call was successful and remember the new value
 				// for each node that was affected by this command
-				const affectedNodes =
-					endpointInstance.node.physicalNodes.filter((node) =>
+				const affectedNodes = this.physicalNodes
+					.filter((node) =>
 						node
 							.getEndpoint(endpointInstance.index)
-							?.supportsCC(valueId.commandClass),
+							?.supportsCC(valueId.commandClass)
 					);
 				for (const node of affectedNodes) {
 					node.valueDB.setValue(valueId, value);
 				}
 			}
 
-			return true;
+			// Depending on the settings of the SET_VALUE implementation, we may have to
+			// optimistically update a different value and/or verify the changes
+			if (hooks) {
+				const supervisedAndSuccessful = isSupervisionResult(result)
+					&& result.status === SupervisionStatus.Success;
+
+				const shouldUpdateOptimistically =
+					api.isSetValueOptimistic(valueId)
+					// For successful supervised commands, we know that an optimistic update is ok
+					&& (supervisedAndSuccessful
+						// For unsupervised commands that did not fail, we let the applciation decide whether
+						// to update related value optimistically
+						|| (!this.driver.options.disableOptimisticValueUpdate
+							&& result == undefined));
+
+				// The actual API implementation handles additional optimistic updates
+				if (shouldUpdateOptimistically) {
+					hooks.optimisticallyUpdateRelatedValues?.(
+						supervisedAndSuccessful,
+					);
+				}
+
+				// Verify the current value after a delay, unless...
+				// ...the command was supervised and successful
+				// ...and the CC API decides not to verify anyways
+				if (
+					!supervisedCommandSucceeded(result)
+					|| hooks.forceVerifyChanges?.()
+				) {
+					// Let the CC API implementation handle the verification.
+					// It may still decide not to do it.
+					await hooks.verifyChanges?.();
+				}
+			}
+
+			return supervisionResultToSetValueResult(result);
 		} catch (e) {
-			// Define which errors during setValue are expected and won't crash
-			// the driver:
+			// Define which errors during setValue are expected and won't throw an error
 			if (isZWaveError(e)) {
-				let handled = false;
-				let emitErrorEvent = false;
+				let result: SetValueResult | undefined;
 				switch (e.code) {
 					// This CC or API is not implemented
 					case ZWaveErrorCodes.CC_NotImplemented:
 					case ZWaveErrorCodes.CC_NoAPI:
-						handled = true;
+						result = {
+							status: SetValueStatus.NotImplemented,
+							message: e.message,
+						};
 						break;
 					// A user tried to set an invalid value
 					case ZWaveErrorCodes.Argument_Invalid:
-						handled = true;
-						emitErrorEvent = true;
+						result = {
+							status: SetValueStatus.InvalidValue,
+							message: e.message,
+						};
 						break;
 				}
-				if (emitErrorEvent) this.driver.emit("error", e);
-				if (handled) return false;
+
+				if (result) return result;
 			}
 			throw e;
 		}
@@ -115,15 +258,14 @@ export class VirtualNode extends VirtualEndpoint {
 	 * control the physical node(s) this virtual node represents.
 	 */
 	public getDefinedValueIDs(): VirtualValueID[] {
-		// If all nodes are secure, we can't use broadcast/multicast commands
-		if (this.physicalNodes.every((n) => n.isSecure === true)) return [];
-
 		// In order to compare value ids, we need them to be strings
 		const ret = new Map<string, VirtualValueID>();
 
 		for (const pNode of this.physicalNodes) {
-			// Secure nodes cannot be used for broadcast
-			if (pNode.isSecure === true) continue;
+			// // Nodes using Security S0 cannot be used for broadcast
+			// if (pNode.getHighestSecurityClass() === SecurityClass.S0_Legacy) {
+			// 	continue;
+			// }
 
 			// Take only the actuator values
 			const valueIDs: TranslatedValueID[] = pNode
@@ -138,8 +280,8 @@ export class VirtualNode extends VirtualEndpoint {
 				// Don't expose read-only values for virtual nodes, they won't ever have any value
 				if (!metadata.writeable) continue;
 
-				const needsUpdate =
-					!ret.has(mapKey) || ret.get(mapKey)!.ccVersion < ccVersion;
+				const needsUpdate = !ret.has(mapKey)
+					|| ret.get(mapKey)!.ccVersion < ccVersion;
 				if (needsUpdate) {
 					ret.set(mapKey, {
 						...valueId,
@@ -158,21 +300,19 @@ export class VirtualNode extends VirtualEndpoint {
 		const exposedEndpoints = distinct(
 			[...ret.values()]
 				.map((v) => v.endpoint)
-				.filter((e): e is number => e !== undefined),
+				.filter((e) => e !== undefined),
 		);
 		for (const endpoint of exposedEndpoints) {
 			// TODO: This should be defined in the Basic CC file
 			const valueId: TranslatedValueID = {
-				commandClass: CommandClasses.Basic,
+				...BasicCCValues.targetValue.endpoint(endpoint),
 				commandClassName: "Basic",
-				endpoint,
-				property: "targetValue",
 				propertyName: "Target value",
 			};
 			const ccVersion = 1;
 			const metadata: ValueMetadataNumeric = {
-				...ValueMetadata.WriteOnlyUInt8,
-				label: "Target value",
+				...BasicCCValues.targetValue.meta,
+				readable: false,
 			};
 			ret.set(valueIdToString(valueId), {
 				...valueId,
@@ -192,11 +332,12 @@ export class VirtualNode extends VirtualEndpoint {
 	public getEndpoint(index: 0): VirtualEndpoint;
 	public getEndpoint(index: number): VirtualEndpoint | undefined;
 	public getEndpoint(index: number): VirtualEndpoint | undefined {
-		if (index < 0)
+		if (index < 0) {
 			throw new ZWaveError(
 				"The endpoint index must be positive!",
 				ZWaveErrorCodes.Argument_Invalid,
 			);
+		}
 		// Zero is the root endpoint - i.e. this node
 		if (index === 0) return this;
 		// Check if the Multi Channel CC interviews for all nodes are completed,
@@ -221,6 +362,19 @@ export class VirtualNode extends VirtualEndpoint {
 			);
 		}
 		return this._endpointInstances.get(index)!;
+	}
+
+	public getEndpointOrThrow(index: number): VirtualEndpoint {
+		const ret = this.getEndpoint(index);
+		if (!ret) {
+			throw new ZWaveError(
+				`Endpoint ${index} does not exist on virtual node ${
+					this.id ?? "??"
+				}`,
+				ZWaveErrorCodes.Controller_EndpointNotFound,
+			);
+		}
+		return ret;
 	}
 
 	/** Returns the current endpoint count of this virtual node (the maximum in the list of physical nodes) */

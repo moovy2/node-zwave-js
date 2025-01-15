@@ -40,6 +40,10 @@
 		{
 			"productType": "0x3200",
 			"productId": "0x015e"
+		},
+		{
+			"productType": "0x1e12",
+			"productId": "0x0163"
 		}
 	],
 	"firmwareVersion": {
@@ -51,10 +55,7 @@
 			"#": "1",
 			"label": "Temperature Reporting Threshold",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -83,10 +84,7 @@
 			"#": "3",
 			"label": "Utility Lock Enable/Disable",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -103,10 +101,7 @@
 			"#": "5",
 			"label": "Humidity Reporting Threshold",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -114,15 +109,15 @@
 					"value": 0
 				},
 				{
-					"label": "3% RH",
+					"label": "3 %rH",
 					"value": 1
 				},
 				{
-					"label": "5% RH",
+					"label": "5 %rH",
 					"value": 2
 				},
 				{
-					"label": "10%RH",
+					"label": "10 %rH",
 					"value": 3
 				}
 			]
@@ -131,10 +126,7 @@
 			"#": "6",
 			"label": "Auxiliary/Emergency",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -151,22 +143,19 @@
 			"#": "7",
 			"label": "Thermostat Swing Temperature",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "0.05F",
+					"label": "0.05 °F",
 					"value": 1
 				},
 				{
-					"label": "0.1F",
+					"label": "0.1 °F",
 					"value": 2
 				},
 				{
-					"label": "4F",
+					"label": "4.0 °F",
 					"value": 8
 				}
 			]
@@ -175,22 +164,19 @@
 			"#": "8",
 			"label": "Thermostat Diff Temperature",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 4,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "2.0 F",
+					"label": "2.0 °F",
 					"value": 4
 				},
 				{
-					"label": "4.0 F",
+					"label": "4.0 °F",
 					"value": 8
 				},
 				{
-					"label": "6.0 F",
+					"label": "6.0 °F",
 					"value": 12
 				}
 			]

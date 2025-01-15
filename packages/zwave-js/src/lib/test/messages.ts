@@ -1,22 +1,18 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-/* eslint-disable @typescript-eslint/no-empty-function */
-import { MessageType } from "../message/Constants";
-import type { Message } from "../message/Message";
-
-export const createSendDataResolvesNever = () =>
-	jest.fn().mockImplementation(() => new Promise<unknown>(() => {}));
-export const createSendDataResolvesImmediately = () =>
-	jest.fn().mockResolvedValue(undefined);
-export const createSendDataRejectsImmediately = () =>
-	jest.fn().mockRejectedValue(new Error("nope"));
+import type { Message } from "@zwave-js/serial";
+import { MessageType } from "@zwave-js/serial";
+import { Bytes } from "@zwave-js/shared";
 
 const defaultImplementations = {
-	serialize: () => Buffer.from([1, 2, 3]),
-	getNodeUnsafe: () => undefined,
+	serializeAsync: () => Promise.resolve(Bytes.from([1, 2, 3])),
+	tryGetNode: () => undefined,
 	getNodeId: () => undefined,
 	toLogEntry: () => ({ tags: [] }),
 	needsCallbackId: () => true,
+	getResponseTimeout: () => undefined,
 	getCallbackTimeout: () => undefined,
+	markAsSent: () => void 0,
+	markAsCompleted: () => void 0,
+	expectsAck: () => true,
 };
 
 export const dummyResponseOK = {

@@ -1,3 +1,4 @@
+// 800 series (LR) starting with firmware 2.0
 {
 	"manufacturer": "Zooz",
 	"manufacturerId": "0x027a",
@@ -17,18 +18,8 @@
 	"paramInformation": [
 		{
 			"#": "12",
-			"label": "Motion Sensor Sensitivity",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 8,
-			"defaultValue": 6,
-			"unsigned": true,
-			"options": [
-				{
-					"label": "Disable",
-					"value": 0
-				}
-			]
+			"$import": "templates/zooz_template.json#motion_sensitivity_1_8",
+			"defaultValue": 6
 		},
 		{
 			"#": "13",
@@ -37,78 +28,27 @@
 			"unit": "seconds",
 			"minValue": 10,
 			"maxValue": 3600,
-			"defaultValue": 30,
-			"unsigned": true
+			"defaultValue": 30
 		},
 		{
 			"#": "14",
+			"$import": "~/templates/master_template.json#base_enable_disable",
 			"label": "Motion Detection: Send Basic Set",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 1,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Disable",
-					"value": 0
-				},
-				{
-					"label": "Enable",
-					"value": 1
-				}
-			]
+			"defaultValue": 1
 		},
 		{
 			"#": "15",
-			"label": "Motion Detection: Basic Set Value",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "0xff for Motion; 0x00 for Clear",
-					"value": 0
-				},
-				{
-					"label": "0x00 for Motion; 0xff for Clear",
-					"value": 1
-				}
-			]
+			"$import": "templates/zooz_template.json#basic_set_value"
 		},
 		{
 			"#": "16",
-			"label": "Motion Detection: Send Binary Sensor Reports",
-			"description": "If disabled, notification reports will be sent instead",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 1,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Disable",
-					"value": 0
-				},
-				{
-					"label": "Enable",
-					"value": 1
-				}
-			]
+			"$import": "templates/zooz_template.json#binary_sensor_report"
 		},
 		{
 			"#": "18",
 			"label": "Temperature Scale",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 2,
 			"defaultValue": 2,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -123,33 +63,14 @@
 		},
 		{
 			"#": "19",
+			"$import": "~/templates/master_template.json#base_enable_disable",
 			"label": "Flash LED on Motion",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 1,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Disable",
-					"value": 0
-				},
-				{
-					"label": "Enable",
-					"value": 1
-				}
-			]
+			"defaultValue": 1
 		},
 		{
 			"#": "32",
-			"label": "Low Battery Alert",
-			"valueSize": 1,
-			"unit": "%",
-			"minValue": 10,
-			"maxValue": 50,
-			"defaultValue": 10,
-			"unsigned": true
+			"$import": "templates/zooz_template.json#low_battery_alarm_threshold",
+			"defaultValue": 10
 		},
 		{
 			"#": "172",
@@ -158,18 +79,14 @@
 			"unit": "hours",
 			"minValue": 1,
 			"maxValue": 744,
-			"defaultValue": 4,
-			"unsigned": true
+			"defaultValue": 4
 		},
 		{
 			"#": "182",
+			"$import": "~/templates/master_template.json#base_0-99_nounit",
 			"label": "Battery Reporting Change Threshold",
-			"valueSize": 1,
 			"unit": "%",
-			"minValue": 0,
-			"maxValue": 99,
 			"defaultValue": 0,
-			"unsigned": true,
 			"options": [
 				{
 					"label": "Disable",
@@ -184,8 +101,7 @@
 			"unit": "°F",
 			"minValue": 1,
 			"maxValue": 144,
-			"defaultValue": 1,
-			"unsigned": true
+			"defaultValue": 1
 		},
 		{
 			"#": "184",
@@ -195,7 +111,6 @@
 			"minValue": 0,
 			"maxValue": 80,
 			"defaultValue": 5,
-			"unsigned": true,
 			"options": [
 				{
 					"label": "Disable",
@@ -211,13 +126,26 @@
 			"minValue": 0,
 			"maxValue": 30000,
 			"defaultValue": 50,
-			"unsigned": true,
 			"options": [
 				{
 					"label": "Disable",
 					"value": 0
 				}
 			]
+		}
+	],
+	"compat": [
+		{
+			// On the 500 series version of this device, the wakeup destination
+			// cannot be set using Supervision, resulting in missing wakeup reports
+			"$if": "firmwareVersion < 2.0",
+			"commandClasses": {
+				"remove": {
+					"Supervision": {
+						"endpoints": "*"
+					}
+				}
+			}
 		}
 	],
 	"metadata": {

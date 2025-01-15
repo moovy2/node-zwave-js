@@ -1,68 +1,72 @@
-import { CommandClasses } from "@zwave-js/core";
-import { CommandClass } from "../../commandclass";
 import {
-	getManufacturerIdValueId,
-	getProductIdValueId,
-	getProductTypeValueId,
-} from "../../commandclass/ManufacturerSpecificCC";
-import { NotificationCCReport } from "../../commandclass/NotificationCC";
-import type { Driver } from "../../driver/Driver";
-import { ZWaveNode } from "../../node/Node";
-import { createAndStartDriver } from "../utils";
+	NotificationCCReport,
+	NotificationCCValues,
+} from "@zwave-js/cc/NotificationCC";
+import { CommandClasses } from "@zwave-js/core";
+import { createMockZWaveRequestFrame } from "@zwave-js/testing";
+import { wait } from "alcalzone-shared/async";
+import sinon from "sinon";
+import { integrationTest } from "../integrationTestSuite.js";
 
-describe("compat flags", () => {
-	let driver: Driver;
+integrationTest(
+	"the alarmMapping compat flag works correctly (using the example Kwikset 910)",
+	{
+		// debug: true,
 
-	beforeEach(async () => {
-		({ driver } = await createAndStartDriver());
+		nodeCapabilities: {
+			manufacturerId: 0x90,
+			productType: 0x01,
+			productId: 0x01,
 
-		driver["_controller"] = {
-			ownNodeId: 1,
-			isFunctionSupported: () => true,
-			nodes: new Map(),
-			incrementStatistics: () => {},
-		} as any;
-	});
+			commandClasses: [
+				{
+					ccId: CommandClasses.Notification,
+					version: 1, // To make sure we rely on the compat flag
+					isSupported: true,
+				},
+				CommandClasses["Manufacturer Specific"],
+				CommandClasses.Version,
+			],
+		},
 
-	afterEach(async () => {
-		await driver.destroy();
-		driver.removeAllListeners();
-	});
+		async testBody(t, driver, node, mockController, mockNode) {
+			// Send a report that should be mapped to notifications
+			const cc = new NotificationCCReport({
+				nodeId: 2,
+				alarmType: 18,
+				alarmLevel: 2,
+			});
 
-	it("the alarmMapping compat flag works correctly (using the example Kwikset 910)", async () => {
-		jest.setTimeout(30000);
+			const nodeNotification = sinon.spy();
+			node.on("notification", nodeNotification);
 
-		const node2 = new ZWaveNode(2, driver);
-		(driver.controller.nodes as any as Map<number, ZWaveNode>).set(
-			2,
-			node2,
-		);
-		node2.addCC(CommandClasses.Notification, {
-			isSupported: true,
-			version: 1,
-		});
-		node2.valueDB.setValue(getManufacturerIdValueId(), 0x90);
-		node2.valueDB.setValue(getProductTypeValueId(), 0x01);
-		node2.valueDB.setValue(getProductIdValueId(), 0x01);
-		await node2["loadDeviceConfig"]();
+			await mockNode.sendToController(
+				createMockZWaveRequestFrame(cc, {
+					ackRequested: false,
+				}),
+			);
+			await wait(100);
 
-		const rawNotification = new NotificationCCReport(driver, {
-			nodeId: 2,
-			alarmType: 18,
-			alarmLevel: 2,
-		});
-		const serialized = rawNotification.serialize();
+			// The correct events should be emitted
+			sinon.assert.calledOnce(nodeNotification);
+			const event = nodeNotification.getCall(0).args[2];
 
-		const deserialized = CommandClass.from(driver, {
-			data: serialized,
-			nodeId: 2,
-		}) as NotificationCCReport;
+			t.expect(event.type).toBe(0x06);
+			t.expect(event.event).toBe(0x05);
+			t.expect(event.parameters).toStrictEqual({
+				userId: 2,
+			});
 
-		// Keypad lock
-		expect(deserialized.notificationType).toBe(0x06);
-		expect(deserialized.notificationEvent).toBe(0x05);
-		expect(deserialized.eventParameters).toEqual({
-			userId: 2,
-		});
-	});
-});
+			// And they should be known to be supported
+			const supportedNotificationTypes: number[] | undefined = node
+				.getValue(NotificationCCValues.supportedNotificationTypes.id);
+			t.expect(supportedNotificationTypes?.includes(0x06)).toBe(true);
+
+			const supportedAccessControlEvents: number[] | undefined = node
+				.getValue(
+					NotificationCCValues.supportedNotificationEvents(0x06).id,
+				);
+			t.expect(supportedAccessControlEvents?.includes(0x05)).toBe(true);
+		},
+	},
+);

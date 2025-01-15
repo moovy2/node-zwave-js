@@ -19,14 +19,11 @@
 			"#": "80",
 			"label": "Command Type When Triggered",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Notification report",
+					"label": "Notification Report",
 					"value": 0
 				},
 				{
@@ -39,10 +36,7 @@
 			"#": "255",
 			"label": "Reset the Device",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 1431655765,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

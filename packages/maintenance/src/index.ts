@@ -1,3 +1,3 @@
-export * from "./prettier";
-export * from "./reportProblem";
-export * from "./tsAPITools";
+export * from "./dprint.js";
+export * from "./reportProblem.js";
+export * from "./tsAPITools.js";

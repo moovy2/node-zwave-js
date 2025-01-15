@@ -33,8 +33,6 @@
 			"#": "1",
 			"label": "Primary Notification Volume",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 3,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
@@ -56,22 +54,20 @@
 			"#": "2",
 			"label": "Primary Notification Length",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 255,
 			"defaultValue": 2,
 			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "30 Seconds",
+					"label": "30 seconds",
 					"value": 1
 				},
 				{
-					"label": "1 Minute",
+					"label": "1 minute",
 					"value": 2
 				},
 				{
-					"label": "5 Minutes",
+					"label": "5 minutes",
 					"value": 3
 				},
 				{
@@ -84,18 +80,18 @@
 			"#": "3",
 			"label": "Secondary Notification Length",
 			"valueSize": 1,
-			"unit": "minutes",
+			"unit": "cycles",
 			"minValue": 0,
 			"maxValue": 255,
 			"defaultValue": 1,
 			"unsigned": true,
 			"options": [
 				{
-					"label": "Forever",
+					"label": "Disabled",
 					"value": 0
 				},
 				{
-					"label": "Disabled",
+					"label": "Forever",
 					"value": 255
 				}
 			]
@@ -104,8 +100,6 @@
 			"#": "4",
 			"label": "Secondary Notification Volume",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 3,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
@@ -127,10 +121,9 @@
 			"#": "5",
 			"label": "Primary Notification Sound",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 10,
 			"defaultValue": 9,
 			"allowManualEntry": false,
+			/* eslint-disable @zwave-js/consistent-config-string-case */
 			"options": [
 				{
 					"label": "Ding dong",
@@ -173,15 +166,15 @@
 					"value": 10
 				}
 			]
+			/* eslint-enable @zwave-js/consistent-config-string-case */
 		},
 		{
 			"#": "6",
 			"label": "Secondary Notification Sound",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 10,
 			"defaultValue": 10,
 			"allowManualEntry": false,
+			/* eslint-disable @zwave-js/consistent-config-string-case */
 			"options": [
 				{
 					"label": "Ding dong",
@@ -224,13 +217,12 @@
 					"value": 10
 				}
 			]
+			/* eslint-enable @zwave-js/consistent-config-string-case */
 		},
 		{
 			"#": "7",
-			"label": "Toggle notification sound",
+			"label": "Toggle Notification Sound",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 2,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -243,6 +235,16 @@
 					"value": 2
 				}
 			]
+		},
+		{
+			"#": "8",
+			"$import": "~/templates/master_template.json#base_enable_disable",
+			"label": "Primary Notification: Flash LED"
+		},
+		{
+			"#": "9",
+			"$import": "~/templates/master_template.json#base_enable_disable",
+			"label": "Secondary Notification: Flash LED"
 		}
 	],
 	"metadata": {

@@ -2,7 +2,7 @@
 	"manufacturer": "Z-works Inc.",
 	"manufacturerId": "0x024d",
 	"label": "DN3G6JA062",
-	"description": "Lock Dectector",
+	"description": "Lock Detector",
 	"devices": [
 		{
 			"productType": "0x4761",
@@ -22,17 +22,13 @@
 			"unit": "seconds",
 			"minValue": 30,
 			"maxValue": 127,
-			"defaultValue": 60,
-			"unsigned": true
+			"defaultValue": 60
 		},
 		{
 			"#": "2",
 			"label": "LED Blinking Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

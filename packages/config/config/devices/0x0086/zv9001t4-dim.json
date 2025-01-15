@@ -22,27 +22,23 @@
 			"#": "3",
 			"label": "Scene Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Central scene",
+					"label": "Central Scene",
 					"value": 0
 				},
 				{
-					"label": "Scene activation",
+					"label": "Scene Activation",
 					"value": 1
 				}
 			]
 		},
 		{
 			"#": "4",
-			"label": "Scene Command Targer",
+			"label": "Scene Command Target",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -51,7 +47,7 @@
 					"value": 0
 				},
 				{
-					"label": "Assocciation Group",
+					"label": "Association group",
 					"value": 1
 				}
 			]

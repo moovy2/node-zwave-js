@@ -1,13 +1,13 @@
 {
-	"manufacturer": "GE/Jasco",
+	"manufacturer": "GE/Enbrighten",
 	"manufacturerId": "0x0063",
 	"label": "43072 / ZW4008DV",
-	"description": "In-Wall Smart Switch (120/277VAC)",
+	"description": "In-Wall Paddle Switch, 120+277, QFSW, 500S",
 	"devices": [
 		{
 			"productType": "0x4952",
 			"productId": "0x3139",
-			"zwaveAllianceId": 3349
+			"zwaveAllianceId": [3349, 4156]
 		}
 	],
 	"firmwareVersion": {
@@ -33,62 +33,20 @@
 	"paramInformation": [
 		{
 			"#": "3",
-			"label": "LED Indication Configuration",
-			"description": "LED status when device on or off.",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "LED ON when load is OFF",
-					"value": 0
-				},
-				{
-					"label": "LED On when light is turned On",
-					"value": 1
-				},
-				{
-					"label": "LED always OFF",
-					"value": 2
-				},
-				{
-					"label": "LED Always ON",
-					"value": 3
-				}
-			]
+			"$import": "~/templates/master_template.json#led_indicator_four_options"
 		},
 		{
 			"#": "19",
-			"label": "Alternate Exclusion",
-			"description": "Enables alternate method for excluding the device to prevent accidental removal",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Press any button on the switch",
-					"value": 0
-				},
-				{
-					"label": "Press two times ON button and two time OFF button, LED will flash 5 times if successful",
-					"value": 1
-				}
-			]
+			"$import": "templates/jasco_template.json#alternate_exclusion"
 		}
 	],
 	"compat": {
-		"treatBasicSetAsEvent": true
+		"mapBasicSet": "event"
 	},
 	"metadata": {
-		"inclusion": "1. Follow the instructions for your Z-Wave certified\ncontroller to add a device to the Z-Wave network.\n2. Once the controller is ready to add your device, press and\nrelease the top or bottom of the wireless smart switch (rocker)",
-		"exclusion": "1. Follow the instructions for your Z-Wave certified controller\nto remove a device from the Z-Wave network.\n2. Once the controller is ready to remove your device, press and\nrelease the top or bottom of the wireless smart switch (rocker)",
-		"reset": "1. Quickly press ON (top) button three times then immediately\npress the OFF (Bottom) button three times. The LED will\nflash ON/OFF five times when completed successfully.\nNote: This should only be used if your network’s primary\ncontroller is missing or otherwise inoperable",
-		"manual": "https://products.z-wavealliance.org/ProductManual/File?folder=&filename=MarketCertificationFiles/3349/14291.46201.ZW4008%20Paramters.pdf"
+		"inclusion": "1. Follow the instructions for your Z-Wave certified controller to add a device to the Z-Wave network.\n2. Once the controller is ready to add your device, press and release the top or bottom of the wireless smart switch (rocker)",
+		"exclusion": "1. Follow the instructions for your Z-Wave certified controller to remove a device from the Z-Wave network.\n2. Once the controller is ready to remove your device, press and release the top or bottom of the wireless smart switch (rocker)",
+		"reset": "1. Quickly press ON (top) button three times then immediately press the OFF (Bottom) button three times. The LED will flash ON/OFF five times when completed successfully. Note: This should only be used if your network’s primary controller is missing or otherwise inoperable",
+		"manual": "https://products.z-wavealliance.org/ProductManual/File?folder=&filename=product_documents/4156/43072%20QSG%20v4.pdf"
 	}
 }

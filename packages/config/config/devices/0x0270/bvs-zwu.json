@@ -41,12 +41,9 @@
 		{
 			"#": "17",
 			"label": "Invert Water Valve Report",
-			"description": "When enabled, the device will report off (0x00) when the valve is open, and on (0xff) when the valve is closed; ",
+			"description": "When enabled, the device will report off (0x00) when the valve is open, and on (0xff) when the valve is closed;",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -64,10 +61,7 @@
 			"label": "Association Group 2: Basic Set Value (On)",
 			"description": "Note: If parameter 17 is enabled, this level will be set when the valve is off",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -89,10 +83,7 @@
 			"label": "Association Group 2: Basic Set Value (Off)",
 			"description": "Note: If parameter 17 is enabled, this level will be set when the valve is on",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 2,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -113,10 +104,7 @@
 			"#": "49",
 			"label": "Association Group 3: Water Leak Basic Set Value (Trigger)",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -137,10 +125,7 @@
 			"#": "50",
 			"label": "Association Group 3: Water Leak Basic Set Value (Cancel)",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -161,10 +146,7 @@
 			"#": "33",
 			"label": "Temperature Report Unit",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 2,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -194,8 +176,6 @@
 			"#": "35[0xff00]",
 			"label": "Temperature Report Offset: Unit",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 17,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -232,8 +212,6 @@
 			"#": "34[0xff00]",
 			"label": "Temperature Change Reporting: Unit",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -262,8 +240,6 @@
 			"#": "36[0xff00]",
 			"label": "Overheat Trigger: Unit",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -291,8 +267,6 @@
 			"#": "37[0xff00]",
 			"label": "Overheat Recover: Unit",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -311,10 +285,7 @@
 			"#": "38",
 			"label": "Association Group 4: Overheat Basic Set Value (Trigger)",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -335,10 +306,7 @@
 			"#": "39",
 			"label": "Association Group 4: Overheat Basic Set Value (Cancel)",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -368,8 +336,6 @@
 			"#": "40[0xff00]",
 			"label": "Freeze Threshold: Unit",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -397,8 +363,6 @@
 			"#": "41[0xff00]",
 			"label": "Freeze Recover: Unit",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -417,10 +381,7 @@
 			"#": "43",
 			"label": "Association Group 5: Freeze Basic Set Value (Trigger)",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -441,10 +402,7 @@
 			"#": "44",
 			"label": "Association Group 5: Freeze Basic Set Value (Cancel)",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -465,10 +423,7 @@
 			"#": "51",
 			"label": "Allow Valve Control - Water Leak Detected",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -485,10 +440,7 @@
 			"#": "42",
 			"label": "Allow Valve Control - Water Leak Detected During Freeze Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -505,10 +457,7 @@
 			"#": "65",
 			"label": "Buzzer",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -527,17 +476,13 @@
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 99,
-			"defaultValue": 80,
-			"unsigned": true
+			"defaultValue": 80
 		},
 		{
 			"#": "67",
 			"label": "Touch Keylock Protection",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -554,8 +499,6 @@
 			"#": "81[0x01]",
 			"label": "Notification Report: Water Valve Open",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -574,8 +517,6 @@
 			"#": "81[0x02]",
 			"label": "Notification Report: Overheat Detection",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -594,8 +535,6 @@
 			"#": "81[0x04]",
 			"label": "Notification Report: Freeze Detection",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -614,8 +553,6 @@
 			"#": "81[0x08]",
 			"label": "Notification Report: Local Water Leak Sensor Probe Detection",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,

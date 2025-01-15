@@ -1,8 +1,8 @@
 {
-	"manufacturer": "GE/Jasco",
+	"manufacturer": "Jasco",
 	"manufacturerId": "0x0063",
-	"label": "14311/ZW4201",
-	"description": "Plug-in Outdoor Smart Switch",
+	"label": "14311 / ZW4201",
+	"description": "Plug-In Outdoor Switch, 500S",
 	"devices": [
 		{
 			"productType": "0x4f50",
@@ -16,12 +16,12 @@
 	},
 	"associations": {
 		"1": {
-			"label": "Group 1",
+			"label": "Lifeline",
 			"maxNodes": 5,
 			"isLifeline": true
 		},
 		"2": {
-			"label": "Group 2",
+			"label": "Local Load",
 			"maxNodes": 5
 		},
 		"3": {
@@ -31,7 +31,7 @@
 		}
 	},
 	"compat": {
-		"disableBasicMapping": true
+		"mapBasicReport": false
 	},
 	"metadata": {
 		"inclusion": "1. Follow the instructions for your Z-Wave certified controller to\ninclude the smart switch to the Z-Wave network.\n2. Once the controller is ready to include your outdoor smart\nswitch, single press and release the manual/program\nbutton on the smart switch to include it in the network.\n3. Once your controller has confirmed that the smart switch\nhas been included, refresh the Z-Wave network to\noptimize performance",

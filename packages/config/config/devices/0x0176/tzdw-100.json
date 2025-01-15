@@ -2,7 +2,7 @@
 	"manufacturer": "Telldus Technologies AB",
 	"manufacturerId": "0x0176",
 	"label": "TZDW-100",
-	"description": "Door/window sensor",
+	"description": "Door/window Sensor",
 	"devices": [
 		{
 			"productType": "0x0005",
@@ -19,8 +19,6 @@
 			"label": "Group 2 Command Type",
 			"description": "Select what type of command to be sent to nodes in association group 2",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -29,15 +27,15 @@
 					"value": 0
 				},
 				{
-					"label": "Switch Binary",
+					"label": "Binary Switch",
 					"value": 1
 				},
 				{
-					"label": "Switch All",
+					"label": "Switch all",
 					"value": 2
 				},
 				{
-					"label": "Switch Multilevel",
+					"label": "Multilevel Switch",
 					"value": 3
 				}
 			]
@@ -63,8 +61,6 @@
 			"label": "Group 2 Signal Type",
 			"description": "Type of commands to association group 2",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -83,8 +79,6 @@
 			"label": "Group 3 Command Type",
 			"description": "Select what type of command to be sent to nodes in association group 3",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -93,15 +87,15 @@
 					"value": 0
 				},
 				{
-					"label": "Switch Binary",
+					"label": "Binary Switch",
 					"value": 1
 				},
 				{
-					"label": "Switch All",
+					"label": "Switch all",
 					"value": 2
 				},
 				{
-					"label": "Switch Multilevel",
+					"label": "Multilevel Switch",
 					"value": 3
 				}
 			]
@@ -127,8 +121,6 @@
 			"label": "Group 3 Signal Type",
 			"description": "Type of commands to association group 3",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -146,8 +138,6 @@
 			"#": "7",
 			"label": "LED-Indicator",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -163,11 +153,9 @@
 		},
 		{
 			"#": "8",
-			"label": "Lifeline command Type",
+			"label": "Lifeline Command Type",
 			"description": "Select the type of command to be sent in the Lifeline",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -176,7 +164,7 @@
 					"value": 0
 				},
 				{
-					"label": "Sensor binary",
+					"label": "Binary Sensor",
 					"value": 1
 				}
 			]

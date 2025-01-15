@@ -1,0 +1,103 @@
+{
+	"$schema": "https://turborepo.org/schema.json",
+	"tasks": {
+		"clean": {
+			"cache": false
+		},
+
+		"bootstrap": {
+			// Dummy task to enable running all bootstrap tasks
+			"cache": false // TypeScript does the caching
+		},
+
+		"codegen": {
+			// Dummy task to enable running all codegen tasks
+		},
+		"@zwave-js/cc#codegen": {
+			"outputs": [
+				"src/cc/index.ts",
+				"src/lib/API.ts",
+				"src/lib/Values.ts"
+			]
+		},
+		"@zwave-js/config#codegen": {
+			"outputs": ["src/LogicParser.ts"]
+		},
+
+		// We just define a single build script, as it turns out that
+		// TypeScript is just better at caching TS builds than Turbo
+		"//#build:turbo": {
+			"inputs": [
+				// Pick up changes to the build script
+				"maintenance/build.ts",
+				// ...and configuration
+				"packages/*/package.json",
+				"packages/*/tsconfig.json",
+				"packages/*/tsconfig.build.json",
+				// All source files are input
+				"packages/*/src/**",
+				// Exclude test files from inputs
+				"!*/**/*.test.ts"
+			],
+			"outputs": ["packages/*/build/**", "packages/*/*.tsbuildinfo"]
+		},
+
+		// Specific linting tasks: ESLint
+		"lint:ts": {
+			"dependsOn": ["bootstrap"],
+			"inputs": [
+				// https://github.com/vercel/turborepo/issues/1407
+				":!:build/",
+				"**/*.{ts,cts,mts,json}",
+				// The style based linting tasks depend on the corresponding configuration in the repo root
+				"../../eslint.config.mjs",
+				"../../tsconfig.all.json"
+			]
+		},
+		"lint:ts:fix": {
+			"dependsOn": ["bootstrap"],
+			"inputs": [
+				// https://github.com/vercel/turborepo/issues/1407
+				":!:build/",
+				"**/*.{ts,cts,mts,json}",
+				// The style based linting tasks depend on the corresponding configuration in the repo root
+				"../../eslint.config.mjs",
+				"../../tsconfig.all.json"
+			],
+			"outputs": ["**/*.{ts,cts,mts,json}"]
+		},
+
+		"lint:zwave": {
+			"dependsOn": ["bootstrap"]
+			// Dummy task to enable running all lint:zwave tasks
+		},
+		"@zwave-js/config#lint:zwave": {
+			"inputs": [
+				"**/*.{ts,cts,mts}",
+				"config/**/*.json",
+				"config/eslint.config.mjs"
+			]
+		},
+
+		"extract-api": {
+			"dependsOn": ["//#build:turbo"],
+			"inputs": ["src/**/*.{ts,cts,mts}", "build/**"],
+			"cache": false
+			// "outputs": [".tmp/api.md", "api.md"]
+		},
+
+		"test:ts": {
+			// "dependsOn": ["//#build:turbo"],
+			"inputs": ["src/**/*.{ts,cts,mts}", "vitest.config.mjs"]
+			// TODO: consider snapshot files
+		}
+	},
+	"globalDependencies": [
+		// Build fresh when dependencies change
+		"yarn.lock",
+		// Build fresh when TS related stuff changes
+		"tsconfig.json",
+		"tsconfig.base.json",
+		"tsconfig.build.json"
+	]
+}

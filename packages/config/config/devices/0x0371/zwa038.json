@@ -2,6 +2,7 @@
 	"manufacturer": "Aeotec Ltd.",
 	"manufacturerId": "0x0371",
 	"label": "ZWA038",
+	// eslint-disable-next-line @zwave-js/consistent-config-string-case
 	"description": "illumino Wall Switch",
 	"devices": [
 		{
@@ -25,7 +26,7 @@
 			"maxNodes": 5
 		},
 		"3": {
-			"label": "Buttom Button - Basic Set",
+			"label": "Bottom Button - Basic Set",
 			"maxNodes": 5
 		},
 		"4": {
@@ -56,7 +57,12 @@
 		},
 		{
 			"#": "82",
-			"$import": "~/0x0086/templates/aeotec_template.json#wallmote_command_type"
+			"$import": "~/0x0086/templates/aeotec_template.json#wallswitch_command_type"
+		},
+		{
+			"#": "83",
+			"$if": "firmwareVersion >= 1.5",
+			"$import": "~/0x0086/templates/aeotec_template.json#led_function_extended"
 		},
 		{
 			"#": "83",
@@ -93,11 +99,17 @@
 		{
 			"#": "122",
 			"$import": "~/templates/master_template.json#orientation_momentary"
+		},
+		{
+			"#": "252",
+			"$if": "firmwareVersion >= 1.5",
+			"$import": "~/templates/master_template.json#base_enable_disable",
+			"label": "Lock Configuration and Manual Button Press"
 		}
 	],
 	"metadata": {
-		"inclusion": "1. Turn your primary controller into inclusion mode.\n2. Press the Top/Buttom button once on product",
-		"exclusion": "1. Turn your primary controller into exclusion mode.\n2. 3*tap the Top/Buttom button on product",
+		"inclusion": "1. Turn your primary controller into inclusion mode.\n2. Press the Top/Bottom button once on product",
+		"exclusion": "1. Turn your primary controller into exclusion mode.\n2. 3*tap the Top/Bottom button on product",
 		"reset": "Press and hold the Top/ Bottom button for 20s",
 		"manual": "https://products.z-wavealliance.org/ProductManual/File?folder=&filename=product_documents/4273/Aeotec%20Wall%20Switch%20manual.pdf"
 	}

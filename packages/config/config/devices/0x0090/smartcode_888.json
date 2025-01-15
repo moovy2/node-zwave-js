@@ -34,8 +34,6 @@
 			"#": "35",
 			"label": "Interior Status LED",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -54,8 +52,6 @@
 			"label": "Audio Feedback",
 			"description": "Allows the user to get/set the audio feed back command",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -77,8 +73,6 @@
 			"#": "47",
 			"label": "Send Motor Load Alarms",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -96,8 +90,6 @@
 			"#": "36[0x01]",
 			"label": "Auto Relock Door",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -115,9 +107,8 @@
 			"#": "36[0xff00]",
 			"label": "Auto Relock Timing",
 			"valueSize": 2,
-			"minValue": 30,
-			"maxValue": 180,
 			"defaultValue": 30,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -125,19 +116,19 @@
 					"value": 30
 				},
 				{
-					"label": "60 Seconds",
+					"label": "60 seconds",
 					"value": 60
 				},
 				{
-					"label": "90 Seconds",
+					"label": "90 seconds",
 					"value": 90
 				},
 				{
-					"label": "120 Seconds",
+					"label": "120 seconds",
 					"value": 120
 				},
 				{
-					"label": "180 Seconds",
+					"label": "180 seconds",
 					"value": 180
 				}
 			]
@@ -186,6 +177,9 @@
 			},
 			{
 				"$import": "templates/kwikset_template.json#alarm_map_low_battery"
+			},
+			{
+				"$import": "templates/kwikset_template.json#alarm_map_critical_battery"
 			}
 		]
 	},

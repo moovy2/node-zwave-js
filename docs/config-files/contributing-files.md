@@ -10,8 +10,8 @@ While our standards are more exacting that other Z-Wave driver projects, we're h
 
 While it is possible to edit config files directly on GitHub, we recommend using a proper IDE to edit the files. For the best possible experience, we recommend using VS Code. The repository comes with settings like auto-formatting, code completion and recommended extensions to make your life easier and help you solve common issues. You can either:
 
--   Open VSCode in a fully [preconfigured environment in your browser](https://gitpod.io/#/https://github.com/zwave-js/node-zwave-js)
--   Or use VSCode offline, see [prerequisites](development/intro.md#prerequisites)
+- Open VSCode in a fully [preconfigured environment in your browser](https://gitpod.io/#/https://github.com/zwave-js/node-zwave-js)
+- Or use VSCode offline, see [prerequisites](development/intro.md#prerequisites)
 
 ## Importing Device Files from Other Projects
 
@@ -51,6 +51,6 @@ Additional information is available at: [Using templates](config-files/using-tem
 
 In order to get your configuration file included in this library:
 
-1. Check your new or changed files for potential problems using `yarn run lint:config`. Warnings in your file may be tolerated if there is a good reason for them. Errors must be fixed.
-2. Check for formatting problems using `yarn run lint:configjson`. If problems are found, you can auto-fix them with VSCode's command **Format Document** (default: <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>) or by running `yarn run lint:configjson -W`.
+1. Check your new or changed files for potential problems using `yarn run lint:zwave`. Warnings in your file may be tolerated if there is a good reason for them. Errors must be fixed.
+2. Check for formatting problems using `yarn run lint:configjson`. If problems are found, you can auto-fix them with VSCode's command **Format Document** (default: <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>) or by running `yarn run lint:configjson -w`.
 3. Create a PR.

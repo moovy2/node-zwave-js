@@ -41,8 +41,8 @@
 			"maxNodes": 5
 		}
 	},
-	//Fantem is an OEM for aeotec
-	//Fantem is an OEM for aeotec
+	// Fantem is an OEM for aeotec
+	// Fantem is an OEM for aeotec
 	"paramInformation": [
 		{
 			"#": "3",
@@ -62,12 +62,12 @@
 		},
 		{
 			"#": "81",
-			"$import": "~/0x0086/templates/aeotec_template.json#notification_report_type",
+			"$import": "~/0x0086/templates/aeotec_template.json#enable_notification_basic_set_only",
 			"label": "Send Notifications to Associated Devices (Group 3)"
 		},
 		{
 			"#": "82",
-			"$import": "~/0x0086/templates/aeotec_template.json#notification_report_type",
+			"$import": "~/0x0086/templates/aeotec_template.json#enable_notification_basic_set_only",
 			"label": "Send Notifications to Associated Devices (Group 4)"
 		},
 		{
@@ -418,10 +418,7 @@
 			"$if": "firmwareVersion >= 2.0",
 			"label": "LED Indicator When Off",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -478,7 +475,7 @@
 		}
 	],
 	"compat": {
-		"treatBasicSetAsEvent": true
+		"mapBasicSet": "event"
 	},
 	"metadata": {
 		"inclusion": "Turn the primary controller of Z-Wave network into inclusion mode, short press the product’s Action button that you can find on the product's housing",

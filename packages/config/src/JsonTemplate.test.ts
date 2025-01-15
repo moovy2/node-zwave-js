@@ -1,30 +1,33 @@
-import { assertZWaveError, ZWaveErrorCodes } from "@zwave-js/core";
-import * as fs from "fs-extra";
-import { tmpdir } from "os";
-import * as path from "path";
-import { readJsonWithTemplate } from "./JsonTemplate";
+import { ZWaveErrorCodes, assertZWaveError } from "@zwave-js/core";
+import { fs } from "@zwave-js/core/bindings/fs/node";
+import fsp from "node:fs/promises";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
+import { afterEach, beforeAll, test } from "vitest";
+import { readJsonWithTemplate } from "./JsonTemplate.js";
 
 const mockDir = path.join(tmpdir(), `zwave-js-template-test`);
 
 async function mockFs(files: Record<string, string>): Promise<void> {
-	await fs.ensureDir(mockDir);
+	await fsp.mkdir(mockDir, { recursive: true });
 	for (const [name, content] of Object.entries(files)) {
 		const relative = name.replace(/^\//, "./");
 		const filename = path.join(mockDir, relative);
 		const dirname = path.join(mockDir, path.dirname(relative));
-		await fs.ensureDir(dirname);
-		await fs.writeFile(filename, content);
+		await fsp.mkdir(dirname, { recursive: true });
+		await fsp.writeFile(filename, content);
 	}
 }
 mockFs.restore = async (): Promise<void> => {
-	await fs.remove(mockDir);
+	await fsp.rm(mockDir, { recursive: true, force: true });
 };
 
-describe("readJsonWithTemplate", () => {
-	beforeAll(() => mockFs.restore());
-	afterEach(() => mockFs.restore());
+beforeAll(() => mockFs.restore());
+afterEach(() => mockFs.restore());
 
-	it("should read simple JSON files normally", async () => {
+test.sequential(
+	"readJsonWithTemplate() should read simple JSON files normally",
+	async (t) => {
 		const file = {
 			foo: "bar",
 			baz: 1,
@@ -34,12 +37,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(file);
-	});
+		t.expect(content).toStrictEqual(file);
+	},
+	20000,
+);
 
-	it("should follow top-level whole-file $imports", async () => {
+test.sequential(
+	"readJsonWithTemplate() should follow top-level whole-file $imports",
+	async (t) => {
 		const test = {
 			$import: "template.json",
 		};
@@ -52,12 +60,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(template);
-	});
+		t.expect(content).toStrictEqual(template);
+	},
+	20000,
+);
 
-	it("should overwrite keys that are present before the $import", async () => {
+test.sequential(
+	"readJsonWithTemplate() should overwrite keys that are present before the $import",
+	async (t) => {
 		const test = {
 			template: false,
 			$import: "template.json",
@@ -71,12 +84,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(template);
-	});
+		t.expect(content).toStrictEqual(template);
+	},
+	20000,
+);
 
-	it("should preserve keys that are present after the $import", async () => {
+test.sequential(
+	"readJsonWithTemplate() should preserve keys that are present after the $import",
+	async (t) => {
 		const test = {
 			$import: "template.json",
 			template: false,
@@ -92,12 +110,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(expected);
-	});
+		t.expect(content).toStrictEqual(expected);
+	},
+	20000,
+);
 
-	it("should throw if the $import specifier is not a string", async () => {
+test.sequential(
+	"readJsonWithTemplate() should throw if the $import specifier is not a string",
+	async (t) => {
 		const test = {
 			$import: 1,
 		};
@@ -108,14 +131,19 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+			t.expect,
+			() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 			{
 				errorCode: ZWaveErrorCodes.Config_Invalid,
 			},
 		);
-	});
+	},
+	20000,
+);
 
-	it("should throw if the $import specifier is not valid", async () => {
+test.sequential(
+	"readJsonWithTemplate() should throw if the $import specifier is not valid",
+	async (t) => {
 		const tests = [
 			"no-extension",
 			"wrong.extension",
@@ -133,16 +161,21 @@ describe("readJsonWithTemplate", () => {
 			});
 
 			await assertZWaveError(
-				() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+				t.expect,
+				() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 				{
 					errorCode: ZWaveErrorCodes.Config_Invalid,
 					messageMatches: "Import specifier",
 				},
 			);
 		}
-	});
+	},
+	20000,
+);
 
-	it("should throw if the $import target is not an object", async () => {
+test.sequential(
+	"readJsonWithTemplate() should throw if the $import target is not an object",
+	async (t) => {
 		const test = {
 			$import: "template.json#somewhere",
 		};
@@ -155,14 +188,19 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+			t.expect,
+			() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 			{
 				errorCode: ZWaveErrorCodes.Config_Invalid,
 			},
 		);
-	});
+	},
+	20000,
+);
 
-	it("should follow deep $imports", async () => {
+test.sequential(
+	"readJsonWithTemplate() should follow deep $imports",
+	async (t) => {
 		const test = {
 			toplevel: true,
 			nested: {
@@ -186,12 +224,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(expected);
-	});
+		t.expect(content).toStrictEqual(expected);
+	},
+	20000,
+);
 
-	it("should follow deep $imports in arrays", async () => {
+test.sequential(
+	"readJsonWithTemplate() should follow deep $imports in arrays",
+	async (t) => {
 		const test = {
 			toplevel: true,
 			nested: [
@@ -229,12 +272,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(expected);
-	});
+		t.expect(content).toStrictEqual(expected);
+	},
+	20000,
+);
 
-	it("file-based circular references should throw an error (direct, top-level)", async () => {
+test.sequential(
+	"readJsonWithTemplate() file-based circular references should throw an error (direct, top-level)",
+	async (t) => {
 		const test = {
 			$import: "template.json",
 		};
@@ -247,14 +295,19 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+			t.expect,
+			() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 			{
 				errorCode: ZWaveErrorCodes.Config_CircularImport,
 			},
 		);
-	});
+	},
+	20000,
+);
 
-	it("file-based circular references should throw an error (three-way)", async () => {
+test.sequential(
+	"readJsonWithTemplate() file-based circular references should throw an error (three-way)",
+	async (t) => {
 		const test = {
 			$import: "template1.json",
 		};
@@ -271,14 +324,19 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+			t.expect,
+			() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 			{
 				errorCode: ZWaveErrorCodes.Config_CircularImport,
 			},
 		);
-	});
+	},
+	20000,
+);
 
-	it("file-based circular references should throw an error (three-way, nested)", async () => {
+test.sequential(
+	"readJsonWithTemplate() file-based circular references should throw an error (three-way, nested)",
+	async (t) => {
 		const test = {
 			nested: {
 				$import: "template1.json",
@@ -308,14 +366,19 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+			t.expect,
+			() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 			{
 				errorCode: ZWaveErrorCodes.Config_CircularImport,
 			},
 		);
-	});
+	},
+	20000,
+);
 
-	it("should be able to resolve relative paths", async () => {
+test.sequential(
+	"readJsonWithTemplate() should be able to resolve relative paths",
+	async (t) => {
 		const test = {
 			$import: "../baz/template.json",
 		};
@@ -328,12 +391,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "foo/bar/test.json"),
 		);
-		expect(content).toEqual(template);
-	});
+		t.expect(content).toStrictEqual(template);
+	},
+	20000,
+);
 
-	it("should be able to resolve the root directory with ~/", async () => {
+test.sequential(
+	"readJsonWithTemplate() should be able to resolve the root directory with ~/",
+	async (t) => {
 		const test = {
 			$import: "~/template.json",
 		};
@@ -344,14 +412,20 @@ describe("readJsonWithTemplate", () => {
 			"/foo/bar/test.json": JSON.stringify(test),
 			"/foo/template.json": JSON.stringify(template),
 		});
+
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "foo/bar/test.json"),
 			path.join(mockDir, "foo"),
 		);
-		expect(content).toEqual(template);
-	});
+		t.expect(content).toStrictEqual(template);
+	},
+	20000,
+);
 
-	it("should throw when using a path that starts with ~/ when no root dir is configured", async () => {
+test.sequential(
+	"readJsonWithTemplate() should throw when using a path that starts with ~/ when no root dir is configured",
+	async (t) => {
 		const test = {
 			$import: "~/foo/template.json",
 		};
@@ -359,15 +433,24 @@ describe("readJsonWithTemplate", () => {
 			"/foo/bar/test.json": JSON.stringify(test),
 		});
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "foo/bar/test.json")),
+			t.expect,
+			() =>
+				readJsonWithTemplate(
+					fs,
+					path.join(mockDir, "foo/bar/test.json"),
+				),
 			{
 				messageMatches: "import specifier cannot start with ~/",
 				errorCode: ZWaveErrorCodes.Config_Invalid,
 			},
 		);
-	});
+	},
+	20000,
+);
 
-	it("should be able to resolve in-file selectors", async () => {
+test.sequential(
+	"readJsonWithTemplate() should be able to resolve in-file selectors",
+	async (t) => {
 		const test = {
 			$import: "template.json#sub",
 		};
@@ -384,12 +467,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(expected);
-	});
+		t.expect(content).toStrictEqual(expected);
+	},
+	20000,
+);
 
-	it("should be able to resolve deep in-file selectors", async () => {
+test.sequential(
+	"readJsonWithTemplate() should be able to resolve deep in-file selectors",
+	async (t) => {
 		const test = {
 			$import: "template.json#we/all/live/in/1/yellow/submarine",
 		};
@@ -413,12 +501,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(expected);
-	});
+		t.expect(content).toStrictEqual(expected);
+	},
+	20000,
+);
 
-	it("selector based circular references should throw an error (three-way)", async () => {
+test.sequential(
+	"readJsonWithTemplate() selector based circular references should throw an error (three-way)",
+	async (t) => {
 		const test = {
 			$import: "template1.json#foo",
 		};
@@ -445,14 +538,19 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+			t.expect,
+			() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 			{
 				errorCode: ZWaveErrorCodes.Config_CircularImport,
 			},
 		);
-	});
+	},
+	20000,
+);
 
-	it("unspecified self-references throw an error", async () => {
+test.sequential(
+	"readJsonWithTemplate() unspecified self-references throw an error",
+	async (t) => {
 		const test = {
 			$import: "#",
 		};
@@ -461,12 +559,17 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+			t.expect,
+			() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 			{},
 		);
-	});
+	},
+	20000,
+);
 
-	it("circular self-references throw an error", async () => {
+test.sequential(
+	"readJsonWithTemplate() circular self-references throw an error",
+	async (t) => {
 		const test = {
 			key1: {
 				$import: "#key2",
@@ -480,14 +583,19 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
-			() => readJsonWithTemplate(path.join(mockDir, "test.json")),
+			t.expect,
+			() => readJsonWithTemplate(fs, path.join(mockDir, "test.json")),
 			{
 				errorCode: ZWaveErrorCodes.Config_CircularImport,
 			},
 		);
-	});
+	},
+	20000,
+);
 
-	it("crazy stuff does work (part 1)", async () => {
+test.sequential(
+	"readJsonWithTemplate() crazy stuff does work (part 1)",
+	async (t) => {
 		const test = {
 			$import: "template1.json",
 		};
@@ -523,12 +631,17 @@ describe("readJsonWithTemplate", () => {
 		};
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(expected);
-	});
+		t.expect(content).toStrictEqual(expected);
+	},
+	20000,
+);
 
-	it("crazy stuff does work (part 2)", async () => {
+test.sequential(
+	"readJsonWithTemplate() crazy stuff does work (part 2)",
+	async (t) => {
 		const test = {
 			$import: "template1.json",
 		};
@@ -564,12 +677,17 @@ describe("readJsonWithTemplate", () => {
 		};
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(expected);
-	});
+		t.expect(content).toStrictEqual(expected);
+	},
+	20000,
+);
 
-	it("referencing partial parameters works", async () => {
+test.sequential(
+	"readJsonWithTemplate() referencing partial parameters works",
+	async (t) => {
 		const test = {
 			paramInformation: {
 				1: {
@@ -598,12 +716,17 @@ describe("readJsonWithTemplate", () => {
 		};
 
 		const content = await readJsonWithTemplate(
+			fs,
 			path.join(mockDir, "test.json"),
 		);
-		expect(content).toEqual(expected);
-	});
+		t.expect(content).toStrictEqual(expected);
+	},
+	20000,
+);
 
-	it("should throw when the referenced file is outside the rootDir", async () => {
+test.sequential(
+	"readJsonWithTemplate() should throw when the referenced file is outside the rootDir",
+	async (t) => {
 		const rootDir = "root/test";
 		const test = {
 			$import: "../outside.json",
@@ -613,15 +736,18 @@ describe("readJsonWithTemplate", () => {
 		});
 
 		await assertZWaveError(
+			t.expect,
 			() =>
 				readJsonWithTemplate(
+					fs,
 					path.join(mockDir, rootDir, "test.json"),
 					path.join(mockDir, rootDir),
 				),
 			{
-				messageMatches: "outside of root",
+				messageMatches: "outside all root directories",
 				errorCode: ZWaveErrorCodes.Config_Invalid,
 			},
 		);
-	});
-});
+	},
+	20000,
+);

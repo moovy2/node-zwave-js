@@ -1,0 +1,23 @@
+// tsconfig for building - only applies to the src directory
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"composite": false,
+		"rootDir": ".",
+		"outDir": "test/build",
+		"declaration": false,
+		"declarationMap": false,
+		"sourceMap": false,
+		"plugins": [
+			{
+				"transform": "./build/validateArgs/transformProgram.js",
+				"transformProgram": true
+			},
+			{ "transform": "./build/validateArgs/transformDecorators.js" }
+		],
+		"incremental": false,
+		"customConditions": ["@@dev", "@@test_transformers"]
+	},
+	"include": ["test/fixtures/**/*.mts"]
+	// "include": ["test/fixtures/testMapAndSet.mts"]
+}

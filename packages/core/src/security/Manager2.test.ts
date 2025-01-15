@@ -1,258 +1,323 @@
-import * as crypto from "crypto";
-import { ZWaveErrorCodes } from "../error/ZWaveError";
-import { assertZWaveError } from "../test/assertZWaveError";
-import { SecurityManager2 } from "./Manager2";
-import { SecurityClass, SecurityClassOwner } from "./SecurityClass";
+import { isUint8Array } from "@zwave-js/shared";
+import * as crypto from "node:crypto";
+import { test } from "vitest";
+import { SecurityClass } from "../definitions/SecurityClass.js";
+import { ZWaveErrorCodes } from "../error/ZWaveError.js";
+import { assertZWaveError } from "../test/assertZWaveError.js";
+import { SecurityManager2 } from "./Manager2.js";
 
-describe("lib/security/Manager2", () => {
-	// beforeAll(() => {
-	// 	jest.useFakeTimers();
-	// });
-
-	// afterAll(() => {
-	// 	jest.clearAllTimers();
-	// 	jest.useRealTimers();
-	// });
-
-	function makeNode(
-		nodeId: number = 2,
-		secClass?: SecurityClass,
-	): SecurityClassOwner {
-		return {
-			getHighestSecurityClass: () => secClass,
-			id: nodeId,
-			hasSecurityClass: (s) => s === secClass,
-			securityClasses:
-				secClass != undefined ? new Map([[secClass, true]]) : new Map(),
-		};
+async function dummyInit(
+	man: SecurityManager2,
+	options: {
+		keys?: boolean;
+		nodeId?: number;
+		secClass?: SecurityClass;
+	} = {},
+): Promise<void> {
+	if (options.keys !== false) {
+		await man.setKeyAsync(SecurityClass.S0_Legacy, crypto.randomBytes(16));
+		await man.setKeyAsync(
+			SecurityClass.S2_AccessControl,
+			crypto.randomBytes(16),
+		);
+		await man.setKeyAsync(
+			SecurityClass.S2_Authenticated,
+			crypto.randomBytes(16),
+		);
+		await man.setKeyAsync(
+			SecurityClass.S2_Unauthenticated,
+			crypto.randomBytes(16),
+		);
 	}
-
-	function dummyInit(
-		man: SecurityManager2,
-		options: {
-			keys?: boolean;
-			nodeId?: number;
-			secClass?: SecurityClass;
-			multicastGroup?: number;
-		} = {},
-	): SecurityClassOwner {
-		if (options.keys !== false) {
-			man.setKey(SecurityClass.S0_Legacy, crypto.randomBytes(16));
-			man.setKey(SecurityClass.S2_AccessControl, crypto.randomBytes(16));
-			man.setKey(SecurityClass.S2_Authenticated, crypto.randomBytes(16));
-			man.setKey(
-				SecurityClass.S2_Unauthenticated,
-				crypto.randomBytes(16),
-			);
-		}
-		const node = makeNode(options.nodeId, options.secClass);
-		if (options.nodeId) {
-			man.initializeSPAN(
-				node,
-				options.secClass ?? SecurityClass.S2_Authenticated,
-				crypto.randomBytes(16),
-				crypto.randomBytes(16),
-			);
-		}
-		if (options.multicastGroup) {
-			man.assignSecurityClassMulticast(
-				options.multicastGroup,
-				options.secClass ?? SecurityClass.S2_Authenticated,
-			);
-			man.initializeMPAN(options.multicastGroup);
-		}
-		return node;
+	if (options.nodeId) {
+		await man.initializeSPANAsync(
+			options.nodeId,
+			options.secClass ?? SecurityClass.S2_Authenticated,
+			crypto.randomBytes(16),
+			crypto.randomBytes(16),
+		);
 	}
+}
 
-	describe("nextNonce", () => {
-		it("should throw if the PRNG for the given receiver node has not been initialized", () => {
-			const man = new SecurityManager2();
-			assertZWaveError(() => man.nextNonce(2), {
-				errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
-				messageMatches: "initialized",
-			});
-		});
+test("nextNonce() -> should throw if the PRNG for the given receiver node has not been initialized", async (t) => {
+	const man = await SecurityManager2.create();
+	assertZWaveError(t.expect, () => man.nextNonceAsync(2), {
+		errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
+		messageMatches: "initialized",
+	});
+});
 
-		it("should generate a 13-byte nonce otherwise", () => {
-			const man = new SecurityManager2();
-			dummyInit(man, {
-				nodeId: 2,
-				secClass: SecurityClass.S2_AccessControl,
-			});
-
-			const ret = man.nextNonce(2);
-			expect(Buffer.isBuffer(ret)).toBeTrue();
-			expect(ret.length).toBe(13);
-		});
-
-		it("two nonces should be different", () => {
-			const man = new SecurityManager2();
-			dummyInit(man, {
-				nodeId: 2,
-				secClass: SecurityClass.S2_AccessControl,
-			});
-
-			const nonce1 = man.nextNonce(2);
-			const nonce2 = man.nextNonce(2);
-			expect(nonce1).not.toEqual(nonce2);
-		});
+test("nextNonce() -> should generate a 13-byte nonce otherwise", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man, {
+		nodeId: 2,
+		secClass: SecurityClass.S2_AccessControl,
 	});
 
-	describe("initializeSPAN", () => {
-		it("should throw if either entropy input does not have length 16", () => {
-			const man = new SecurityManager2();
-			const node = makeNode(2);
-			assertZWaveError(
-				() =>
-					man.initializeSPAN(
-						node,
-						SecurityClass.S2_Authenticated,
-						Buffer.alloc(15),
-						Buffer.alloc(16),
-					),
-				{
-					errorCode: ZWaveErrorCodes.Argument_Invalid,
-					messageMatches: "16 bytes",
-				},
-			);
+	const ret = await man.nextNonceAsync(2);
+	t.expect(isUint8Array(ret)).toBe(true);
+	t.expect(ret.length).toBe(13);
+});
 
-			assertZWaveError(
-				() =>
-					man.initializeSPAN(
-						node,
-						SecurityClass.S2_Authenticated,
-						Buffer.alloc(16),
-						Buffer.alloc(1),
-					),
-				{
-					errorCode: ZWaveErrorCodes.Argument_Invalid,
-					messageMatches: "16 bytes",
-				},
-			);
-		});
-
-		it("should throw if the node has not been assigned a security class", () => {
-			const man = new SecurityManager2();
-			const node = makeNode(2);
-			assertZWaveError(
-				() =>
-					man.initializeSPAN(
-						node,
-						SecurityClass.S2_Authenticated,
-						Buffer.alloc(16),
-						Buffer.alloc(16),
-					),
-				{
-					errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
-					messageMatches: "security class",
-				},
-			);
-		});
-
-		it("should throw if the keys for the node's security class have not been set up", () => {
-			const man = new SecurityManager2();
-			const node = makeNode(2, SecurityClass.S2_Authenticated);
-			assertZWaveError(
-				() =>
-					man.initializeSPAN(
-						node,
-						SecurityClass.S2_Authenticated,
-						Buffer.alloc(16),
-						Buffer.alloc(16),
-					),
-				{
-					errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
-					messageMatches: "network key",
-				},
-			);
-		});
-
-		it("should not throw otherwise", () => {
-			const man = new SecurityManager2();
-			const node = dummyInit(man, {
-				nodeId: 2,
-				secClass: SecurityClass.S2_Authenticated,
-			});
-			expect(() =>
-				man.initializeSPAN(
-					node,
-					SecurityClass.S2_Authenticated,
-					Buffer.alloc(16),
-					Buffer.alloc(16),
-				),
-			).not.toThrow();
-		});
+test("nextNonce() -> two nonces should be different", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man, {
+		nodeId: 2,
+		secClass: SecurityClass.S2_AccessControl,
 	});
 
-	describe("setKeys", () => {
-		it("throws if the network key does not have length 16", () => {
-			const man = new SecurityManager2();
-			assertZWaveError(
-				() =>
-					man.setKey(
-						SecurityClass.S2_Authenticated,
-						Buffer.alloc(15),
-					),
-				{
-					errorCode: ZWaveErrorCodes.Argument_Invalid,
-					messageMatches: "16 bytes",
-				},
-			);
-		});
+	const nonce1 = await man.nextNonceAsync(2);
+	const nonce2 = await man.nextNonceAsync(2);
+	t.expect(nonce1).not.toStrictEqual(nonce2);
+});
 
-		it("throws if the security class is not valid", () => {
-			const man = new SecurityManager2();
-			assertZWaveError(() => man.setKey(-1 as any, Buffer.alloc(16)), {
-				errorCode: ZWaveErrorCodes.Argument_Invalid,
-				messageMatches: "security class",
-			});
-		});
+test("initializeSPAN() -> should throw if either entropy input does not have length 16", async (t) => {
+	const man = await SecurityManager2.create();
+	const nodeId = 2;
+	assertZWaveError(
+		t.expect,
+		async () =>
+			await man.initializeSPANAsync(
+				nodeId,
+				SecurityClass.S2_Authenticated,
+				new Uint8Array(15),
+				new Uint8Array(16),
+			),
+		{
+			errorCode: ZWaveErrorCodes.Argument_Invalid,
+			messageMatches: "16 bytes",
+		},
+	);
+
+	assertZWaveError(
+		t.expect,
+		async () =>
+			await man.initializeSPANAsync(
+				nodeId,
+				SecurityClass.S2_Authenticated,
+				new Uint8Array(16),
+				new Uint8Array(1),
+			),
+		{
+			errorCode: ZWaveErrorCodes.Argument_Invalid,
+			messageMatches: "16 bytes",
+		},
+	);
+});
+
+test("initializeSPAN() -> should throw if the node has not been assigned a security class", async (t) => {
+	const man = await SecurityManager2.create();
+	const nodeId = 2;
+	assertZWaveError(
+		t.expect,
+		async () =>
+			await man.initializeSPANAsync(
+				nodeId,
+				SecurityClass.S2_Authenticated,
+				new Uint8Array(16),
+				new Uint8Array(16),
+			),
+		{
+			errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
+			messageMatches: "security class",
+		},
+	);
+});
+
+test("initializeSPAN() -> should throw if the keys for the node's security class have not been set up", async (t) => {
+	const man = await SecurityManager2.create();
+	const nodeId = 2;
+	assertZWaveError(
+		t.expect,
+		async () =>
+			await man.initializeSPANAsync(
+				nodeId,
+				SecurityClass.S2_Authenticated,
+				new Uint8Array(16),
+				new Uint8Array(16),
+			),
+		{
+			errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
+			messageMatches: "network key",
+		},
+	);
+});
+
+test("initializeSPAN() -> should not throw otherwise", async (t) => {
+	const man = await SecurityManager2.create();
+	const nodeId = 2;
+	await dummyInit(man, {
+		nodeId,
+		secClass: SecurityClass.S2_Authenticated,
 	});
+	await man.initializeSPANAsync(
+		nodeId,
+		SecurityClass.S2_Authenticated,
+		new Uint8Array(16),
+		new Uint8Array(16),
+	);
+});
 
-	describe("nextMPAN", () => {
-		it("should throw if the MPAN state for the given multicast group has not been initialized", () => {
-			const man = new SecurityManager2();
-			assertZWaveError(() => man.nextMPAN(1), {
-				errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
-				messageMatches: "initialized",
-			});
-		});
+test("setKeys() -> throws if the network key does not have length 16", async (t) => {
+	const man = await SecurityManager2.create();
+	assertZWaveError(
+		t.expect,
+		async () =>
+			await man.setKeyAsync(
+				SecurityClass.S2_Authenticated,
+				new Uint8Array(15),
+			),
+		{
+			errorCode: ZWaveErrorCodes.Argument_Invalid,
+			messageMatches: "16 bytes",
+		},
+	);
+});
 
-		it("should throw if the multicast group has not been assigned to a security class", () => {
-			const man = new SecurityManager2();
-			man.initializeMPAN(1);
-			assertZWaveError(() => man.nextMPAN(1), {
-				errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
-				messageMatches: "security class",
-			});
-		});
+test("setKeys() -> throws if the security class is not valid", async (t) => {
+	const man = await SecurityManager2.create();
+	assertZWaveError(
+		t.expect,
+		async () => await man.setKeyAsync(-1 as any, new Uint8Array(16)),
+		{
+			errorCode: ZWaveErrorCodes.Argument_Invalid,
+			messageMatches: "security class",
+		},
+	);
+});
 
-		it("should throw if the keys for the group's security class have not been set up", () => {
-			const man = new SecurityManager2();
-			man.assignSecurityClassMulticast(1, SecurityClass.S2_Authenticated);
-			man.initializeMPAN(1);
-			assertZWaveError(() => man.nextMPAN(1), {
-				errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
-				messageMatches: "network key",
-			});
-		});
+test("createMulticastGroup() -> should return a different group ID for a different node set", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man);
+	const group1 = man.createMulticastGroup(
+		[2, 3, 4],
+		SecurityClass.S2_Authenticated,
+	);
+	const group2 = man.createMulticastGroup(
+		[3, 4, 5],
+		SecurityClass.S2_Authenticated,
+	);
 
-		it("should generate a 16-byte buffer otherwise", () => {
-			const man = new SecurityManager2();
-			dummyInit(man, { multicastGroup: 1 });
-			const ret = man.nextMPAN(1);
+	t.expect(group1).not.toBe(group2);
+});
 
-			expect(Buffer.isBuffer(ret)).toBeTrue();
-			expect(ret.length).toBe(16);
-		});
+test("createMulticastGroup() -> should return a different group ID for a different node set for LR nodes", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man);
+	const group1 = man.createMulticastGroup(
+		[260, 261, 262],
+		SecurityClass.S2_Authenticated,
+	);
+	const group2 = man.createMulticastGroup(
+		[259, 260, 261],
+		SecurityClass.S2_Authenticated,
+	);
 
-		it("two nonces should be different", () => {
-			const man = new SecurityManager2();
-			dummyInit(man, { multicastGroup: 2 });
+	t.expect(group1).not.toBe(group2);
+});
 
-			const nonce1 = man.nextMPAN(2);
-			const nonce2 = man.nextMPAN(2);
-			expect(nonce1).not.toEqual(nonce2);
-		});
+//
+
+test("createMulticastGroup() -> should return the same group ID for a previously used node set", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man);
+	const group1 = man.createMulticastGroup(
+		[2, 3, 4],
+		SecurityClass.S2_Authenticated,
+	);
+	const group2 = man.createMulticastGroup(
+		[2, 3, 4],
+		SecurityClass.S2_Authenticated,
+	);
+
+	t.expect(group1).toBe(group2);
+});
+
+test("createMulticastGroup() -> should return the same group ID for a previously used LR node set", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man);
+	const group1 = man.createMulticastGroup(
+		[260, 261, 262],
+		SecurityClass.S2_Authenticated,
+	);
+	const group2 = man.createMulticastGroup(
+		[260, 261, 262],
+		SecurityClass.S2_Authenticated,
+	);
+
+	t.expect(group1).toBe(group2);
+});
+
+test("getMulticastKeyAndIV() -> should throw if the MPAN state for the given multicast group has not been initialized", async (t) => {
+	const man = await SecurityManager2.create();
+	assertZWaveError(t.expect, () => man.getMulticastKeyAndIVAsync(1), {
+		errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
+		messageMatches: "does not exist",
 	});
+});
+
+test("getMulticastKeyAndIV() -> should throw if the multicast group has not been created", async (t) => {
+	const man = await SecurityManager2.create();
+	assertZWaveError(t.expect, () => man.getMulticastKeyAndIVAsync(1), {
+		errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
+		messageMatches: "does not exist",
+	});
+});
+
+test("getMulticastKeyAndIV() -> should throw if the keys for the group's security class have not been set up", async (t) => {
+	const man = await SecurityManager2.create();
+	const groupId = man.createMulticastGroup(
+		[2, 3, 4],
+		SecurityClass.S2_Authenticated,
+	);
+	assertZWaveError(t.expect, () => man.getMulticastKeyAndIVAsync(groupId), {
+		errorCode: ZWaveErrorCodes.Security2CC_NotInitialized,
+		messageMatches: "network key",
+	});
+});
+
+test("getMulticastKeyAndIV() -> should generate a 13-byte IV otherwise", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man);
+	const groupId = man.createMulticastGroup(
+		[2, 3, 4],
+		SecurityClass.S2_Authenticated,
+	);
+
+	const { iv: ret } = await man.getMulticastKeyAndIVAsync(groupId);
+
+	t.expect(isUint8Array(ret)).toBe(true);
+	t.expect(ret.length).toBe(13);
+});
+
+test("getMulticastKeyAndIV() -> two nonces for the same group should be different", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man);
+	const groupId = man.createMulticastGroup(
+		[2, 3, 4],
+		SecurityClass.S2_Authenticated,
+	);
+
+	const { iv: nonce1 } = await man.getMulticastKeyAndIVAsync(groupId);
+	const { iv: nonce2 } = await man.getMulticastKeyAndIVAsync(groupId);
+
+	t.expect(nonce1).not.toStrictEqual(nonce2);
+});
+
+test("getMulticastKeyAndIV() -> two nonces for different groups should be different", async (t) => {
+	const man = await SecurityManager2.create();
+	await dummyInit(man);
+	const group1 = man.createMulticastGroup(
+		[2, 3, 4],
+		SecurityClass.S2_Authenticated,
+	);
+	const group2 = man.createMulticastGroup(
+		[3, 4, 5],
+		SecurityClass.S2_Authenticated,
+	);
+
+	const { iv: nonce1 } = await man.getMulticastKeyAndIVAsync(group1);
+	const { iv: nonce2 } = await man.getMulticastKeyAndIVAsync(group2);
+
+	t.expect(nonce1).not.toStrictEqual(nonce2);
 });

@@ -42,8 +42,6 @@
 			"#": "1",
 			"label": "Temperature Reporting Threshold",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 4,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
@@ -73,9 +71,8 @@
 			"#": "2[0xff000000]",
 			"label": "HVAC Type",
 			"valueSize": 4,
-			"minValue": 1,
-			"maxValue": 2,
 			"defaultValue": 1,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -83,7 +80,7 @@
 					"value": 1
 				},
 				{
-					"label": "Heat Pump",
+					"label": "Heat pump",
 					"value": 2
 				}
 			]
@@ -94,6 +91,7 @@
 			"valueSize": 4,
 			"minValue": 0,
 			"maxValue": 15,
+			"unsigned": true,
 			"readOnly": true,
 			"allowManualEntry": false
 		},
@@ -101,8 +99,7 @@
 			"#": "2[0xf00000]",
 			"label": "Auxiliary Heat Type",
 			"valueSize": 4,
-			"minValue": 1,
-			"maxValue": 2,
+			"unsigned": true,
 			"readOnly": true,
 			"allowManualEntry": false,
 			"options": [
@@ -122,6 +119,7 @@
 			"valueSize": 4,
 			"minValue": 0,
 			"maxValue": 255,
+			"unsigned": true,
 			"readOnly": true,
 			"allowManualEntry": false
 		},
@@ -131,36 +129,19 @@
 			"valueSize": 4,
 			"minValue": 0,
 			"maxValue": 255,
+			"unsigned": true,
 			"readOnly": true,
 			"allowManualEntry": false
 		},
 		{
 			"#": "3",
-			"label": "Lock Setpoint Changes",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 0,
-			"unsigned": true,
-			"writeOnly": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Disable",
-					"value": 0
-				},
-				{
-					"label": "Enable",
-					"value": 1
-				}
-			]
+			"$import": "~/templates/master_template.json#base_enable_disable",
+			"label": "Lock Setpoint Changes"
 		},
 		{
 			"#": "4",
 			"label": "Thermostat Power Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 2,
 			"readOnly": true,
 			"allowManualEntry": false,
 			"options": [
@@ -178,10 +159,7 @@
 			"#": "5",
 			"label": "Humidity Reporting Threshold",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 2,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -204,31 +182,14 @@
 		},
 		{
 			"#": "6",
-			"label": "Auxiliary/Emergency Heating",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Disable",
-					"value": 0
-				},
-				{
-					"label": "Enable",
-					"value": 1
-				}
-			]
+			"$import": "~/templates/master_template.json#base_enable_disable",
+			"label": "Auxiliary/Emergency Heating"
 		},
 		{
 			"#": "7",
 			"label": "Thermostat Hysteresis",
 			"description": "Variance allowed from setpoint to engage HVAC",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 8,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
@@ -270,8 +231,6 @@
 			"#": "8[0xff00]",
 			"label": "Heating Differential Temperature",
 			"valueSize": 2,
-			"minValue": 4,
-			"maxValue": 12,
 			"defaultValue": 4,
 			"allowManualEntry": false,
 			"options": [
@@ -301,8 +260,6 @@
 			"#": "8[0xff]",
 			"label": "Cooling Differential Temperature",
 			"valueSize": 2,
-			"minValue": 4,
-			"maxValue": 12,
 			"defaultValue": 4,
 			"allowManualEntry": false,
 			"options": [
@@ -332,24 +289,55 @@
 			"#": "9",
 			"label": "Thermostat Recovery Mode",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 2,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Fast recovery mode",
+					"label": "Fast",
 					"value": 1
 				},
 				{
-					"label": "Economy recovery mode",
+					"label": "Economy",
 					"value": 2
 				}
 			]
 		}
 	],
 	"compat": {
-		// The device has two endpoints. The temperature gets reported via the root, humidity is on endpoint 2.
-		"mapRootReportsToEndpoint": 1
+		// https://github.com/zwave-js/node-zwave-js/issues/6017#issuecomment-1648532422
+
+		// The device has a weird endpoint setup. Most thermostat functionality is on endpoint 0, but the two additional
+		// endpoints have a thermostat device class:
+		// General Thermostat V2
+		// - "Manufacturer Specific"
+		// - "Thermostat Mode"
+		// - "Thermostat Setpoint"
+		// - "Version"
+		// plus the non-mandatory CCs
+		// - "Multilevel Sensor"
+		// - "Association"
+
+		// The additional endpoints simply mirror the root endpoint though, except the humidity sensor on endpoint 2.
+
+		// expose the application CCs on the root endpoint
+		"preserveRootApplicationCCValueIDs": true,
+
+		// Remove all Thermostat CCs from endpoints 1 and 2, as well as the sensor on endpoint 1
+		"commandClasses": {
+			"remove": {
+				"Basic": {
+					"endpoints": [1, 2]
+				},
+				"Thermostat Mode": {
+					"endpoints": [1, 2]
+				},
+				"Thermostat Setpoint": {
+					"endpoints": [1, 2]
+				},
+				"Multilevel Sensor": {
+					"endpoints": [1]
+				}
+			}
+		}
 	}
 }

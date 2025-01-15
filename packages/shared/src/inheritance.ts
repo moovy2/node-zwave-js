@@ -1,8 +1,8 @@
-import type { Constructor, UnionToIntersection } from "./types";
+import type { Constructor, UnionToIntersection } from "./types.js";
 
 /** Decorator to support multi-inheritance using mixins */
 export function Mixin(baseCtors: Constructor[]) {
-	return function (derivedCtor: Constructor): void {
+	return function(derivedCtor: Constructor): void {
 		for (const baseCtor of baseCtors) {
 			applyMixin(derivedCtor, baseCtor);
 		}
@@ -32,8 +32,8 @@ export function applyMixin(
 				Object.defineProperty(
 					target.prototype,
 					prop,
-					Object.getOwnPropertyDescriptor(ctor.prototype, prop) ??
-						Object.create(null),
+					Object.getOwnPropertyDescriptor(ctor.prototype, prop)
+						?? Object.create(null),
 				);
 			}
 		}

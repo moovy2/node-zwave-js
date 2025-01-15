@@ -22,8 +22,6 @@
 			"#": "3",
 			"label": "All On / All Off",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 255,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -33,11 +31,11 @@
 					"value": 0
 				},
 				{
-					"label": "Enable All Off; Disable All On",
+					"label": "Enable all off; Disable all on",
 					"value": 1
 				},
 				{
-					"label": "Enable All On; Disable All Off",
+					"label": "Enable all on; Disable all off",
 					"value": 2
 				},
 				{
@@ -58,8 +56,6 @@
 			"#": "5",
 			"label": "Key Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -68,27 +64,27 @@
 					"value": 0
 				},
 				{
-					"label": "Auto off after 'Key on Duration' seconds",
+					"label": "Auto off after 'Key on duration' seconds",
 					"value": 1
 				},
 				{
-					"label": "Auto on after 'Key on Duration' seconds",
+					"label": "Auto on after 'Key on duration' seconds",
 					"value": 2
 				},
 				{
-					"label": "Held 3 seconds -> On; Release -> Off",
+					"label": "Held 3 seconds -> on; Release -> off",
 					"value": 3
 				},
 				{
-					"label": "Single click (On/Off); Held 3 seconds -> On; Release -> Off",
+					"label": "Single click (On/Off); Held 3 seconds -> on; Release -> off",
 					"value": 4
 				},
 				{
-					"label": "Momentary switch; Held -> On; Release -> Off",
+					"label": "Momentary switch; Held -> on; Release -> off",
 					"value": 5
 				},
 				{
-					"label": "Held 3 seconds -> On; Held 3 seconds -> Off",
+					"label": "Held 3 seconds -> on; Held 3 seconds -> off",
 					"value": 6
 				}
 			]
@@ -96,8 +92,8 @@
 		{
 			"#": "6",
 			"label": "Key On Duration",
-			"unit": "seconds",
 			"valueSize": 2,
+			"unit": "seconds",
 			"minValue": 0,
 			"maxValue": 65535,
 			"defaultValue": 0,
@@ -107,10 +103,7 @@
 			"#": "8",
 			"label": "Basic CC Integration Setting",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -135,10 +128,7 @@
 			"#": "10",
 			"label": "Key 1 Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -146,27 +136,27 @@
 					"value": 0
 				},
 				{
-					"label": "Auto off after 'Key on Duration' seconds",
+					"label": "Auto off after 'Key on duration' seconds",
 					"value": 1
 				},
 				{
-					"label": "Auto on after 'Key on Duration' seconds",
+					"label": "Auto on after 'Key on duration' seconds",
 					"value": 2
 				},
 				{
-					"label": "Held 3 seconds -> On; Release -> Off",
+					"label": "Held 3 seconds -> on; Release -> off",
 					"value": 3
 				},
 				{
-					"label": "Single click (On/Off); Held 3 seconds -> On; Release -> Off",
+					"label": "Single click (On/Off); Held 3 seconds -> on; Release -> off",
 					"value": 4
 				},
 				{
-					"label": "Momentary switch; Held -> On; Release -> Off",
+					"label": "Momentary switch; Held -> on; Release -> off",
 					"value": 5
 				},
 				{
-					"label": "Held 3 seconds -> On; Held 3 seconds -> Off",
+					"label": "Held 3 seconds -> on; Held 3 seconds -> off",
 					"value": 6
 				}
 			]
@@ -175,8 +165,6 @@
 			"#": "14",
 			"label": "Local Control",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -194,8 +182,6 @@
 			"#": "15",
 			"label": "Remote Control",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -213,8 +199,6 @@
 			"#": "16",
 			"label": "Scene Respond",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 7,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -256,25 +240,23 @@
 			"#": "17",
 			"label": "Key 1 Scene Settings",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Scene activation disabled",
+					"label": "Scene Activation disabled",
 					"value": 0
 				},
 				{
-					"label": "Key 1 -> Scene ID1 (Any Key 1 relay state)",
+					"label": "Key 1 -> scene ID1 (Any key 1 relay state)",
 					"value": 1
 				},
 				{
-					"label": "Key 1 -> Scene ID 1 (Key 1 relay open)",
+					"label": "Key 1 -> scene id 1 (Key 1 relay open)",
 					"value": 2
 				},
 				{
-					"label": "Upon clicking Key 1, always activate scene ID1 when Key 1's relay output is closed",
+					"label": "Upon clicking key 1, always activate scene ID1 when key 1's relay output is closed",
 					"value": 3
 				}
 			]
@@ -289,7 +271,7 @@
 			"unsigned": true,
 			"options": [
 				{
-					"label": "Scene activation disabled",
+					"label": "Scene Activation disabled",
 					"value": 0
 				}
 			]
@@ -312,12 +294,9 @@
 		},
 		{
 			"#": "255",
-			"label": "Factory reset",
+			"label": "Factory Reset",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 85,
 			"defaultValue": 0,
-			"unsigned": true,
 			"writeOnly": true,
 			"allowManualEntry": false,
 			"options": [

@@ -1,8 +1,6 @@
 {
 	"base_remote_mode_5": {
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 5,
 		"defaultValue": 0,
 		"unsigned": true,
 		"writeOnly": true,
@@ -34,13 +32,6 @@
 			}
 		]
 	},
-	"base_0-65535": {
-		"valueSize": 4,
-		"minValue": 0,
-		"maxValue": 65535,
-		"defaultValue": 0,
-		"unsigned": true
-	},
 	"base_interval": {
 		"valueSize": 4,
 		"unit": "seconds",
@@ -51,8 +42,6 @@
 	},
 	"base_color_options": {
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 8,
 		"unsigned": true,
 		"allowManualEntry": false,
 		"options": [
@@ -96,8 +85,6 @@
 	},
 	"base_color_options_9": {
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 9,
 		"defaultValue": 9,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -144,11 +131,25 @@
 			}
 		]
 	},
+	"base_out_of_limit": {
+		"valueSize": 1,
+		"minValue": 0,
+		"maxValue": 1,
+		"readOnly": true,
+		"options": [
+			{
+				"label": "Within limit",
+				"value": 0
+			},
+			{
+				"label": "Out of limit",
+				"value": 1
+			}
+		]
+	},
 	"notification_type": {
 		"label": "Notification Type",
 		"valueSize": 1,
-		"minValue": 1,
-		"maxValue": 11,
 		"defaultValue": 6,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -202,8 +203,6 @@
 	"motion_report_type": {
 		"label": "Motion Sensor Report Type to Send",
 		"valueSize": 1,
-		"minValue": 1,
-		"maxValue": 2,
 		"defaultValue": 1,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -221,8 +220,6 @@
 	"sensor_report_type": {
 		"label": "Report Type to Send",
 		"valueSize": 4,
-		"minValue": 16,
-		"maxValue": 256,
 		"defaultValue": 1,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -244,8 +241,6 @@
 	"binary_report_type": {
 		"label": "Report Type To Send",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
 		"defaultValue": 2,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -267,8 +262,6 @@
 	"binary_report_type_3": {
 		"label": "Motion Sensor Triggered Command",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 3,
 		"defaultValue": 1,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -291,10 +284,28 @@
 			}
 		]
 	},
-	"notification_report_type": {
+	"multilevel_report_type": {
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
+		"defaultValue": 1,
+		"unsigned": true,
+		"allowManualEntry": false,
+		"options": [
+			{
+				"label": "Disable",
+				"value": 0
+			},
+			{
+				"label": "Basic CC Report",
+				"value": 1
+			},
+			{
+				"label": "MultiLevel Switch CC Report",
+				"value": 2
+			}
+		]
+	},
+	"multilevel_set_report_type": {
+		"valueSize": 1,
 		"defaultValue": 1,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -308,7 +319,7 @@
 				"value": 1
 			},
 			{
-				"label": "MultiLevel Switch CC Report",
+				"label": "MultiLevel Switch CC Set",
 				"value": 2
 			}
 		]
@@ -326,8 +337,6 @@
 	"celsius_fahrenheit": {
 		"label": "Temperature Unit",
 		"valueSize": 4,
-		"minValue": 1,
-		"maxValue": 2,
 		"defaultValue": 1,
 		"allowManualEntry": false,
 		"options": [
@@ -342,7 +351,7 @@
 		]
 	},
 	"celsius_fahrenheit_0": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Temperature Unit",
 		"valueSize": 4,
 		"options": [
@@ -371,7 +380,7 @@
 	},
 	"low_temp_alarm": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
-		"label": "Low Temperature Alarm (-15°C)"
+		"label": "Low Temperature Alarm (-15 °C)"
 	},
 	"below_temp_report": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
@@ -416,8 +425,6 @@
 	"factory_reset": {
 		"label": "Reset to Factory Defaults",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"writeOnly": true,
@@ -436,13 +443,15 @@
 	"factory_reset_exclude": {
 		"label": "Reset to Factory Default Setting",
 		"valueSize": 4,
-		"minValue": 0,
-		"maxValue": 1431655765,
 		"defaultValue": 0,
 		"unsigned": true,
 		"writeOnly": true,
 		"allowManualEntry": false,
 		"options": [
+			{
+				"label": "Normal Operation",
+				"value": 0
+			},
 			{
 				"label": "Reset the product to factory default setting and exclude from Z-Wave network",
 				"value": 1431655765
@@ -456,8 +465,6 @@
 	"factory_reset_complete": {
 		"label": "Reset to Factory Default Setting",
 		"valueSize": 4,
-		"minValue": 0,
-		"maxValue": 4294967295,
 		"defaultValue": 0,
 		"unsigned": true,
 		"writeOnly": true,
@@ -567,8 +574,6 @@
 	},
 	"reset_parameters": {
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"writeOnly": true,
@@ -587,8 +592,6 @@
 	"enable_notification_basic_report_only": {
 		"label": "Send Notifications to Associated Devices (Group 1)",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -606,8 +609,6 @@
 	"enable_notification_basic_set_only": {
 		"label": "Send Notifications to Associated Devices (Group 1)",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -625,8 +626,6 @@
 	"enable_notifications": {
 		"label": "Send Notifications to Associated Devices (Group 1)",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -648,8 +647,6 @@
 	"enable_notifications_0-3": {
 		"label": "Send Notifications to Associated Devices (Group 1)",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 3,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -675,8 +672,6 @@
 	"enable_notifications_0-4": {
 		"label": "Send Notifications to Associated Devices (Group 1)",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 4,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -697,7 +692,6 @@
 				"label": "Multilevel Switch CC Report",
 				"value": 3
 			},
-
 			{
 				"label": "Hail CC (when using the manual switch to change the load state)",
 				"value": 4
@@ -705,7 +699,7 @@
 		]
 	},
 	"invert_state_report": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Invert Binary Report Value",
 		"options": [
 			{
@@ -719,7 +713,7 @@
 		]
 	},
 	"invert_basic_set": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Invert Basic Set on Open/Close Event",
 		"options": [
 			{
@@ -749,7 +743,7 @@
 		]
 	},
 	"auto_off_timer_65535": {
-		"$import": "#base_0-65535",
+		"$import": "~/templates/master_template.json#base_0-65535",
 		"label": "Auto Off Timer",
 		"unit": "seconds",
 		"options": [
@@ -776,7 +770,7 @@
 		]
 	},
 	"auto_on_timer_65535": {
-		"$import": "#base_0-65535",
+		"$import": "~/templates/master_template.json#base_0-65535",
 		"label": "Auto On Timer",
 		"unit": "seconds",
 		"options": [
@@ -814,7 +808,7 @@
 		"unsigned": true
 	},
 	"report_power_voltage": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Multilevel Sensor Report Content",
 		"options": [
 			{
@@ -851,14 +845,14 @@
 	"overheat_protection": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Overheat Protection",
-		"description": "Output will be turned off after 30 seconds if internal temperature exceeds 100°C"
+		"description": "Output will be turned off after 30 seconds if internal temperature exceeds 100 °C"
 	},
 	"auto_report_interval": {
 		"$import": "#base_interval",
 		"label": "Automatic Reporting Interval"
 	},
 	"auto_report_interval_watt": {
-		"$import": "#base_0-65535",
+		"$import": "~/templates/master_template.json#base_0-65535",
 		"label": "Automatic Reporting Interval: Power Consumption",
 		"unit": "seconds",
 		"defaultValue": 600,
@@ -870,7 +864,7 @@
 		]
 	},
 	"auto_report_interval_kwh": {
-		"$import": "#base_0-65535",
+		"$import": "~/templates/master_template.json#base_0-65535",
 		"label": "Automatic Reporting Interval: kWh",
 		"unit": "seconds",
 		"defaultValue": 600,
@@ -882,7 +876,7 @@
 		]
 	},
 	"auto_report_interval_v": {
-		"$import": "#base_0-65535",
+		"$import": "~/templates/master_template.json#base_0-65535",
 		"label": "Automatic Reporting Interval: Voltage",
 		"unit": "seconds",
 		"defaultValue": 600,
@@ -894,7 +888,7 @@
 		]
 	},
 	"auto_report_interval_amp": {
-		"$import": "#base_0-65535",
+		"$import": "~/templates/master_template.json#base_0-65535",
 		"label": "Automatic Reporting Interval: Current",
 		"unit": "seconds",
 		"defaultValue": 600,
@@ -1010,6 +1004,16 @@
 		"label": "Automatic Report: Group 1 - Voltage (Whole HEM)",
 		"valueSize": 4
 	},
+	"auto_report_group1_v_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - Voltage (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group1_v_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - Voltage (Channel 2)",
+		"valueSize": 4
+	},
 	"auto_report_group1_amp": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 1 - Current",
@@ -1033,6 +1037,16 @@
 	"auto_report_group1_amp_wholehem": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 1 - Current (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group1_amp_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - Current (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group1_amp_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - Current (Channel 2)",
 		"valueSize": 4
 	},
 	"auto_report_group1_msrc": {
@@ -1065,6 +1079,16 @@
 		"label": "Automatic Report: Group 1 - Power (Whole HEM)",
 		"valueSize": 4
 	},
+	"auto_report_group1_watt_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - Power (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group1_watt_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - Power (Channel 2)",
+		"valueSize": 4
+	},
 	"auto_report_group1_kwh": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 1 - kWh",
@@ -1088,6 +1112,56 @@
 	"auto_report_group1_kwh_wholehem": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 1 - kWh (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kwh_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kWh (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kwh_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kWh (Channel 2)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kVarh_wholehem": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kVarh (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kVar_wholehem": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kVar (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kVarh_clamp1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kVarh (Clamp 1)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kVarh_clamp2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kVarh (Clamp 2)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kVarh_clamp3": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kVarh (Clamp 3)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kVar_clamp1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kVar (Clamp 1)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kVar_clamp2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kVar (Clamp 2)",
+		"valueSize": 4
+	},
+	"auto_report_group1_kVar_clamp3": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 1 - kVar (Clamp 3)",
 		"valueSize": 4
 	},
 	"auto_report_group2_battery": {
@@ -1140,6 +1214,16 @@
 		"label": "Automatic Report: Group 2 - Voltage (Whole HEM)",
 		"valueSize": 4
 	},
+	"auto_report_group2_v_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - Voltage (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group2_v_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - Voltage (Channel 2)",
+		"valueSize": 4
+	},
 	"auto_report_group2_amp": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 2 - Current",
@@ -1163,6 +1247,16 @@
 	"auto_report_group2_amp_wholehem": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 2 - Current (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group2_amp_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - Current (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group2_amp_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - Current (Channel 2)",
 		"valueSize": 4
 	},
 	"auto_report_group2_msrc": {
@@ -1195,6 +1289,16 @@
 		"label": "Automatic Report: Group 2 - Power (Whole HEM)",
 		"valueSize": 4
 	},
+	"auto_report_group2_watt_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - Power (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group2_watt_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - Power (Channel 2)",
+		"valueSize": 4
+	},
 	"auto_report_group2_kwh": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 2 - kWh",
@@ -1218,6 +1322,56 @@
 	"auto_report_group2_kwh_wholehem": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 2 - kWh (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kwh_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kWh (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kwh_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kWh (Channel 2)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kVarh_wholehem": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kVarh (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kVar_wholehem": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kVar (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kVarh_clamp1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kVarh (Clamp 1)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kVarh_clamp2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kVarh (Clamp 2)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kVarh_clamp3": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kVarh (Clamp 3)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kVar_clamp1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kVar (Clamp 1)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kVar_clamp2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kVar (Clamp 2)",
+		"valueSize": 4
+	},
+	"auto_report_group2_kVar_clamp3": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 2 - kVar (Clamp 3)",
 		"valueSize": 4
 	},
 	"auto_report_group3_battery": {
@@ -1270,6 +1424,16 @@
 		"label": "Automatic Report: Group 3 - Voltage (Whole HEM)",
 		"valueSize": 4
 	},
+	"auto_report_group3_v_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - Voltage (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group3_v_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - Voltage (Channel 2)",
+		"valueSize": 4
+	},
 	"auto_report_group3_amp": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 3 - Current",
@@ -1293,6 +1457,16 @@
 	"auto_report_group3_amp_wholehem": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 3 - Current (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group3_amp_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - Current (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group3_amp_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - Current (Channel 2)",
 		"valueSize": 4
 	},
 	"auto_report_group3_msrc": {
@@ -1325,6 +1499,16 @@
 		"label": "Automatic Report: Group 3 - Power (Whole HEM)",
 		"valueSize": 4
 	},
+	"auto_report_group3_watt_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - Power (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group3_watt_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - Power (Channel 2)",
+		"valueSize": 4
+	},
 	"auto_report_group3_kwh": {
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "Automatic Report: Group 3 - kWh",
@@ -1350,6 +1534,56 @@
 		"label": "Automatic Report: Group 3 - kWh (Whole HEM)",
 		"valueSize": 4
 	},
+	"auto_report_group3_kwh_channel1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kWh (Channel 1)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kwh_channel2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kWh (Channel 2)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kVarh_wholehem": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kVarh (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kVar_wholehem": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kVar (Whole HEM)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kVarh_clamp1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kVarh (Clamp 1)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kVarh_clamp2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kVarh (Clamp 2)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kVarh_clamp3": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kVarh (Clamp 3)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kVar_clamp1": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kVar (Clamp 1)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kVar_clamp2": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kVar (Clamp 2)",
+		"valueSize": 4
+	},
+	"auto_report_group3_kVar_clamp3": {
+		"$import": "~/templates/master_template.json#base_enable_disable",
+		"label": "Automatic Report: Group 3 - kVar (Clamp 3)",
+		"valueSize": 4
+	},
 	"device_tag": {
 		"label": "Device Tag",
 		"valueSize": 2,
@@ -1361,8 +1595,6 @@
 	"partner_id_aeotec": {
 		"label": "Partner ID",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 0,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1376,8 +1608,6 @@
 	"partner_id_att": {
 		"label": "Partner ID",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1395,8 +1625,6 @@
 	"partner_id_other": {
 		"label": "Partner ID",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1412,7 +1640,7 @@
 		]
 	},
 	"sensor_operation_mode": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Sensor Operation Mode",
 		"options": [
 			{
@@ -1432,8 +1660,6 @@
 	"association_group_2_trigger": {
 		"label": "Association Group 2: Trigger",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1453,10 +1679,8 @@
 		]
 	},
 	"association_group_2_command_type": {
-		"label": "Association Group 2: Command Type ",
+		"label": "Association Group 2: Command Type",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
 		"defaultValue": 2,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1550,7 +1774,7 @@
 		"defaultValue": 1
 	},
 	"external_switch_two": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "External Switch Type",
 		"options": [
 			{
@@ -1606,8 +1830,6 @@
 	"external_switch_3way_auto": {
 		"label": "External Switch Type",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 4,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1637,8 +1859,6 @@
 	"external_switch_toggle_no_nc": {
 		"label": "External Switch Type",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1660,8 +1880,6 @@
 	"external_switch_dimmers": {
 		"label": "External Switch Type",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 3,
 		"defaultValue": 1,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1685,7 +1903,7 @@
 		]
 	},
 	"switch_mode_state_s1": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Switch Mode (S1): State Sync",
 		"allowManualEntry": false,
 		"options": [
@@ -1700,7 +1918,7 @@
 		]
 	},
 	"switch_mode_state_s2": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Switch Mode (S2): State Sync",
 		"allowManualEntry": false,
 		"options": [
@@ -1721,8 +1939,6 @@
 	"led_function": {
 		"label": "LED Indicator Function",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
 		"defaultValue": 2,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1741,6 +1957,31 @@
 			}
 		]
 	},
+	"led_function_extended": {
+		"$import": "~/0x0086/templates/aeotec_template.json#led_function",
+		"options": [
+			{
+				"label": "Disable",
+				"value": 0
+			},
+			{
+				"label": "Momentary blink",
+				"value": 1
+			},
+			{
+				"label": "LED follows switch state",
+				"value": 2
+			},
+			{
+				"label": "Inverted LED state based on output",
+				"value": 3
+			},
+			{
+				"label": "LED always on, blinks when state changed",
+				"value": 4
+			}
+		]
+	},
 	"blink_duration": {
 		"label": "LED Blink Duration",
 		"valueSize": 2,
@@ -1748,7 +1989,8 @@
 		"minValue": 0,
 		"maxValue": 255,
 		"defaultValue": 0,
-		"writeOnly": true
+		"writeOnly": true,
+		"unsigned": true
 	},
 	"blink_length": {
 		"label": "LED Blink Cycle Length",
@@ -1758,7 +2000,8 @@
 		"minValue": 0,
 		"maxValue": 255,
 		"defaultValue": 0,
-		"writeOnly": true
+		"writeOnly": true,
+		"unsigned": true
 	},
 	"motion_timeout": {
 		"label": "Motion Sensor Timeout",
@@ -1909,8 +2152,6 @@
 	"current_power_mode": {
 		"label": "Current Power Mode",
 		"valueSize": 2,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"readOnly": true,
@@ -1929,8 +2170,6 @@
 	"sleep_state": {
 		"label": "Sleep State",
 		"valueSize": 2,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"readOnly": true,
 		"allowManualEntry": false,
@@ -1942,14 +2181,16 @@
 			{
 				"label": "Awake",
 				"value": 1
+			},
+			{
+				"label": "Always awake on USB power",
+				"value": 2
 			}
 		]
 	},
 	"switch_destination_s1": {
 		"label": "Control Destination (S1)",
 		"valueSize": 1,
-		"minValue": 1,
-		"maxValue": 3,
 		"defaultValue": 3,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1971,8 +2212,6 @@
 	"switch_destination_s2": {
 		"label": "Control Destination (S2)",
 		"valueSize": 1,
-		"minValue": 1,
-		"maxValue": 3,
 		"defaultValue": 3,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -1986,7 +2225,7 @@
 				"value": 2
 			},
 			{
-				"label": "Load and association group 3",
+				"label": "Load and association group 4",
 				"value": 3
 			}
 		]
@@ -2012,8 +2251,6 @@
 	"current_working_mode": {
 		"label": "Current Working Mode",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
 		"defaultValue": 0,
 		"unsigned": true,
 		"readOnly": true,
@@ -2034,7 +2271,7 @@
 		]
 	},
 	"dimming_principle": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Dimming Principle",
 		"defaultValue": 1,
 		"options": [
@@ -2051,8 +2288,6 @@
 	"load_type": {
 		"label": "Load Type",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 3,
 		"defaultValue": 0,
 		"unsigned": true,
 		"readOnly": true,
@@ -2099,8 +2334,6 @@
 	"brightness_single_tap": {
 		"label": "Brightness on Single Tap",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 3,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -2130,8 +2363,6 @@
 	"load_recognition_method": {
 		"label": "Load Recognition Method",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 2,
 		"defaultValue": 2,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -2153,8 +2384,6 @@
 	// Doorbells/Sirens
 	"base_light_index": {
 		"valueSize": 4,
-		"minValue": 1,
-		"maxValue": 127,
 		"defaultValue": 1,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -2227,8 +2456,6 @@
 	},
 	"base_tone_play_mode": {
 		"valueSize": 4,
-		"minValue": 0,
-		"maxValue": 255,
 		"defaultValue": 0,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -2550,8 +2777,6 @@
 	},
 	"base_basic_set_command": {
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 4,
 		"unsigned": true,
 		"allowManualEntry": false,
 		"options": [
@@ -2620,8 +2845,10 @@
 	"button_unpair": {
 		"label": "Button Unpairing",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 7,
+		// "minValue": 0,
+		// Theoretically these options can be combined, but not doing it
+		// is easier to understand
+		// "maxValue": 7,
 		"defaultValue": 0,
 		"unsigned": true,
 		"writeOnly": true,
@@ -2648,8 +2875,6 @@
 	"button_pair": {
 		"label": "Button Pairing",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 4,
 		"defaultValue": 0,
 		"unsigned": true,
 		"writeOnly": true,
@@ -2676,8 +2901,6 @@
 	"button_pairing_status": {
 		"label": "Pairing Mode Status",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 4,
 		"defaultValue": 0,
 		"unsigned": true,
 		"readOnly": true,
@@ -2704,8 +2927,6 @@
 	"button_status_1": {
 		"label": "Status: Button 1",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"readOnly": true,
@@ -2724,8 +2945,6 @@
 	"button_status_2": {
 		"label": "Status: Button 2",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"readOnly": true,
@@ -2744,8 +2963,6 @@
 	"button_status_3": {
 		"label": "Status: Button 3",
 		"valueSize": 1,
-		"minValue": 0,
-		"maxValue": 1,
 		"defaultValue": 0,
 		"unsigned": true,
 		"readOnly": true,
@@ -2789,7 +3006,7 @@
 		"label": "Button 3: Battery Voltage"
 	},
 	"base_button_version": {
-		"$import": "#base_0-65535",
+		"$import": "~/templates/master_template.json#base_0-65535",
 		"options": [
 			{
 				"label": "Not paired",
@@ -2957,8 +3174,6 @@
 	"wallmote_report_type": {
 		"label": "Report Type",
 		"valueSize": 1,
-		"minValue": 1,
-		"maxValue": 3,
 		"defaultValue": 1,
 		"unsigned": true,
 		"allowManualEntry": false,
@@ -2974,7 +3189,7 @@
 		]
 	},
 	"wallmote_command_type": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Command Type to Send Association Groups",
 		"options": [
 			{
@@ -3019,7 +3234,7 @@
 		"defaultValue": 1
 	},
 	"wave_option": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "Wave Option",
 		"valueSize": 4,
 		"defaultValue": 1,
@@ -3194,7 +3409,7 @@
 		"label": "WallSwipe Sensitivity"
 	},
 	"wallswipe_status": {
-		"$import": "~/templates/master_template.json#base_0-1_nounit",
+		"$import": "~/templates/master_template.json#base_options_nounit",
 		"label": "WallSwipe Status",
 		"options": [
 			{
@@ -3211,5 +3426,22 @@
 		"$import": "~/templates/master_template.json#base_enable_disable",
 		"label": "WallSwipe Reset Function",
 		"defaultValue": 1
+	},
+	// Wall Switch settings
+	"wallswitch_command_type": {
+		"label": "Command Type to Send Association Groups",
+		"valueSize": 1,
+		"defaultValue": 1,
+		"allowManualEntry": false,
+		"options": [
+			{
+				"label": "Basic CC Set",
+				"value": 1
+			},
+			{
+				"label": "Binary Switch CC Set",
+				"value": 2
+			}
+		]
 	}
 }

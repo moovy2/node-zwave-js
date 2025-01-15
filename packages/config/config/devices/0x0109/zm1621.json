@@ -20,21 +20,19 @@
 			"label": "Siren Strobe Mode",
 			"description": "Defines the reaction of the siren",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "All Enable",
+					"label": "All enable",
 					"value": 0
 				},
 				{
-					"label": "Siren Only",
+					"label": "Siren only",
 					"value": 1
 				},
 				{
-					"label": "Strobe Only",
+					"label": "Strobe only",
 					"value": 2
 				}
 			]
@@ -44,8 +42,6 @@
 			"label": "Alarm Auto Stop Time",
 			"description": "Defines the auto time out of the alarm indication",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [

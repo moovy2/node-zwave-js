@@ -19,21 +19,19 @@
 			"label": "Primary Notification Volume Level",
 			"description": "Set the volume level",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Low Volume",
+					"label": "Low",
 					"value": 1
 				},
 				{
-					"label": "Medium Volume",
+					"label": "Medium",
 					"value": 2
 				},
 				{
-					"label": "High Volume",
+					"label": "High",
 					"value": 3
 				}
 			]
@@ -42,8 +40,6 @@
 			"#": "2",
 			"label": "Primary Notification Length",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 255,
 			"defaultValue": 2,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -53,7 +49,7 @@
 					"value": 255
 				},
 				{
-					"label": "30 Sec",
+					"label": "30 seconds",
 					"value": 1
 				},
 				{
@@ -70,18 +66,16 @@
 			"#": "3",
 			"label": "Secondary Notification Length",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 1,
 			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Chime Will Not Play",
+					"label": "Chime will not play",
 					"value": 255
 				},
 				{
-					"label": "Does Not Stop",
+					"label": "Does not stop",
 					"value": 0
 				},
 				{
@@ -89,11 +83,11 @@
 					"value": 1
 				},
 				{
-					"label": "Time 2 Min",
+					"label": "Time 2 min",
 					"value": 2
 				},
 				{
-					"label": "Time 5 Min",
+					"label": "Time 5 min",
 					"value": 5
 				}
 			]
@@ -102,21 +96,19 @@
 			"#": "4",
 			"label": "Secondary Notification Volume Level",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 3,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Low Volume",
+					"label": "Low",
 					"value": 1
 				},
 				{
-					"label": "Medium Volume",
+					"label": "Medium",
 					"value": 2
 				},
 				{
-					"label": "High Volume",
+					"label": "High",
 					"value": 3
 				}
 			]
@@ -125,8 +117,6 @@
 			"#": "5",
 			"label": "Primary Notification Sound",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 10,
 			"defaultValue": 9,
 			"allowManualEntry": false,
 			"options": [
@@ -176,8 +166,6 @@
 			"#": "6",
 			"label": "Secondary Notification Sound",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 10,
 			"defaultValue": 9,
 			"allowManualEntry": false,
 			"options": [
@@ -227,17 +215,15 @@
 			"#": "7",
 			"label": "Toggle Secondary Chime",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 2,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Primary Notification Will Play",
+					"label": "Primary notification will play",
 					"value": 1
 				},
 				{
-					"label": "Secondary Notification Will Play",
+					"label": "Secondary notification will play",
 					"value": 2
 				}
 			]

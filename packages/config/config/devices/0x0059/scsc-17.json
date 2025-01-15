@@ -31,8 +31,6 @@
 			"label": "Temperature Scale",
 			"description": "Controls the temperature sensor scale",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
 			"unsigned": true,
 			"allowManualEntry": false,
@@ -49,7 +47,7 @@
 		},
 		{
 			"#": "2",
-			"label": "Lower temperature limit",
+			"label": "Lower Temperature Limit",
 			"description": "Defines the minimum temperature. Steps are 1C",
 			"valueSize": 1,
 			"minValue": 0,
@@ -59,7 +57,7 @@
 		},
 		{
 			"#": "3",
-			"label": "Upper temperature limit",
+			"label": "Upper Temperature Limit",
 			"description": "Defines the maximum temperature. Steps are 1C",
 			"valueSize": 1,
 			"minValue": 0,

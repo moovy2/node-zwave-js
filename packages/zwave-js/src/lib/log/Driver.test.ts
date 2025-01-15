@@ -1,25 +1,75 @@
 import {
+	MessagePriority,
+	ZWaveLogContainer,
 	createDefaultTransportFormat,
 	getDirectionPrefix,
-	ZWaveLogContainer,
 } from "@zwave-js/core";
-import { assertLogInfo, assertMessage, SpyTransport } from "@zwave-js/testing";
+import {
+	SpyTransport,
+	assertLogInfo,
+	assertMessage,
+} from "@zwave-js/core/test";
+import { FunctionType, Message, MessageType } from "@zwave-js/serial";
 import { createDeferredPromise } from "alcalzone-shared/deferred-promise";
-import { SortedList } from "alcalzone-shared/sorted-list";
 import colors from "ansi-colors";
 import MockDate from "mockdate";
-import type { Driver } from "../driver/Driver";
-import { Transaction } from "../driver/Transaction";
-import {
-	FunctionType,
-	MessagePriority,
-	MessageType,
-} from "../message/Constants";
-import { Message } from "../message/Message";
-import { createEmptyMockDriver } from "../test/mocks";
-import { DriverLogger } from "./Driver";
+import { beforeEach, test as baseTest } from "vitest";
+import type { Driver } from "../driver/Driver.js";
+import { createAndStartTestingDriver } from "../driver/DriverMock.js";
+import { TransactionQueue } from "../driver/Queue.js";
+import { Transaction } from "../driver/Transaction.js";
+import { DriverLogger } from "./Driver.js";
 
-const fakeDriver = createEmptyMockDriver() as unknown as Driver;
+interface LocalTestContext {
+	context: {
+		driver: Driver;
+		driverLogger: DriverLogger;
+		spyTransport: SpyTransport;
+	};
+}
+
+const test = baseTest.extend<LocalTestContext>({
+	context: [
+		async ({}, use) => {
+			// Setup
+			const { driver } = await createAndStartTestingDriver({
+				loadConfiguration: false,
+				skipNodeInterview: true,
+				skipControllerIdentification: true,
+			});
+
+			// Replace all defined transports with a spy transport
+			const spyTransport = new SpyTransport();
+			spyTransport.format = createDefaultTransportFormat(true, true);
+			const driverLogger = new DriverLogger(
+				driver,
+				new ZWaveLogContainer({
+					transports: [spyTransport],
+				}),
+			);
+			// Uncomment this to debug the log outputs manually
+			// wasSilenced = unsilence(driverLogger);
+
+			MockDate.set(new Date().setHours(0, 0, 0, 0));
+
+			// Run tests
+			await use({ driver, driverLogger, spyTransport });
+
+			// Teardown
+			driver.removeAllListeners();
+			await driver.destroy();
+
+			// Don't spam the console when performing the other tests not related to logging
+			driverLogger.container.updateConfiguration({ enabled: false });
+			MockDate.reset();
+		},
+		{ auto: true },
+	],
+});
+
+beforeEach<LocalTestContext>(({ context, expect }) => {
+	context.spyTransport.spy.resetHistory();
+});
 
 interface CreateMessageOptions {
 	type: MessageType;
@@ -34,347 +84,331 @@ function createMessage(
 	driver: Driver,
 	options: Partial<CreateTransactionOptions>,
 ) {
-	return new Message(driver, {
+	return new Message({
 		type: options.type || MessageType.Request,
 		functionType: options.functionType || (0x00 as any),
 	});
 }
 
 function createTransaction(
+	driver: Driver,
 	options: Partial<CreateTransactionOptions>,
 ): Transaction {
-	const message = createMessage(fakeDriver, options);
-	const trns = new Transaction(
-		fakeDriver,
+	const message = createMessage(driver, options);
+	const trns = new Transaction(driver, {
 		message,
-		createDeferredPromise(),
-		options.priority || MessagePriority.Controller,
-	);
+		parts: {} as any,
+		promise: createDeferredPromise(),
+		priority: options.priority || MessagePriority.Controller,
+	});
 	return trns;
 }
 
-describe("lib/log/Driver =>", () => {
-	let driverLogger: DriverLogger;
-	let spyTransport: SpyTransport;
+test.sequential("print() logs short messages correctly", ({ context, expect }) => {
+	const { driverLogger, spyTransport } = context;
+	driverLogger.print("Test");
+	assertMessage(expect, spyTransport, {
+		message: `  Test`,
+	});
+});
 
-	// Replace all defined transports with a spy transport
-	beforeAll(() => {
-		spyTransport = new SpyTransport();
-		spyTransport.format = createDefaultTransportFormat(true, true);
-		driverLogger = new DriverLogger(
-			new ZWaveLogContainer({
-				transports: [spyTransport],
+test.sequential("print() logs long messages correctly", ({ context, expect }) => {
+	const { driverLogger, spyTransport } = context;
+	driverLogger.print(
+		"This is a very long message that should be broken into multiple lines maybe sometimes...",
+	);
+	assertMessage(expect, spyTransport, {
+		message:
+			`  This is a very long message that should be broken into multiple lines maybe so
+  metimes...`,
+	});
+});
+
+test.sequential("print() logs with the given loglevel", ({ context, expect }) => {
+	const { driverLogger, spyTransport } = context;
+	driverLogger.print("Test", "warn");
+	assertLogInfo(expect, spyTransport, { level: "warn" });
+});
+
+test.sequential("print() has a default loglevel of verbose", ({ context, expect }) => {
+	const { driverLogger, spyTransport } = context;
+	driverLogger.print("Test");
+	assertLogInfo(expect, spyTransport, { level: "verbose" });
+});
+
+test.sequential(
+	"print() prefixes the messages with the current timestamp and channel name",
+	({ context, expect }) => {
+		const { driverLogger, spyTransport } = context;
+		driverLogger.print("Whatever");
+		assertMessage(expect, spyTransport, {
+			message: `00:00:00.000 DRIVER   Whatever`,
+			ignoreTimestamp: false,
+			ignoreChannel: false,
+		});
+	},
+);
+
+test.sequential("print() the timestamp is in a dim color", ({ context, expect }) => {
+	const { driverLogger, spyTransport } = context;
+	driverLogger.print("Whatever");
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.startsWith(colors.gray("00:00:00.000")),
+		ignoreTimestamp: false,
+		ignoreChannel: false,
+		ignoreColor: false,
+	});
+});
+
+test.sequential("print() the channel name is in inverted gray color", ({ context, expect }) => {
+	const { driverLogger, spyTransport } = context;
+	driverLogger.print("Whatever");
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.startsWith(colors.gray.inverse("DRIVER")),
+		ignoreChannel: false,
+		ignoreColor: false,
+	});
+});
+
+test.sequential(
+	"transaction() (for outbound messages) contains the direction",
+	({ context, expect }) => {
+		const { driver, driverLogger, spyTransport } = context;
+		driverLogger.transaction(createTransaction(driver, {}));
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.startsWith(getDirectionPrefix("outbound")),
+		});
+	},
+);
+test.sequential(
+	"transaction() (for outbound messages) contains the message type as a tag",
+	({ context, expect }) => {
+		const { driver, driverLogger, spyTransport } = context;
+		driverLogger.transaction(
+			createTransaction(driver, { type: MessageType.Request }),
+		);
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.includes("[REQ]"),
+		});
+
+		driverLogger.transaction(
+			createTransaction(driver, { type: MessageType.Response }),
+		);
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.includes("[RES]"),
+			callNumber: 1,
+		});
+	},
+);
+
+test.sequential(
+	"transaction() (for outbound messages) contains the function type as a tag",
+	({ context, expect }) => {
+		const { driver, driverLogger, spyTransport } = context;
+		driverLogger.transaction(
+			createTransaction(driver, {
+				functionType: FunctionType.GetSerialApiInitData,
 			}),
 		);
-		// Uncomment this to debug the log outputs manually
-		// wasSilenced = unsilence(driverLogger);
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.includes("[GetSerialApiInitData]"),
+		});
+	},
+);
 
-		MockDate.set(new Date().setHours(0, 0, 0, 0));
+test.sequential(
+	"transaction() (for outbound messages) contains the message priority",
+	({ context, expect }) => {
+		const { driver, driverLogger, spyTransport } = context;
+		driverLogger.transaction(
+			createTransaction(driver, {
+				priority: MessagePriority.Controller,
+			}),
+		);
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.includes("[P: Controller]"),
+		});
+	},
+);
+
+test.sequential(
+	"transactionResponse() (for inbound messages) contains the direction",
+	({ context, expect }) => {
+		const { driver, driverLogger, spyTransport } = context;
+		const msg = createMessage(driver, {});
+		driverLogger.transactionResponse(msg, undefined, null as any);
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.startsWith(getDirectionPrefix("inbound")),
+		});
+	},
+);
+
+test.sequential(
+	"transactionResponse() (for inbound messages) contains the message type as a tag",
+	({ context, expect }) => {
+		const { driver, driverLogger, spyTransport } = context;
+		let msg = createMessage(driver, {
+			type: MessageType.Request,
+		});
+		driverLogger.transactionResponse(msg, undefined, null as any);
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.includes("[REQ]"),
+		});
+
+		msg = createMessage(driver, {
+			type: MessageType.Response,
+		});
+		driverLogger.transactionResponse(msg, undefined, null as any);
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.includes("[RES]"),
+			callNumber: 1,
+		});
+	},
+);
+
+test.sequential(
+	"transactionResponse() (for inbound messages) contains the function type as a tag",
+	({ context, expect }) => {
+		const { driver, driverLogger, spyTransport } = context;
+		const msg = createMessage(driver, {
+			functionType: FunctionType.HardReset,
+		});
+		driverLogger.transactionResponse(msg, undefined, null as any);
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.includes("[HardReset]"),
+		});
+	},
+);
+
+test.sequential(
+	"transactionResponse() (for inbound messages) contains the role (regarding the transaction) of the received message as a tag",
+	({ context, expect }) => {
+		const { driver, driverLogger, spyTransport } = context;
+		const msg = createMessage(driver, {
+			functionType: FunctionType.HardReset,
+		});
+		driverLogger.transactionResponse(msg, undefined, "fatal_controller");
+		assertMessage(expect, spyTransport, {
+			predicate: (msg) => msg.includes("[fatal_controller]"),
+		});
+	},
+);
+
+test.sequential("sendQueue() prints the send queue length", ({ context, expect }) => {
+	const { driver, driverLogger, spyTransport } = context;
+	const queue = new TransactionQueue();
+	driverLogger.sendQueue(queue);
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes("(0 messages)"),
 	});
 
-	// Don't spam the console when performing the other tests not related to logging
-	afterAll(() => {
-		driverLogger.container.updateConfiguration({ enabled: false });
-		MockDate.reset();
+	queue.add(
+		createTransaction(driver, {
+			functionType: FunctionType.GetSUCNodeId,
+		}),
+	);
+	driverLogger.sendQueue(queue);
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes("(1 message)"),
+		callNumber: 1,
 	});
 
-	beforeEach(() => {
-		spyTransport.spy.mockClear();
+	queue.add(
+		createTransaction(driver, {
+			functionType: FunctionType.GetSUCNodeId,
+		}),
+	);
+	driverLogger.sendQueue(queue);
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes("(2 messages)"),
+		callNumber: 2,
 	});
+});
 
-	describe("print()", () => {
-		it("logs short messages correctly", () => {
-			driverLogger.print("Test");
-			assertMessage(spyTransport, {
-				message: `  Test`,
-			});
-		});
+test.sequential("sendQueue() prints the function type for each message", ({ context, expect }) => {
+	const { driver, driverLogger, spyTransport } = context;
+	const queue = new TransactionQueue();
+	queue.add(
+		createTransaction(driver, {
+			functionType: FunctionType.GetSUCNodeId,
+		}),
+	);
+	queue.add(
+		createTransaction(driver, { functionType: FunctionType.HardReset }),
+	);
+	driverLogger.sendQueue(queue);
 
-		it("logs long messages correctly", () => {
-			driverLogger.print(
-				"This is a very long message that should be broken into multiple lines maybe sometimes...",
-			);
-			assertMessage(spyTransport, {
-				message: `  This is a very long message that should be broken into multiple lines maybe so
-  metimes...`,
-			});
-		});
-
-		it("logs with the given loglevel", () => {
-			driverLogger.print("Test", "warn");
-			assertLogInfo(spyTransport, { level: "warn" });
-		});
-
-		it("has a default loglevel of verbose", () => {
-			driverLogger.print("Test");
-			assertLogInfo(spyTransport, { level: "verbose" });
-		});
-
-		it("prefixes the messages with the current timestamp and channel name", () => {
-			driverLogger.print("Whatever");
-			assertMessage(spyTransport, {
-				message: `00:00:00.000 DRIVER   Whatever`,
-				ignoreTimestamp: false,
-				ignoreChannel: false,
-			});
-		});
-
-		it("the timestamp is in a dim color", () => {
-			driverLogger.print("Whatever");
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.startsWith(colors.gray("00:00:00.000")),
-				ignoreTimestamp: false,
-				ignoreChannel: false,
-				ignoreColor: false,
-			});
-		});
-
-		it("the channel name is in inverted gray color", () => {
-			driverLogger.print("Whatever");
-			assertMessage(spyTransport, {
-				predicate: (msg) =>
-					msg.startsWith(colors.gray.inverse("DRIVER")),
-				ignoreChannel: false,
-				ignoreColor: false,
-			});
-		});
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes("GetSUCNodeId"),
 	});
-
-	describe("transaction() (for outbound messages)", () => {
-		it("contains the direction", () => {
-			driverLogger.transaction(createTransaction({}));
-			assertMessage(spyTransport, {
-				predicate: (msg) =>
-					msg.startsWith(getDirectionPrefix("outbound")),
-			});
-		});
-		it("contains the message type as a tag", () => {
-			driverLogger.transaction(
-				createTransaction({ type: MessageType.Request }),
-			);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("[REQ]"),
-			});
-
-			driverLogger.transaction(
-				createTransaction({ type: MessageType.Response }),
-			);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("[RES]"),
-				callNumber: 1,
-			});
-		});
-
-		it("contains the function type as a tag", () => {
-			driverLogger.transaction(
-				createTransaction({
-					functionType: FunctionType.GetSerialApiInitData,
-				}),
-			);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("[GetSerialApiInitData]"),
-			});
-		});
-
-		it("contains the message priority", () => {
-			driverLogger.transaction(
-				createTransaction({
-					priority: MessagePriority.MultistepController,
-				}),
-			);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("[P: MultistepController]"),
-			});
-		});
-
-		// it("contains no message priority on further attempts", () => {
-		// 	const transaction = createTransaction({
-		// 		priority: MessagePriority.MultistepController,
-		// 	});
-		// 	transaction.sendAttempts = 2;
-		// 	driverLogger.transaction(transaction);
-		// 	assertMessage(spyTransport, {
-		// 		predicate: (msg) => !msg.includes("[P: MultistepController]"),
-		// 	});
-		// });
-
-		// it("contains the number of send attempts after the first try", () => {
-		// 	const transaction = createTransaction({
-		// 		priority: MessagePriority.MultistepController,
-		// 	});
-		// 	transaction.sendAttempts = 2;
-		// 	transaction.maxSendAttempts = 3;
-		// 	driverLogger.transaction(transaction);
-		// 	assertMessage(spyTransport, {
-		// 		predicate: (msg) => msg.includes("[attempt 2/3]"),
-		// 	});
-		// });
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes("HardReset"),
 	});
+});
 
-	describe("transactionResponse() (for inbound messages)", () => {
-		it("contains the direction", () => {
-			const msg = createMessage(fakeDriver, {});
-			driverLogger.transactionResponse(msg, undefined, null as any);
-			assertMessage(spyTransport, {
-				predicate: (msg) =>
-					msg.startsWith(getDirectionPrefix("inbound")),
-			});
-		});
+test.sequential("sendQueue() prints the message type for each message", ({ context, expect }) => {
+	const { driver, driverLogger, spyTransport } = context;
+	const queue = new TransactionQueue();
+	queue.add(
+		createTransaction(driver, {
+			functionType: FunctionType.GetSUCNodeId,
+			type: MessageType.Request,
+		}),
+	);
+	queue.add(
+		createTransaction(driver, {
+			functionType: FunctionType.HardReset,
+			type: MessageType.Response,
+		}),
+	);
+	driverLogger.sendQueue(queue);
 
-		it("contains the message type as a tag", () => {
-			let msg = createMessage(fakeDriver, {
-				type: MessageType.Request,
-			});
-			driverLogger.transactionResponse(msg, undefined, null as any);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("[REQ]"),
-			});
-
-			msg = createMessage(fakeDriver, {
-				type: MessageType.Response,
-			});
-			driverLogger.transactionResponse(msg, undefined, null as any);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("[RES]"),
-				callNumber: 1,
-			});
-		});
-
-		it("contains the function type as a tag", () => {
-			const msg = createMessage(fakeDriver, {
-				functionType: FunctionType.HardReset,
-			});
-			driverLogger.transactionResponse(msg, undefined, null as any);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("[HardReset]"),
-			});
-		});
-
-		it("contains the role (regarding the transaction) of the received message as a tag", () => {
-			const msg = createMessage(fakeDriver, {
-				functionType: FunctionType.HardReset,
-			});
-			driverLogger.transactionResponse(
-				msg,
-				undefined,
-				"fatal_controller",
-			);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("[fatal_controller]"),
-			});
-		});
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes("· [REQ] GetSUCNodeId"),
 	});
-
-	describe("sendQueue()", () => {
-		it("prints the send queue length", () => {
-			const queue = new SortedList<Transaction>();
-			driverLogger.sendQueue(queue);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("(0 messages)"),
-			});
-
-			queue.add(
-				createTransaction({ functionType: FunctionType.GetSUCNodeId }),
-			);
-			driverLogger.sendQueue(queue);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("(1 message)"),
-				callNumber: 1,
-			});
-
-			queue.add(
-				createTransaction({ functionType: FunctionType.GetSUCNodeId }),
-			);
-			driverLogger.sendQueue(queue);
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("(2 messages)"),
-				callNumber: 2,
-			});
-		});
-
-		it("prints the function type for each message", () => {
-			const queue = new SortedList<Transaction>();
-			queue.add(
-				createTransaction({ functionType: FunctionType.GetSUCNodeId }),
-			);
-			queue.add(
-				createTransaction({ functionType: FunctionType.HardReset }),
-			);
-			driverLogger.sendQueue(queue);
-
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("GetSUCNodeId"),
-			});
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("HardReset"),
-			});
-		});
-
-		it("prints the message type for each message", () => {
-			const queue = new SortedList<Transaction>();
-			queue.add(
-				createTransaction({
-					functionType: FunctionType.GetSUCNodeId,
-					type: MessageType.Request,
-				}),
-			);
-			queue.add(
-				createTransaction({
-					functionType: FunctionType.HardReset,
-					type: MessageType.Response,
-				}),
-			);
-			driverLogger.sendQueue(queue);
-
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("· [REQ] GetSUCNodeId"),
-			});
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes("· [RES] HardReset"),
-			});
-		});
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes("· [RES] HardReset"),
 	});
+});
 
-	describe("colors", () => {
-		it("primary tags are printed in inverse colors", () => {
-			const msg = createMessage(fakeDriver, {
-				functionType: FunctionType.HardReset,
-				type: MessageType.Response,
-			});
-			driverLogger.transactionResponse(msg, undefined, null as any);
+test.sequential("primary tags are printed in inverse colors", ({ context, expect }) => {
+	const { driver, driverLogger, spyTransport } = context;
+	const msg = createMessage(driver, {
+		functionType: FunctionType.HardReset,
+		type: MessageType.Response,
+	});
+	driverLogger.transactionResponse(msg, undefined, null as any);
 
-			const expected1 = colors.cyan(
-				colors.bgCyan("[") +
-					colors.inverse("RES") +
-					colors.bgCyan("]") +
-					" " +
-					colors.bgCyan("[") +
-					colors.inverse("HardReset") +
-					colors.bgCyan("]"),
-			);
+	const expected1 = colors.cyan(
+		colors.bgCyan("[")
+			+ colors.inverse("RES")
+			+ colors.bgCyan("]")
+			+ " "
+			+ colors.bgCyan("[")
+			+ colors.inverse("HardReset")
+			+ colors.bgCyan("]"),
+	);
 
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes(expected1),
-				ignoreColor: false,
-			});
-		});
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes(expected1),
+		ignoreColor: false,
+	});
+});
 
-		it("inline tags are printed in inverse colors", () => {
-			driverLogger.print(`This is a message [with] [inline] tags...`);
+test.sequential("inline tags are printed in inverse colors", ({ context, expect }) => {
+	const { driverLogger, spyTransport } = context;
+	driverLogger.print(`This is a message [with] [inline] tags...`);
 
-			const expected1 =
-				colors.bgCyan("[") +
-				colors.inverse("with") +
-				colors.bgCyan("]") +
-				" " +
-				colors.bgCyan("[") +
-				colors.inverse("inline") +
-				colors.bgCyan("]");
+	const expected1 = colors.bgCyan("[")
+		+ colors.inverse("with")
+		+ colors.bgCyan("]")
+		+ " "
+		+ colors.bgCyan("[")
+		+ colors.inverse("inline")
+		+ colors.bgCyan("]");
 
-			assertMessage(spyTransport, {
-				predicate: (msg) => msg.includes(expected1),
-				ignoreColor: false,
-			});
-		});
+	assertMessage(expect, spyTransport, {
+		predicate: (msg) => msg.includes(expected1),
+		ignoreColor: false,
 	});
 });

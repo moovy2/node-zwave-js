@@ -2,7 +2,7 @@
 	"manufacturer": "Heatit",
 	"manufacturerId": "0x019b",
 	"label": "Z-RELAY",
-	"description": "Multipurpose relay",
+	"description": "Multipurpose Relay",
 	"devices": [
 		{
 			"productType": "0x0003",
@@ -18,17 +18,15 @@
 			"#": "1",
 			"label": "Status LED",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "LED turned off.",
+					"label": "LED turned off",
 					"value": 0
 				},
 				{
-					"label": "LED turned on.",
+					"label": "LED turned on",
 					"value": 1
 				},
 				{
@@ -55,13 +53,11 @@
 			"label": "Thermistor Type Input 1",
 			"description": "This parameter decides which kind of thermistor is connected to input 1.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "No thermistor, input is disabled.",
+					"label": "No thermistor, input is disabled",
 					"value": 0
 				},
 				{
@@ -75,13 +71,11 @@
 			"label": "Thermistor Type Input 2",
 			"description": "This parameter decides which kind of thermistor is connected to input 2.",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "No thermistor, input is disabled.",
+					"label": "No thermistor, input is disabled",
 					"value": 0
 				},
 				{
@@ -111,8 +105,8 @@
 		{
 			"#": "7",
 			"label": "Input 1 Report Interval",
-			"unit": "10 seconds",
 			"valueSize": 2,
+			"unit": "10 seconds",
 			"minValue": 0,
 			"maxValue": 8640,
 			"defaultValue": 6
@@ -120,8 +114,8 @@
 		{
 			"#": "8",
 			"label": "Input 2 Report Interval",
-			"unit": "10 seconds",
 			"valueSize": 2,
+			"unit": "10 seconds",
 			"minValue": 0,
 			"maxValue": 8640,
 			"defaultValue": 6
@@ -159,8 +153,6 @@
 			"label": "Auto Relay On",
 			"description": "Configures which events will cause the relay to be turned on",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -183,8 +175,6 @@
 			"label": "Auto Relay Off",
 			"description": "Configures which events will cause the relay to be turned off",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
@@ -215,8 +205,8 @@
 			"#": "15",
 			"label": "Voltage",
 			"description": "Voltage value used for power calculation.",
-			"unit": "V",
 			"valueSize": 1,
+			"unit": "V",
 			"minValue": 0,
 			"maxValue": 250,
 			"defaultValue": 220,
@@ -236,11 +226,21 @@
 			"#": "18",
 			"label": "Load Size Connect to Relay Output",
 			"description": "Actual load in Watt.",
-			"unit": "W",
 			"valueSize": 2,
+			"unit": "W",
 			"minValue": 0,
 			"maxValue": 6000,
 			"defaultValue": 0
 		}
-	]
+	],
+	"compat": {
+		"commandClasses": {
+			"remove": {
+				// The device does not support Supervision correctly
+				"Supervision": {
+					"endpoints": "*"
+				}
+			}
+		}
+	}
 }

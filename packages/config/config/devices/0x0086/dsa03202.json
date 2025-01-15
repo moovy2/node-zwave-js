@@ -2,7 +2,7 @@
 	"manufacturer": "AEON Labs",
 	"manufacturerId": "0x0086",
 	"label": "DSA03XXX-ZW",
-	"description": "Minimote 4 button remote control",
+	"description": "Minimote 4 Button Remote Control",
 	"devices": [
 		{
 			"productType": "0x0001",
@@ -80,18 +80,26 @@
 		{
 			"#": "250",
 			"$import": "~/templates/master_template.json#base_enable_disable",
-			"label": "Scene Mode (Secondary Controller)"
+			"label": "Scene Mode (Secondary Controller)",
+			"writeOnly": true
 		}
 	],
 	"compat": {
 		"commandClasses": {
 			"add": {
-				"0x84": {
+				"Scene Activation": {
+					"isControlled": true,
+					"version": 1
+				},
+				"Wake Up": {
 					// To fix issue #1536
 					"isSupported": true,
 					"version": 1
 				}
 			}
 		}
+	},
+	"metadata": {
+		"wakeup": "Press and hold the Learn Button (or Join Button) for 3 seconds, then let go. This should keep the Minimote awake for 30 seconds."
 	}
 }

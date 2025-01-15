@@ -1,141 +1,322 @@
-import { MessageHeaders, MockSerialPort } from "@zwave-js/serial";
+import {
+	BasicCCGet,
+	type CommandClass,
+	NoOperationCC,
+	WakeUpCCWakeUpNotification,
+} from "@zwave-js/cc";
+import { CommandClasses } from "@zwave-js/core";
+import { FunctionType } from "@zwave-js/serial";
+import {
+	type MockNodeBehavior,
+	MockZWaveFrameType,
+	createMockZWaveRequestFrame,
+} from "@zwave-js/testing";
 import { wait } from "alcalzone-shared/async";
-import type { Driver } from "../../driver/Driver";
-import { ZWaveNode } from "../../node/Node";
-import { NodeStatus } from "../../node/Types";
-import { createAndStartDriver } from "../utils";
-import { isFunctionSupported_NoBridge } from "./fixtures";
+import path from "node:path";
+import { integrationTest } from "../integrationTestSuiteMulti.js";
 
-describe("regression tests", () => {
-	let driver: Driver;
-	let serialport: MockSerialPort;
-	process.env.LOGLEVEL = "debug";
+// Repro from #1107
+// Node 10's awake timer elapses before its ping is rejected,
+// this causes mismatched responses for all following messages
 
-	beforeEach(async () => {
-		({ driver, serialport } = await createAndStartDriver());
+integrationTest(
+	"marking a node with a pending message as asleep does not mess up the remaining transactions",
+	{
+		// debug: true,
+		provisioningDirectory: path.join(
+			__dirname,
+			"fixtures/nodeAsleepMessageOrder",
+		),
 
-		driver["_controller"] = {
-			ownNodeId: 1,
-			isFunctionSupported: isFunctionSupported_NoBridge,
-			nodes: new Map(),
-			incrementStatistics: () => {},
-		} as any;
-	});
+		nodeCapabilities: [
+			{
+				id: 10,
+				capabilities: {
+					commandClasses: [
+						CommandClasses.Basic,
+						CommandClasses["Wake Up"],
+					],
+					isListening: false,
+					isFrequentListening: false,
+				},
+			},
+			{
+				id: 17,
+				capabilities: {
+					commandClasses: [CommandClasses.Basic],
+				},
+			},
+		],
 
-	afterEach(async () => {
-		await driver.destroy();
-		driver.removeAllListeners();
-	});
+		testBody: async (t, driver, nodes, mockController, mockNodes) => {
+			const [node10, node17] = nodes;
+			const [mockNode10, mockNode17] = mockNodes;
 
-	it("marking a node with a pending message as asleep does not mess up the remaining transactions", async () => {
-		jest.setTimeout(5000);
-		// Repro from #1107
+			node10.markAsAwake();
+			mockNode10.autoAckControllerFrames = false;
+			mockNode17.autoAckControllerFrames = false;
 
-		// Node 10's awake timer elapses before its ping is rejected,
-		// this causes mismatched responses for all following messages
+			const pingPromise10 = node10.ping();
+			node10.commandClasses.Basic.set(60);
+			const pingPromise17 = node17.ping();
 
-		const node10 = new ZWaveNode(10, driver);
-		const node17 = new ZWaveNode(17, driver);
-		(driver.controller.nodes as Map<number, ZWaveNode>).set(10, node10);
-		(driver.controller.nodes as Map<number, ZWaveNode>).set(17, node17);
-		// Add event handlers for the nodes
-		for (const node of driver.controller.nodes.values()) {
-			driver["addNodeEventHandlers"](node);
-		}
+			// Ping for 10 should be sent
+			await wait(50);
+			mockNode10.assertReceivedControllerFrame(
+				(frame) =>
+					frame.type === MockZWaveFrameType.Request
+					&& frame.payload instanceof NoOperationCC,
+				{
+					errorMessage: "Node 10 did not receive the ping",
+				},
+			);
 
-		node10["_isListening"] = false;
-		node10["_isFrequentListening"] = false;
-		node10.markAsAwake();
-		expect(node10.status).toBe(NodeStatus.Awake);
+			// Mark the node as asleep. This should abort the ongoing transaction.
+			node10.markAsAsleep();
+			await wait(50);
 
-		driver["lastCallbackId"] = 2;
-		const ACK = Buffer.from([MessageHeaders.ACK]);
+			mockController.assertReceivedHostMessage(
+				(msg) => msg.functionType === FunctionType.SendDataAbort,
+				{
+					errorMessage: "The SendData was not aborted",
+				},
+			);
 
-		const pingPromise10 = node10.ping();
-		const pingPromise17 = node17.ping();
-		// » [Node 010] [REQ] [SendData]
-		//   │ transmit options: 0x25
-		//   │ callback id:      3
-		//   └─[NoOperationCC]
-		expect(serialport.lastWrite).toEqual(
-			Buffer.from("010800130a01002503c9", "hex"),
-		);
-		await wait(10);
-		serialport.receiveData(ACK);
+			// Now ack the ping so the SendData command will be finished
+			mockNode10.ackControllerRequestFrame();
 
-		await wait(50);
+			// Ping for 10 should be failed now
+			t.expect(await pingPromise10).toBe(false);
 
-		// « [RES] [SendData]
-		//     was sent: true
-		serialport.receiveData(Buffer.from("0104011301e8", "hex"));
-		// » [ACK]
-		expect(serialport.lastWrite).toEqual(ACK);
+			// Now the ping for 17 should go out
+			await wait(500);
+			mockNode17.assertReceivedControllerFrame(
+				(frame) =>
+					frame.type === MockZWaveFrameType.Request
+					&& frame.payload instanceof NoOperationCC,
+				{
+					errorMessage: "Node 17 did not receive the ping",
+				},
+			);
 
-		await wait(50);
+			// Ping 17 does not get resolved by the other callback
+			t.expect(await Promise.race([pingPromise17, wait(50)]))
+				.toBeUndefined();
 
-		node10.markAsAsleep();
-		expect(node10.status).toBe(NodeStatus.Asleep);
+			// And it should fail since we don't ack:
+			t.expect(await pingPromise17).toBe(false);
+		},
+	},
+);
 
-		// The command queue should now abort the ongoing transaction
-		// » [REQ] [SendDataAbort]
-		expect(serialport.lastWrite).toEqual(Buffer.from("01030016ea", "hex"));
-		await wait(10);
-		serialport.receiveData(ACK);
+integrationTest(
+	"When a sleeping node with pending commands wakes up, the queue continues executing",
+	{
+		// debug: true,
 
-		// Abort was acknowledged, Ping for 10 should be failed
-		await wait(50);
-		await expect(pingPromise10).resolves.toBe(false);
+		provisioningDirectory: path.join(
+			__dirname,
+			"fixtures/nodeAsleepMessageOrder",
+		),
 
-		// Now the Ping for 17 should go out
-		// » [Node 017] [REQ] [SendData]
-		//   │ transmit options: 0x25
-		//   │ callback id:      4
-		//   └─[NoOperationCC]
-		expect(serialport.lastWrite).toEqual(
-			Buffer.from("010800131101002504d5", "hex"),
-		);
-		serialport.receiveData(ACK);
+		nodeCapabilities: [
+			{
+				id: 10,
+				capabilities: {
+					commandClasses: [
+						CommandClasses.Basic,
+						CommandClasses["Wake Up"],
+					],
+					isListening: false,
+					isFrequentListening: false,
+				},
+			},
+			{
+				id: 17,
+				capabilities: {
+					commandClasses: [CommandClasses.Basic],
+				},
+			},
+		],
 
-		await wait(50);
+		customSetup: async (driver, mockController, mockNodes) => {
+			const [mockNode10] = mockNodes;
 
-		// Callback for previous message comes and should be ignored
-		// « [REQ] [SendData]
-		//     callback id:     3
-		//     transmit status: NoAck
-		serialport.receiveData(
-			Buffer.from(
-				"011800130301019b007f7f7f7f7f010107000000000204000012",
-				"hex",
-			),
-		);
-		expect(serialport.lastWrite).toEqual(ACK);
+			const doNotAnswerWhenAsleep: MockNodeBehavior = {
+				handleCC(controller, self, receivedCC) {
+					if (!mockNode10.autoAckControllerFrames) {
+						return { action: "stop" };
+					}
+				},
+			};
+			mockNode10.defineBehavior(doNotAnswerWhenAsleep);
+		},
 
-		await wait(10);
+		testBody: async (t, driver, nodes, mockController, mockNodes) => {
+			const [node10, node17] = nodes;
+			const [mockNode10, mockNode17] = mockNodes;
 
-		// Ping 17 does not get resolved by the other callback
-		await expect(Promise.race([pingPromise17, wait(50)])).resolves.toBe(
-			undefined,
-		);
+			// Node 10 is assumed to be awake, but actually asleep
+			node10.markAsAwake();
+			mockNode10.autoAckControllerFrames = false;
 
-		// « [RES] [SendData]
-		//     was sent: true
-		serialport.receiveData(Buffer.from("0104011301e8", "hex"));
-		// » [ACK]
-		expect(serialport.lastWrite).toEqual(ACK);
+			// Query the node's BASIC state. This will fail and move the commands to the wakeup queue.
+			const queryBasicPromise1 = node10.commandClasses.Basic.get();
 
-		await wait(50);
+			// Wait for the node to get marked as asleep
+			await new Promise((resolve) => node10.once("sleep", resolve));
 
-		// Callback for ping node 17 (failed)
-		// « [REQ] [SendData]
-		//     callback id:     4
-		//     transmit status: NoAck
-		serialport.receiveData(
-			Buffer.from(
-				"011800130401019d007f7f7f7f7f010107000000000204000013",
-				"hex",
-			),
-		);
-		expect(serialport.lastWrite).toEqual(ACK);
-		await expect(pingPromise17).resolves.toBeFalse();
-	});
-});
+			driver.driverLog.sendQueue(driver["queue"]);
+
+			await wait(200);
+
+			// Node 10 wakes up
+			mockNode10.autoAckControllerFrames = true;
+			const cc: CommandClass = new WakeUpCCWakeUpNotification({
+				nodeId: mockController.ownNodeId,
+			});
+			mockNode10.sendToController(createMockZWaveRequestFrame(cc, {
+				ackRequested: false,
+			}));
+
+			// Wait for the node to wake up
+			mockNode10.clearReceivedControllerFrames();
+			await new Promise((resolve) => node10.once("wake up", resolve));
+
+			driver.driverLog.print("AFTER WAKEUP:");
+			driver.driverLog.sendQueue(driver["queue"]);
+
+			let result: any = await Promise.race([
+				wait(5000).then(() => "timeout"),
+				queryBasicPromise1.catch(() => "error"),
+			]);
+			// The first command should have been sent
+			mockNode10.assertReceivedControllerFrame((f) =>
+				f.type === MockZWaveFrameType.Request
+				&& f.payload instanceof BasicCCGet
+			);
+			// and return a number
+			t.expect(typeof result?.currentValue).toBe("number");
+
+			// Query the node's BASIC state again. This should be handled relatively quickly
+			mockNode10.clearReceivedControllerFrames();
+			const queryBasicPromise2 = node10.commandClasses.Basic.get();
+
+			await wait(500);
+
+			driver.driverLog.print("AFTER Basic Get:");
+			driver.driverLog.sendQueue(driver["queue"]);
+
+			result = await Promise.race([
+				wait(5000).then(() => "timeout"),
+				queryBasicPromise2.catch(() => "error"),
+			]);
+
+			// The second command should also have been sent
+			mockNode10.assertReceivedControllerFrame((f) =>
+				f.type === MockZWaveFrameType.Request
+				&& f.payload instanceof BasicCCGet
+			);
+			// and return a number
+			t.expect(typeof result?.currentValue).toBe("number");
+		},
+	},
+);
+
+integrationTest(
+	"When a command to a sleeping node is pending, other commands are still handled",
+	{
+		// debug: true,
+
+		provisioningDirectory: path.join(
+			__dirname,
+			"fixtures/nodeAsleepMessageOrder",
+		),
+
+		nodeCapabilities: [
+			{
+				id: 10,
+				capabilities: {
+					commandClasses: [
+						CommandClasses.Basic,
+						CommandClasses["Wake Up"],
+					],
+					isListening: false,
+					isFrequentListening: false,
+				},
+			},
+			{
+				id: 17,
+				capabilities: {
+					commandClasses: [CommandClasses.Basic],
+				},
+			},
+		],
+
+		customSetup: async (driver, mockController, mockNodes) => {
+			const [mockNode10] = mockNodes;
+
+			const doNotAnswerWhenAsleep: MockNodeBehavior = {
+				handleCC(controller, self, receivedCC) {
+					if (!mockNode10.autoAckControllerFrames) {
+						return { action: "stop" };
+					}
+				},
+			};
+			mockNode10.defineBehavior(doNotAnswerWhenAsleep);
+		},
+
+		testBody: async (t, driver, nodes, mockController, mockNodes) => {
+			const [node10, node17] = nodes;
+			const [mockNode10, mockNode17] = mockNodes;
+
+			// Node 10 is sleeping
+			node10.markAsAsleep();
+			mockNode10.autoAckControllerFrames = false;
+
+			// Queue a command to node 10
+			const commandToNode10 = node10.commandClasses.Basic.set(60);
+
+			// Queue a command to node 17
+			const commandToNode17 = node17.commandClasses.Basic.set(99);
+
+			driver.driverLog.print("BEFORE wakeup");
+			driver.driverLog.sendQueue(driver["queue"]);
+
+			let result = await Promise.race([
+				wait(500).then(() => "timeout"),
+				commandToNode17.then(() => "ok"),
+			]);
+			t.expect(result).toBe("ok");
+
+			// The first command should not have been sent
+			mockNode10.assertReceivedControllerFrame(
+				(f) =>
+					f.type === MockZWaveFrameType.Request
+					&& f.payload instanceof BasicCCGet,
+				{
+					noMatch: true,
+				},
+			);
+
+			driver.driverLog.print("AFTER first command");
+			driver.driverLog.sendQueue(driver["queue"]);
+
+			// Node 10 wakes up
+			mockNode10.autoAckControllerFrames = true;
+			const cc: CommandClass = new WakeUpCCWakeUpNotification({
+				nodeId: mockController.ownNodeId,
+			});
+			mockNode10.sendToController(createMockZWaveRequestFrame(cc, {
+				ackRequested: false,
+			}));
+
+			// And the first command should be sent
+			result = await Promise.race([
+				wait(500).then(() => "timeout"),
+				commandToNode10.then(() => "ok"),
+			]);
+			t.expect(result).toBe("ok");
+		},
+	},
+);

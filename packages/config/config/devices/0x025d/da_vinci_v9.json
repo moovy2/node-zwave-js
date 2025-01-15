@@ -170,8 +170,6 @@
 			"#": "1",
 			"label": "Button 1 Type",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -180,7 +178,7 @@
 					"value": 0
 				},
 				{
-					"label": "Switch On/Off",
+					"label": "Switch on/off",
 					"value": 1
 				},
 				{
@@ -196,11 +194,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -209,8 +207,6 @@
 			"#": "2",
 			"label": "Button 1 Partner-Id",
 			"valueSize": 2,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -260,33 +256,31 @@
 			"#": "3",
 			"label": "Button 1 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration 10 Seconds",
+					"label": "Duration 10 seconds",
 					"value": 10
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -295,8 +289,6 @@
 			"#": "4",
 			"label": "Button 1 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -332,12 +324,9 @@
 		},
 		{
 			"#": "5",
-			"label": "Button 1 attributes",
+			"label": "Button 1 Attributes",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -345,11 +334,11 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
@@ -358,13 +347,11 @@
 			"#": "6",
 			"label": "Button 2 Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Switch On/Off",
+					"label": "Switch on/off",
 					"value": 1
 				},
 				{
@@ -380,11 +367,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -393,8 +380,6 @@
 			"#": "7",
 			"label": "Button 2 Partner-Id",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -444,33 +429,31 @@
 			"#": "8",
 			"label": "Button 2 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration10 Seconds",
+					"label": "Duration10 seconds",
 					"value": 10
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -479,8 +462,6 @@
 			"#": "9",
 			"label": "Button 2 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
@@ -516,12 +497,9 @@
 		},
 		{
 			"#": "10",
-			"label": "Button 2 attributes",
+			"label": "Button 2 Attributes",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -529,11 +507,11 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
@@ -542,13 +520,11 @@
 			"#": "11",
 			"label": "Button 3 Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Switch On/Off",
+					"label": "Switch on/off",
 					"value": 1
 				},
 				{
@@ -564,11 +540,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -577,8 +553,6 @@
 			"#": "12",
 			"label": "Button 3 Partner-Id",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -628,29 +602,27 @@
 			"#": "13",
 			"label": "Button 3 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -659,8 +631,6 @@
 			"#": "14",
 			"label": "Button 3 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 3,
 			"allowManualEntry": false,
 			"options": [
@@ -696,12 +666,9 @@
 		},
 		{
 			"#": "15",
-			"label": "Button 3 attributes",
+			"label": "Button 3 Attributes",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -709,11 +676,11 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
@@ -722,13 +689,11 @@
 			"#": "16",
 			"label": "Button 4 Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Switch On/Off",
+					"label": "Switch on/off",
 					"value": 1
 				},
 				{
@@ -744,11 +709,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -757,8 +722,6 @@
 			"#": "17",
 			"label": "Button 4 Partner-Id",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -808,29 +771,27 @@
 			"#": "18",
 			"label": "Button 4 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -839,8 +800,6 @@
 			"#": "19",
 			"label": "Button 4 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 4,
 			"allowManualEntry": false,
 			"options": [
@@ -876,12 +835,9 @@
 		},
 		{
 			"#": "20",
-			"label": "Button 4 attributes",
+			"label": "Button 4 Attributes",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -889,11 +845,11 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
@@ -902,13 +858,11 @@
 			"#": "21",
 			"label": "Button 5 Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Switch On/Off",
+					"label": "Switch on/off",
 					"value": 1
 				},
 				{
@@ -924,11 +878,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -937,8 +891,6 @@
 			"#": "22",
 			"label": "Button 5 Partner-Id",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -988,29 +940,27 @@
 			"#": "23",
 			"label": "Button 5 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -1019,8 +969,6 @@
 			"#": "24",
 			"label": "Button 5 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 6,
 			"allowManualEntry": false,
 			"options": [
@@ -1056,12 +1004,9 @@
 		},
 		{
 			"#": "25",
-			"label": "Button 5 attributes",
+			"label": "Button 5 Attributes",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -1069,11 +1014,11 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
@@ -1082,13 +1027,11 @@
 			"#": "26",
 			"label": "Button 6 Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Switch On/Off",
+					"label": "Switch on/off",
 					"value": 1
 				},
 				{
@@ -1104,11 +1047,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -1117,8 +1060,6 @@
 			"#": "27",
 			"label": "Button 6 Partner-Id",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -1168,29 +1109,27 @@
 			"#": "28",
 			"label": "Button 6 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -1199,8 +1138,6 @@
 			"#": "29",
 			"label": "Button 6 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 6,
 			"allowManualEntry": false,
 			"options": [
@@ -1236,12 +1173,9 @@
 		},
 		{
 			"#": "30",
-			"label": "Button 6 attributes",
+			"label": "Button 6 Attributes",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -1249,11 +1183,11 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
@@ -1262,13 +1196,11 @@
 			"#": "31",
 			"label": "Button 7 Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "On/Off Switch",
+					"label": "On/Off switch",
 					"value": 1
 				},
 				{
@@ -1284,11 +1216,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -1297,8 +1229,6 @@
 			"#": "32",
 			"label": "Button 7 Partner-Id",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -1348,29 +1278,27 @@
 			"#": "33",
 			"label": "Button 7 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -1379,8 +1307,6 @@
 			"#": "34",
 			"label": "Button 7 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -1416,12 +1342,9 @@
 		},
 		{
 			"#": "35",
-			"label": "Button 7 attribute",
+			"label": "Button 7 Attribute",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -1429,11 +1352,11 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
@@ -1442,13 +1365,11 @@
 			"#": "36",
 			"label": "Button 8 Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Switch On/Off",
+					"label": "Switch on/off",
 					"value": 1
 				},
 				{
@@ -1464,11 +1385,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -1477,8 +1398,6 @@
 			"#": "37",
 			"label": "Button 8 Partner-Id",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -1528,29 +1447,27 @@
 			"#": "38",
 			"label": "Button 8 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -1559,8 +1476,6 @@
 			"#": "39",
 			"label": "Button 8 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -1596,12 +1511,9 @@
 		},
 		{
 			"#": "40",
-			"label": "Button 8 attribute",
+			"label": "Button 8 Attribute",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -1609,11 +1521,11 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
@@ -1622,13 +1534,11 @@
 			"#": "41",
 			"label": "Button 9 Type",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 6,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Switch On/Off",
+					"label": "Switch on/off",
 					"value": 1
 				},
 				{
@@ -1644,11 +1554,11 @@
 					"value": 4
 				},
 				{
-					"label": "Blind-up multiway",
+					"label": "Blind-Up multiway",
 					"value": 5
 				},
 				{
-					"label": "Blind-down multiway",
+					"label": "Blind-Down multiway",
 					"value": 6
 				}
 			]
@@ -1657,8 +1567,6 @@
 			"#": "42",
 			"label": "Button 9 Partner-Id",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 9,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -1708,29 +1616,27 @@
 			"#": "43",
 			"label": "Button 9 Blind Duration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 127,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Duration 3 Seconds",
+					"label": "Duration 3 seconds",
 					"value": 3
 				},
 				{
-					"label": "Duration 30 Seconds",
+					"label": "Duration 30 seconds",
 					"value": 30
 				},
 				{
-					"label": "Duration 60 Seconds",
+					"label": "Duration 60 seconds",
 					"value": 60
 				},
 				{
-					"label": "Duration 90 Seconds",
+					"label": "Duration 90 seconds",
 					"value": 90
 				},
 				{
-					"label": "Duration 120 Seconds",
+					"label": "Duration 120 seconds",
 					"value": 120
 				}
 			]
@@ -1739,8 +1645,6 @@
 			"#": "44",
 			"label": "Button 9 Output",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 6,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
@@ -1776,12 +1680,9 @@
 		},
 		{
 			"#": "45",
-			"label": "Button 9 attributes",
+			"label": "Button 9 Attributes",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 7,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -1789,18 +1690,18 @@
 					"value": 0
 				},
 				{
-					"label": "Only Led",
+					"label": "Only LED",
 					"value": 1
 				},
 				{
-					"label": "Only Sound",
+					"label": "Only sound",
 					"value": 2
 				}
 			]
 		},
 		{
 			"#": "46",
-			"label": "Device Led on intensity",
+			"label": "Device LED On Intensity",
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 7,
@@ -1808,7 +1709,7 @@
 		},
 		{
 			"#": "47",
-			"label": "Device Led off intensity",
+			"label": "Device LED Off Intensity",
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 7,
@@ -1816,7 +1717,7 @@
 		},
 		{
 			"#": "48",
-			"label": "Device Toggle or Pulse the output",
+			"label": "Device Toggle or Pulse the Output",
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 1,
@@ -1833,7 +1734,7 @@
 		},
 		{
 			"#": "50",
-			"label": "Device touch sensitivity",
+			"label": "Device Touch Sensitivity",
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 7,
@@ -1843,18 +1744,16 @@
 			"#": "51",
 			"label": "Save and Reset",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 255,
 			"defaultValue": 0,
 			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Do NOT Save and Reset",
+					"label": "Do NOT save and reset",
 					"value": 0
 				},
 				{
-					"label": "Save and Reset",
+					"label": "Save and reset",
 					"value": 255
 				}
 			]

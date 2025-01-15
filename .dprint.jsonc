@@ -1,0 +1,75 @@
+{
+	"lineWidth": 80,
+	"useTabs": true,
+	"indentWidth": 4,
+	"newLineKind": "lf",
+
+	"typescript": {
+		"semiColons": "prefer",
+		"quoteStyle": "alwaysDouble",
+		"module.sortImportDeclarations": "caseSensitive",
+		"importDeclaration.sortNamedImports": "caseSensitive",
+		"module.sortExportDeclarations": "caseSensitive",
+		"exportDeclaration.sortNamedExports": "caseSensitive",
+		"arrowFunction.useParentheses": "force",
+		// Preserve maximum overlap with the current formatter,
+		// then consider turning these off one by one.
+		// "operatorPosition": "sameLine",
+		"conditionalExpression.operatorPosition": "nextLine",
+		"conditionalType.operatorPosition": "nextLine",
+		"constructorType.spaceAfterNewKeyword": true,
+		"constructSignature.spaceAfterNewKeyword": true,
+		"binaryExpression.linePerExpression": true,
+		"quoteProps": "asNeeded",
+	},
+
+	"json": {},
+
+	"markdown": {},
+
+	"prettier": {
+		"associations": [
+			// Prettier formats those better
+			"package.json",
+			"**/package.json",
+			"packages/nvmedit/test/fixtures/**/*.json",
+			"**/*.yml",
+			"**/*.yaml",
+		],
+
+		"semi": true,
+		"trailingComma": "all",
+		"singleQuote": false,
+		"printWidth": 80,
+		"endOfLine": "lf",
+
+		"yml.useTabs": false,
+		"yml.tabWidth": 2,
+		"yml.singleQuote": true,
+	},
+
+	"excludes": [
+		"**/build",
+		"**/node_modules",
+		"**/package.json",
+		"**/*-lock.json",
+		".github/workflows",
+		".yarn/plugins",
+		".yarn/releases",
+		".tmp/",
+		".vscode/extensions/",
+		"cache/",
+		"packages/*/*.api.md",
+		"CHANGELOG*.md",
+		".yarnrc.yml",
+		// I have no idea why, but using dprint programmatically on this file
+		// results in a different formatting than using the CLI
+		"packages/config/src/LogicParser.ts",
+	],
+	"plugins": [
+		"https://plugins.dprint.dev/typescript-0.93.0.wasm",
+		"https://plugins.dprint.dev/json-0.19.3.wasm",
+		"https://plugins.dprint.dev/markdown-0.17.8.wasm",
+		"https://plugins.dprint.dev/prettier-0.46.1.json@e5bd083088a8dfc6e5ce2d3c9bee81489b065bd5345ef55b59f5d96627928b7a",
+	],
+}

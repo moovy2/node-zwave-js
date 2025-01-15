@@ -7,6 +7,11 @@
 		{
 			"productType": "0x7000",
 			"productId": "0xa00a"
+		},
+		{
+			"productType": "0xbb00",
+			"productId": "0xbb0a",
+			"zwaveAllianceId": 4132
 		}
 	],
 	"firmwareVersion": {
@@ -33,10 +38,7 @@
 			"#": "1",
 			"label": "Status After Power Failure",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 4,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -56,83 +58,18 @@
 					"value": 3
 				},
 				{
-					"label": "Relay 2 - Previous state, Relay 1 - On",
+					"label": "Relay 2 - Previous state, relay 1 - On",
 					"value": 4
-				}
-			]
-		},
-		{
-			"#": "2",
-			"$if": "firmwareVersion >= 1.4",
-			"label": "Input Type for S1 Terminal",
-			"description": "Note: The device must be excluded (without resetting it) and re-included after changing to/from values 4-11",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 11,
-			"defaultValue": 1,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Momentary switch",
-					"value": 0
-				},
-				{
-					"label": "Toggle switch (follow switch)",
-					"value": 1
-				},
-				{
-					"label": "Toggle switch (change on toggle)",
-					"value": 2
-				},
-				{
-					"label": "Garage door (momentary mode)",
-					"value": 3
-				},
-				{
-					"label": "Water sensor",
-					"value": 4
-				},
-				{
-					"label": "Heat alarm",
-					"value": 5
-				},
-				{
-					"label": "Motion alert",
-					"value": 6
-				},
-				{
-					"label": "Door sensor (open/close)",
-					"value": 7
-				},
-				{
-					"label": "CO alarm",
-					"value": 8
-				},
-				{
-					"label": "CO2 alarm",
-					"value": 9
-				},
-				{
-					"label": "On/off report (dry contact switch/sensor)",
-					"value": 10
-				},
-				{
-					"label": "Garage door mode (momentary mode) for relay and door sensor (open/close) for input",
-					"value": 11
 				}
 			]
 		},
 		{
 			"#": "2",
 			"$if": "firmwareVersion < 1.4",
-			"label": "Input Type for S1 Terminal",
+			"label": "S1 Terminal: Input Type",
 			"description": "Note: The device must be excluded (without resetting it) and re-included after changing to/from values 4-10",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 10,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -140,15 +77,15 @@
 					"value": 0
 				},
 				{
-					"label": "Toggle switch (follow switch)",
+					"label": "Toggle switch (Follow switch)",
 					"value": 1
 				},
 				{
-					"label": "Toggle switch (change on toggle)",
+					"label": "Toggle switch (Change on toggle)",
 					"value": 2
 				},
 				{
-					"label": "Garage door (momentary mode)",
+					"label": "Garage door (Momentary mode)",
 					"value": 3
 				},
 				{
@@ -164,7 +101,7 @@
 					"value": 6
 				},
 				{
-					"label": "Door sensor (open/close)",
+					"label": "Door sensor (Open/Close)",
 					"value": 7
 				},
 				{
@@ -176,7 +113,164 @@
 					"value": 9
 				},
 				{
-					"label": "On/off report (dry contact switch/sensor)",
+					"label": "On/Off report (Dry contact switch/sensor)",
+					"value": 10
+				}
+			]
+		},
+		{
+			"#": "2",
+			"$if": "firmwareVersion >= 1.4",
+			"label": "S1 Terminal: Input Type",
+			"description": "Note: The device must be excluded (without resetting it) and re-included after changing to/from values 4-11",
+			"valueSize": 1,
+			"defaultValue": 1,
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Momentary switch",
+					"value": 0
+				},
+				{
+					"label": "Toggle switch (Follow switch)",
+					"value": 1
+				},
+				{
+					"label": "Toggle switch (Change on toggle)",
+					"value": 2
+				},
+				{
+					"label": "Garage door (Momentary mode)",
+					"value": 3
+				},
+				{
+					"label": "Water sensor",
+					"value": 4
+				},
+				{
+					"label": "Heat alarm",
+					"value": 5
+				},
+				{
+					"label": "Motion alert",
+					"value": 6
+				},
+				{
+					"label": "Door sensor (Open/Close)",
+					"value": 7
+				},
+				{
+					"label": "CO alarm",
+					"value": 8
+				},
+				{
+					"label": "CO2 alarm",
+					"value": 9
+				},
+				{
+					"label": "On/Off report (Dry contact switch/sensor)",
+					"value": 10
+				},
+				{
+					"label": "Garage door mode (Momentary mode) for relay and door sensor (Open/Close) for input",
+					"value": 11
+				}
+			]
+		},
+		{
+			"#": "19",
+			"$if": "firmwareVersion >= 1.10",
+			"label": "S1 Terminal: Invert Values",
+			"description": "Select the same value as you chose for parameter 2 to reverse the values for open and closed circuit",
+			"valueSize": 1,
+			"defaultValue": 0,
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Disable",
+					"value": 0
+				},
+				{
+					"label": "Leak alarm (Water sensor)",
+					"value": 4
+				},
+				{
+					"label": "Heat alarm",
+					"value": 5
+				},
+				{
+					"label": "Motion alert",
+					"value": 6
+				},
+				{
+					"label": "Open/Close alert (Door sensor)",
+					"value": 7
+				},
+				{
+					"label": "CO alarm",
+					"value": 8
+				},
+				{
+					"label": "CO2 alarm",
+					"value": 9
+				},
+				{
+					"label": "On/Off report (Dry contact switch/sensor)",
+					"value": 10
+				}
+			]
+		},
+		{
+			"#": "3",
+			"$if": "firmwareVersion < 1.4",
+			"label": "S2 Terminal: Input Type",
+			"description": "Note: The device must be excluded (without resetting it) and re-included after changing to/from values 4-10",
+			"valueSize": 1,
+			"defaultValue": 1,
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Momentary switch",
+					"value": 0
+				},
+				{
+					"label": "Toggle switch (Follow switch)",
+					"value": 1
+				},
+				{
+					"label": "Toggle switch (Change on toggle)",
+					"value": 2
+				},
+				{
+					"label": "Garage door (Momentary mode)",
+					"value": 3
+				},
+				{
+					"label": "Water sensor",
+					"value": 4
+				},
+				{
+					"label": "Heat alarm",
+					"value": 5
+				},
+				{
+					"label": "Motion alert",
+					"value": 6
+				},
+				{
+					"label": "Door sensor (Open/Close)",
+					"value": 7
+				},
+				{
+					"label": "CO alarm",
+					"value": 8
+				},
+				{
+					"label": "CO2 alarm",
+					"value": 9
+				},
+				{
+					"label": "On/Off report (Dry contact switch/sensor)",
 					"value": 10
 				}
 			]
@@ -184,13 +278,10 @@
 		{
 			"#": "3",
 			"$if": "firmwareVersion >= 1.4",
-			"label": "Input Type for S2 Terminal",
+			"label": "S2 Terminal: Input Type",
 			"description": "Note: The device must be excluded (without resetting it) and re-included after changing to/from values 4-11",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 11,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -198,15 +289,15 @@
 					"value": 0
 				},
 				{
-					"label": "Toggle switch (follow switch)",
+					"label": "Toggle switch (Follow switch)",
 					"value": 1
 				},
 				{
-					"label": "Toggle switch (change on toggle)",
+					"label": "Toggle switch (Change on toggle)",
 					"value": 2
 				},
 				{
-					"label": "Garage door (momentary mode)",
+					"label": "Garage door (Momentary mode)",
 					"value": 3
 				},
 				{
@@ -222,7 +313,7 @@
 					"value": 6
 				},
 				{
-					"label": "Door sensor (open/close)",
+					"label": "Door sensor (Open/Close)",
 					"value": 7
 				},
 				{
@@ -234,81 +325,27 @@
 					"value": 9
 				},
 				{
-					"label": "On/off report (dry contact switch/sensor)",
+					"label": "On/Off report (Dry contact switch/sensor)",
 					"value": 10
 				},
 				{
-					"label": "Garage door mode (momentary mode) for relay and door sensor (open/close) for input",
+					"label": "Garage door mode (Momentary mode) for relay and door sensor (Open/Close) for input",
 					"value": 11
 				}
 			]
 		},
 		{
-			"#": "3",
-			"$if": "firmwareVersion < 1.4",
-			"label": "Input Type for S2 Terminal",
-			"description": "Note: The device must be excluded (without resetting it) and re-included after changing to/from values 4-10",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 10,
-			"defaultValue": 1,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Momentary switch",
-					"value": 0
-				},
-				{
-					"label": "Toggle switch (follow switch)",
-					"value": 1
-				},
-				{
-					"label": "Toggle switch (change on toggle)",
-					"value": 2
-				},
-				{
-					"label": "Garage door (momentary mode)",
-					"value": 3
-				},
-				{
-					"label": "Water sensor",
-					"value": 4
-				},
-				{
-					"label": "Heat alarm",
-					"value": 5
-				},
-				{
-					"label": "Motion alert",
-					"value": 6
-				},
-				{
-					"label": "Door sensor (open/close)",
-					"value": 7
-				},
-				{
-					"label": "CO alarm",
-					"value": 8
-				},
-				{
-					"label": "CO2 alarm",
-					"value": 9
-				},
-				{
-					"label": "On/off report (dry contact switch/sensor)",
-					"value": 10
-				}
-			]
+			"#": "20",
+			"$if": "firmwareVersion >= 1.10",
+			"$import": "#paramInformation/19",
+			"label": "S2 Terminal: Invert Values",
+			"description": "Select the same value as you chose for parameter 3 to reverse the values for open and closed circuit"
 		},
 		{
 			"#": "5",
 			"label": "LED Indicator",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -331,53 +368,66 @@
 		},
 		{
 			"#": "6",
-			"label": "Auto Turn-Off Timer (Relay 1)",
-			"description": "Sets the time after which you want relay 1 to automatically turn off once it has been turned on, using the unit defined in parameter 15.",
-			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 65535,
+			"$import": "templates/zooz_template.json#auto_timer_base_0x_1x_3x_7x_nounit",
+			"label": "Relay 1: Auto Turn-Off Timer"
+		},
+		{
+			"#": "15",
+			"label": "Relay 1: Auto Turn-Off Timer Unit",
+			"valueSize": 1,
 			"defaultValue": 0,
-			"unsigned": true
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Minutes",
+					"value": 0
+				},
+				{
+					"label": "Seconds",
+					"value": 1
+				},
+				{
+					"label": "Hours",
+					"value": 2
+				}
+			]
 		},
 		{
 			"#": "7",
-			"label": "Auto Turn-On Timer (Relay 1)",
-			"description": "The time after relay 1 will automatically turn on, using the unit defined in parameter 16",
-			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 65535,
-			"defaultValue": 0,
-			"unsigned": true
+			"$import": "templates/zooz_template.json#auto_timer_base_0x_1x_3x_7x_nounit",
+			"label": "Relay 1: Auto Turn-On Timer"
+		},
+		{
+			"#": "16",
+			"$import": "#paramInformation/15",
+			"label": "Relay 1: Auto Turn-On Timer Unit"
 		},
 		{
 			"#": "8",
-			"label": "Auto Turn-Off Timer (Relay 2)",
-			"description": "The time after relay 2 will automatically turn off, using the unit defined in parameter 17",
-			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 65535,
-			"defaultValue": 0,
-			"unsigned": true
+			"$import": "templates/zooz_template.json#auto_timer_base_0x_1x_3x_7x_nounit",
+			"label": "Relay 2: Auto Turn-Off Timer"
+		},
+		{
+			"#": "17",
+			"$import": "#paramInformation/15",
+			"label": "Relay 2: Auto Turn-Off Timer Unit"
 		},
 		{
 			"#": "9",
-			"label": "Auto Turn-On Timer (Relay 2)",
-			"description": "The time after relay 2 will automatically turn on, using the unit defined in parameter 18",
-			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 65535,
-			"defaultValue": 0,
-			"unsigned": true
+			"$import": "templates/zooz_template.json#auto_timer_base_0x_1x_3x_7x_nounit",
+			"label": "Relay 2: Auto Turn-On Timer"
+		},
+		{
+			"#": "18",
+			"$import": "#paramInformation/15",
+			"label": "Relay 2: Auto Turn-On Timer Unit"
 		},
 		{
 			"#": "10",
 			"label": "Control Relay 1 with S1 Input",
 			"description": "If disabled and Parameter 2 is >= 4, a Z-Wave report will be sent but R1 will not be triggered",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -395,10 +445,7 @@
 			"label": "Control Relay 2 with S2 Input",
 			"description": "If disabled and Parameter 3 is >= 4, a Z-Wave report will be sent but R2 will not be triggered",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -412,111 +459,11 @@
 			]
 		},
 		{
-			"#": "15",
-			"label": "Auto Turn-Off Timer Unit (Relay 1)",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
-			"defaultValue": 1,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Minutes",
-					"value": 0
-				},
-				{
-					"label": "Seconds",
-					"value": 1
-				},
-				{
-					"label": "Hours",
-					"value": 2
-				}
-			]
-		},
-		{
-			"#": "16",
-			"label": "Auto Turn-On Timer Unit (Relay 1)",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Minutes",
-					"value": 0
-				},
-				{
-					"label": "Seconds",
-					"value": 1
-				},
-				{
-					"label": "Hours",
-					"value": 2
-				}
-			]
-		},
-		{
-			"#": "17",
-			"label": "Auto Turn-Off Timer Unit (Relay 2)",
-			"description": "Choose between second, minutes, and hours as the unit for Auto Turn-Off time for Relay 2.  Default: minutes",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Minutes",
-					"value": 0
-				},
-				{
-					"label": "Seconds",
-					"value": 1
-				},
-				{
-					"label": "Hours",
-					"value": 2
-				}
-			]
-		},
-		{
-			"#": "18",
-			"label": "Auto Turn-On Timer Unit (Relay 2)",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Minutes",
-					"value": 0
-				},
-				{
-					"label": "Seconds",
-					"value": 1
-				},
-				{
-					"label": "Hours",
-					"value": 2
-				}
-			]
-		},
-		{
 			"#": "24",
 			"label": "DC Motor Mode",
 			"description": "Sync R1 and R2 together to prevent both being activated at the same time",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -528,10 +475,63 @@
 					"value": 1
 				}
 			]
+		},
+		{
+			"#": "25",
+			"$if": "firmwareVersion >= 1.30",
+			"label": "Input 1 Trigger Duration",
+			"description": "How long contact needs to be made at the input for the status change to be recorded.",
+			"valueSize": 1,
+			"unit": "0.1 seconds",
+			"minValue": 0,
+			"maxValue": 100,
+			"defaultValue": 5
+		},
+		{
+			"#": "26",
+			"$if": "firmwareVersion >= 1.30",
+			"$import": "#paramInformation/25",
+			"label": "Input 2 Trigger Duration"
+		},
+		{
+			"#": "27",
+			"$if": "firmwareVersion >= 1.30",
+			"label": "Custom Input Actions",
+			"description": "How the relay should react to state changes of IN1 and IN2. This setting is designed for rare and niche scenarios and should not be used unless your unique situation requires it.",
+			"valueSize": 1,
+			"defaultValue": 0,
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Disabled",
+					"value": 0
+				},
+				{
+					"label": "IN1: Turn R1 on, IN2: Turn R1 off",
+					"value": 1
+				},
+				{
+					"label": "IN1: Turn R2 on, IN2: Turn R2 off",
+					"value": 2
+				},
+				{
+					"label": "IN1: Turn R1 and R2 on, IN2: Turn R1 and R2 off",
+					"value": 3
+				}
+			]
 		}
 	],
 	"compat": {
 		// This device improperly reports the state of R2 (endpoint 2) through the root endpoint in a way that also changes the state of R1 (endpoint 1)
-		"preserveRootApplicationCCValueIDs": true
+		"preserveRootApplicationCCValueIDs": true,
+		// The device sends Configuration CC info reports in 4-byte chunks, causing each query to block the network for roughly 1.5 seconds.
+		"skipConfigurationNameQuery": true,
+		"skipConfigurationInfoQuery": true
+	},
+	"metadata": {
+		"inclusion": "INCLUSION\n1. Initiate inclusion (pairing) in the app (or web interface).\n2. TAP THE Z-WAVE BUTTON 3 TIMES QUICKLY if using traditional Z-Wave inclusion.\n3. The LED indicator will blink to signal communication and remain on for 2 seconds to confirm inclusion.",
+		"exclusion": "1. Bring your Universal Relay close to the Z-Wave hub and power it\n2. Put the Z-Wave hub into exclusion mode\n3. Click the Z-Wave button 3 times quickly\n4. Your hub will confirm exclusion and the Universal Relay will disappear from your controller's device list",
+		"reset": "If your primary controller is missing or inoperable, you may need to reset the device to factory settings. To complete the reset process manually, click the Z-Wave button 4 times quickly, the LED indicator will light up,\nthen quickly click the Z-Wave button 4 times again. The LED indicator will flash 3 times to confirm successful reset and will then turn off",
+		"manual": "https://products.z-wavealliance.org/ProductManual/File?folder=&filename=product_documents/4132/zooz-700-series-z-wave-plus-universal-relay-zen17-ver1.0-manual.pdf"
 	}
 }

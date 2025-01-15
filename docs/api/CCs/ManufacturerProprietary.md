@@ -9,24 +9,12 @@
 ```ts
 async sendData(
 	manufacturerId: number,
-	data?: Buffer,
+	data?: Uint8Array,
 ): Promise<void>;
 ```
 
-### `fibaroVenetianBlindsGet`
+### `sendAndReceiveData`
 
 ```ts
-async fibaroVenetianBlindsGet(): Promise<Pick<FibaroVenetianBlindCCReport, "position" | "tilt"> | undefined>;
-```
-
-### `fibaroVenetianBlindsSetPosition`
-
-```ts
-async fibaroVenetianBlindsSetPosition(value: number): Promise<void>;
-```
-
-### `fibaroVenetianBlindsSetTilt`
-
-```ts
-async fibaroVenetianBlindsSetTilt(value: number): Promise<void>;
+async sendAndReceiveData(manufacturerId: number, data?: Uint8Array): Promise<{ manufacturerId: number | undefined; data: Bytes; } | undefined>;
 ```

@@ -357,19 +357,16 @@
 			"#": "253",
 			"label": "Meter Calibration Mode",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"writeOnly": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Normal Operation",
+					"label": "Normal operation",
 					"value": 0
 				},
 				{
-					"label": "Enter Meter Calibration Mode",
+					"label": "Enter meter calibration mode",
 					"value": 1
 				}
 			]
@@ -382,5 +379,9 @@
 			"#": "255",
 			"$import": "templates/aeotec_template.json#factory_reset"
 		}
-	]
+	],
+	"compat": {
+		// The root endpoint exposes a master binary switch and total energy consumption
+		"preserveRootApplicationCCValueIDs": true
+	}
 }

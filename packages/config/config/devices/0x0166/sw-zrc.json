@@ -2,7 +2,7 @@
 	"manufacturer": "CBCC Domotique SAS",
 	"manufacturerId": "0x0166",
 	"label": "SW-ZRC",
-	"description": "RemSwiid Z-Wave remote controller",
+	"description": "RemSwiid Z-Wave Remote Controller",
 	"devices": [
 		{
 			"productType": "0x0002",
@@ -20,18 +20,15 @@
 			"label": "Source Node Priority Association Group",
 			"description": "Set priority Association Group number for an Association Source Node",
 			"valueSize": 1,
-			"minValue": 1,
-			"maxValue": 2,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Association Group 1",
+					"label": "Association group 1",
 					"value": 1
 				},
 				{
-					"label": "Association Group 2",
+					"label": "Association group 2",
 					"value": 2
 				}
 			]
@@ -40,10 +37,7 @@
 			"#": "2",
 			"label": "Function Device Key A",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -68,10 +62,7 @@
 			"#": "3",
 			"label": "Function Device Key B",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -96,10 +87,7 @@
 			"#": "4",
 			"label": "Function Device Key C",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -124,10 +112,7 @@
 			"#": "5",
 			"label": "Function Device Key D",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -152,10 +137,7 @@
 			"#": "6",
 			"label": "Function Device Key E",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -180,10 +162,7 @@
 			"#": "7",
 			"label": "Function Device Key F",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -208,10 +187,7 @@
 			"#": "8",
 			"label": "Function Device Key G",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -236,10 +212,7 @@
 			"#": "9",
 			"label": "Function Device Key H",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 1,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -264,10 +237,7 @@
 			"#": "10",
 			"label": "Send Unsolicited Battery Report On Wake Up",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -284,10 +254,7 @@
 			"#": "11",
 			"label": "Dimming Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{

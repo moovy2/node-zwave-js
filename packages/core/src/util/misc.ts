@@ -1,5 +1,4 @@
-import { entries } from "alcalzone-shared/objects";
-import { ZWaveError, ZWaveErrorCodes } from "../error/ZWaveError";
+import { ZWaveError, ZWaveErrorCodes } from "../error/ZWaveError.js";
 
 /** Ensures that the values array is consecutive */
 export function isConsecutiveArray(values: number[]): boolean {
@@ -7,9 +6,11 @@ export function isConsecutiveArray(values: number[]): boolean {
 }
 
 /** Returns an object that includes all non-undefined properties from the original one */
-export function stripUndefined<T>(obj: Record<string, T>): Record<string, T> {
+export function stripUndefined<T>(
+	obj: Record<string, T | undefined>,
+): Record<string, T> {
 	const ret = {} as Record<string, T>;
-	for (const [key, value] of entries(obj)) {
+	for (const [key, value] of Object.entries(obj)) {
 		if (value !== undefined) ret[key] = value;
 	}
 	return ret;
@@ -47,7 +48,7 @@ function validatePayloadInternal(
 }
 
 // Export and augment the validatePayload method with a reason
-export const validatePayload = validatePayloadInternal.bind(
+export const validatePayload: ValidatePayload = validatePayloadInternal.bind(
 	undefined,
 	undefined,
 ) as ValidatePayload;
@@ -96,4 +97,28 @@ export function getBitMaskWidth(mask: number): number {
 		i++;
 	}
 	return i;
+}
+
+/**
+ * Determines the legal range of values that can be encoded at with the given bit mask
+ * Example:
+ * ```txt
+ *   Mask = 00110000
+ *            ^^---- => 0..3 unsigned OR -2..+1 signed
+ *
+ *   Mask = 00110001
+ *            ^....^ => 0..63 unsigned OR -32..+31 signed (with gaps)
+ * ```
+ */
+export function getLegalRangeForBitMask(
+	mask: number,
+	unsigned: boolean,
+): [min: number, max: number] {
+	if (mask === 0) return [0, 0];
+	const bitMaskWidth = getBitMaskWidth(mask);
+	const min = unsigned || bitMaskWidth == 1 ? 0 : -(2 ** (bitMaskWidth - 1));
+	const max = unsigned || bitMaskWidth == 1
+		? 2 ** bitMaskWidth - 1
+		: 2 ** (bitMaskWidth - 1) - 1;
+	return [min, max];
 }

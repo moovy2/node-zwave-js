@@ -1,27 +1,22 @@
 // tsconfig for IntelliSense - active in all files in the current package
 {
-	"extends": "../../tsconfig.json",
-	"compilerOptions": {},
-	"references": [
-		{
-			"path": "../config/tsconfig.build.json"
-		},
-		{
-			"path": "../core/tsconfig.build.json"
-		},
-		{
-			"path": "../maintenance/tsconfig.build.json"
-		},
-		{
-			"path": "../serial/tsconfig.build.json"
-		},
-		{
-			"path": "../shared/tsconfig.build.json"
-		},
-		{
-			"path": "../testing/tsconfig.build.json"
-		}
-	],
-	"include": ["maintenance/**/*.ts", "src/**/*.ts"],
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"plugins": [
+			{
+				"transform": "@zwave-js/transformers/validateArgs/program",
+				"transformProgram": true
+			},
+			{
+				"transform": "@zwave-js/transformers/validateArgs/decorators"
+			}
+		],
+		"typeRoots": [
+			"src/lib/@types",
+			"node_modules/@types",
+			"../../node_modules/@types"
+		]
+	},
+	"include": ["src/**/*.ts"],
 	"exclude": ["build/**", "node_modules/**"]
 }

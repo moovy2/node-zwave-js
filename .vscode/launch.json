@@ -7,18 +7,15 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Debug locally",
-			"port": 9229,
+			"name": "Debug current test",
 			"runtimeExecutable": "yarn",
 			"runtimeArgs": [
-				"node",
+				"test",
 				"--async-stack-traces",
-				"--inspect-brk=9229",
-				"-r",
-				"esbuild-register",
-				"${workspaceFolder}/test/run.ts"
+				"${file}"
 			],
 			"env": {
+				"NODE_ENV": "development"
 				// "NO_CACHE": "true"
 				// "LOGLEVEL": "info"
 			},
@@ -29,36 +26,78 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Generate typed docs",
-			"port": 9229,
+			"name": "Debug locally",
 			"runtimeExecutable": "yarn",
 			"runtimeArgs": [
-				"node",
+				"tsx",
+				"--async-stack-traces",
+				"--conditions=@@dev",
+				"${workspaceFolder}/test/run.ts"
+			],
+			"env": {
+				"NODE_ENV": "development"
+				// "NO_CACHE": "true"
+				// "LOGLEVEL": "info"
+			},
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"],
+			"sourceMaps": true
+			// "preLaunchTask": "npm: build"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug primary and secondary",
+			"runtimeExecutable": "yarn",
+			"runtimeArgs": [
+				"tsx",
+				"--async-stack-traces",
+				"--conditions=@@dev",
+				"${workspaceFolder}/test/run_duplex.ts"
+			],
+			"env": {
+				"NODE_ENV": "development"
+				// "NO_CACHE": "true"
+				// "LOGLEVEL": "info"
+			},
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"],
+			"sourceMaps": true
+			// "preLaunchTask": "npm: build"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Generate typed docs",
+			"runtimeExecutable": "yarn",
+			"runtimeArgs": [
+				"tsx",
 				"--async-stack-traces",
 				"--inspect-brk=9229",
-				"-r",
-				"esbuild-register",
 				"${workspaceFolder}/packages/maintenance/src/generateTypedDocs.ts"
 			],
 			"console": "integratedTerminal",
 			"skipFiles": ["<node_internals>/**"],
-			"sourceMaps": true
+			"sourceMaps": true,
+			// This needs the compiled sources (I think)
+			"preLaunchTask": "npm: build"
 		},
 		{
 			"type": "node",
 			"request": "launch",
 			"name": "Decode message",
-			"port": 9229,
 			"runtimeExecutable": "yarn",
 			"runtimeArgs": [
-				"node",
+				"tsx",
 				"--async-stack-traces",
 				"--inspect-brk=9229",
-				"${workspaceFolder}/test/debug.js"
+				"--conditions=@@dev",
+				"${workspaceFolder}/test/decodeMessage.ts"
 			],
 			"console": "integratedTerminal",
 			"skipFiles": ["<node_internals>/**"],
 			"sourceMaps": true
+			// "preLaunchTask": "npm: build"
 		},
 		{
 			"type": "node",
@@ -67,27 +106,33 @@
 			"cwd": "${workspaceFolder}",
 			"runtimeExecutable": "yarn",
 			"runtimeArgs": [
-				"node",
+				"tsx",
 				"--async-stack-traces",
 				"--inspect=9229",
-				"-r",
-				"esbuild-register",
+				"--conditions=@@dev",
 				"${workspaceFolder}/packages/config/maintenance/importConfig.ts",
 				"-dm -s zwa"
 			],
-			"console": "integratedTerminal",
-			"disableOptimisticBPs": true
+			"console": "integratedTerminal"
 		},
 		{
 			"type": "node",
-			"name": "vscode-jest-tests",
 			"request": "launch",
-			"console": "integratedTerminal",
-			"internalConsoleOptions": "neverOpen",
-			"disableOptimisticBPs": true,
-			"cwd": "${workspaceFolder}",
+			"name": "Run Zniffer",
 			"runtimeExecutable": "yarn",
-			"args": ["run", "test:ts", "--runInBand", "--watchAll=false"]
+			"runtimeArgs": [
+				"tsx",
+				"--async-stack-traces",
+				"--conditions=@@dev",
+				"${workspaceFolder}/test/run_zniffer.ts"
+			],
+			"env": {
+				"NODE_ENV": "development"
+			},
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"],
+			"sourceMaps": true
+			// "preLaunchTask": "npm: build"
 		}
 	]
 }

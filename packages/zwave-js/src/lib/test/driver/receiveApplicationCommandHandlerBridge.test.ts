@@ -1,103 +1,93 @@
+import { SecurityCCNonceReport } from "@zwave-js/cc";
 import { CommandClasses, SecurityManager } from "@zwave-js/core";
-import { MessageHeaders, MockSerialPort } from "@zwave-js/serial";
-import { wait } from "alcalzone-shared/async";
-import type { Driver } from "../../driver/Driver";
-import { ZWaveNode } from "../../node/Node";
-import { createAndStartDriver } from "../utils";
-import { isFunctionSupported_NoBridge } from "./fixtures";
+import {
+	BridgeApplicationCommandRequest,
+	FunctionType,
+} from "@zwave-js/serial";
+import { Bytes } from "@zwave-js/shared/safe";
+import {
+	getDefaultMockControllerCapabilities,
+	getDefaultSupportedFunctionTypes,
+} from "@zwave-js/testing";
+import { integrationTest } from "../integrationTestSuite.js";
 
-describe("regression tests", () => {
-	let driver: Driver;
-	let serialport: MockSerialPort;
-	process.env.LOGLEVEL = "debug";
-
-	beforeEach(async () => {
-		({ driver, serialport } = await createAndStartDriver({
-			networkKey: Buffer.alloc(16, 0),
-		}));
-
-		driver["_securityManager"] = new SecurityManager({
-			networkKey: driver.options.networkKey!,
-			ownNodeId: 1,
-			nonceTimeout: driver.options.timeouts.nonce,
-		});
-
-		driver["_controller"] = {
-			ownNodeId: 1,
-			isFunctionSupported: isFunctionSupported_NoBridge,
-			nodes: new Map(),
-			incrementStatistics: () => {},
-		} as any;
-	});
-
-	afterEach(async () => {
-		await driver.destroy();
-		driver.removeAllListeners();
-	});
-
-	it("Node responses in a BridgeApplicationCommandRequest should be understood", async () => {
-		jest.setTimeout(5000);
-
-		// Repro for #1100
-		const node3 = new ZWaveNode(3, driver);
-		(driver.controller.nodes as Map<number, ZWaveNode>).set(3, node3);
-		// Add event handlers for the nodes
-		for (const node of driver.controller.nodes.values()) {
-			driver["addNodeEventHandlers"](node);
-		}
-
-		node3.addCC(CommandClasses.Security, {
-			isSupported: true,
-			version: 1,
-		});
-		node3.markAsAlive();
-
-		const ACK = Buffer.from([MessageHeaders.ACK]);
-
-		const getNoncePromise = node3.commandClasses.Security.getNonce();
-		// » [Node 003] [REQ] [SendData]
-		// │ transmit options: 0x25
-		// │ callback id:      1
-		// └─[SecurityCCNonceGet]
-		expect(serialport.lastWrite).toEqual(
-			Buffer.from("0109001303029840250118", "hex"),
-		);
-		await wait(10);
-		serialport.receiveData(ACK);
-
-		await wait(10);
-
-		// « [RES] [SendData]
-		//     was sent: true
-		serialport.receiveData(Buffer.from("0104011301e8", "hex"));
-		// » [ACK]
-		expect(serialport.lastWrite).toEqual(ACK);
-
-		await wait(10);
-
-		// « [REQ] [SendData]
-		//     callback id:     1
-		//     transmit status: OK
-		serialport.receiveData(
-			Buffer.from(
-				"011800130100000100c17f7f7f7f000003000000000301000034",
-				"hex",
-			),
-		);
-		// » [ACK]
-		expect(serialport.lastWrite).toEqual(ACK);
-
-		await wait(10);
-
+integrationTest(
+	"Node responses in a BridgeApplicationCommandRequest should be understood",
+	{
+		// Repro for #1100 - Z-Wave JS uses SendData, the controller responds with
 		// BridgeApplicationCommandRequest
-		serialport.receiveData(
-			Buffer.from("011300a80001030a98803e55e4b714973b9e00c18b", "hex"),
-		);
-		// » [ACK]
-		expect(serialport.lastWrite).toEqual(ACK);
 
-		await expect(getNoncePromise).resolves.toEqual(
-			Buffer.from("3e55e4b714973b9e", "hex"),
-		);
-	});
-});
+		// debug: true,
+
+		// The controller does not support the bridge API
+		controllerCapabilities: {
+			...getDefaultMockControllerCapabilities(),
+			supportedFunctionTypes: getDefaultSupportedFunctionTypes().filter(
+				(ft) =>
+					ft !== FunctionType.SendDataBridge
+					&& ft !== FunctionType.SendDataMulticastBridge,
+			),
+		},
+
+		nodeCapabilities: {
+			commandClasses: [CommandClasses.Security],
+		},
+
+		additionalDriverOptions: {
+			testingHooks: {
+				skipNodeInterview: true,
+			},
+		},
+
+		customSetup: async (driver, controller, mockNode) => {
+			// Create a security manager for the node
+			const sm0Node = new SecurityManager({
+				ownNodeId: mockNode.id,
+				networkKey: driver.options.securityKeys!.S0_Legacy!,
+				nonceTimeout: 100000,
+			});
+			mockNode.securityManagers.securityManager = sm0Node;
+
+			// Create a security manager for the controller
+			const sm0Ctrlr = new SecurityManager({
+				ownNodeId: controller.ownNodeId,
+				networkKey: driver.options.securityKeys!.S0_Legacy!,
+				nonceTimeout: 100000,
+			});
+			controller.securityManagers.securityManager = sm0Ctrlr;
+		},
+
+		testBody: async (t, driver, node, mockController, mockNode) => {
+			node.addCC(CommandClasses.Security, {
+				isSupported: true,
+				version: 1,
+			});
+
+			const noncePromise = node.commandClasses.Security.getNonce();
+			const expectedNonce = Uint8Array.from(
+				Bytes.from("3e55e4b714973b9e", "hex"),
+			);
+
+			const nonceReport = new SecurityCCNonceReport({
+				nodeId: node.id,
+				nonce: expectedNonce,
+			});
+			const response = new BridgeApplicationCommandRequest({
+				command: nonceReport,
+				frameType: "singlecast",
+				ownNodeId: mockController.ownNodeId,
+				fromForeignHomeId: false,
+				isExploreFrame: false,
+				isForeignFrame: false,
+				routedBusy: false,
+				nodeId: node.id,
+				targetNodeId: mockController.ownNodeId,
+			});
+
+			mockController.sendMessageToHost(response, mockNode);
+
+			const nonce = Uint8Array.from((await noncePromise)!);
+			t.expect(nonce).toStrictEqual(expectedNonce);
+		},
+	},
+);

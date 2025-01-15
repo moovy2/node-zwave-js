@@ -1,15 +1,47 @@
 {
-	"typescript.tsdk": ".yarn/sdks/typescript/lib",
+	"typescript.tsdk": "node_modules/typescript/lib",
 	"typescript.enablePromptUseWorkspaceTsdk": true,
-	"jest.showCoverageOnLoad": false,
-	"jest.enableCodeLens": true,
-	"editor.formatOnSave": true,
-	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": false, // the default of true interferes with codeActionsOnSave
+	"editor.codeActionsOnSave": [
+		"source.fixAll.eslint",
+		"source.formatDocument"
+	],
+	"eslint.codeActionsOnSave.mode": "problems",
+	"eslint.codeActionsOnSave.rules": [
+		"!@zwave-js/no-debug-in-tests", // Don't auto-fix this rule on save, or we cannot use debug mode in tests
+		"!@zwave-js/ccapi-validate-args", // We may want to decide whether to fix this or not on a case-by-case basis
+		"!report-unused-eslint-disable-comments", // Without this, disables for the above rules would be removed
+		"*"
+	],
+	"eslint.rules.customizations": [
+		{
+			// Just hint that debug:true should not be checked in
+			"rule": "@zwave-js/no-debug-in-tests",
+			"severity": "info"
+		}
+	],
+	"dprint.experimentalLsp": true,
+	"dprint.path": "./node_modules/dprint/bin.js",
+	"editor.defaultFormatter": "dprint.dprint",
+	"[jsonc]": {
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "dprint.dprint"
+	},
+	"[javascript]": {
+		// Not sure why this is needed, but it is
+		"editor.defaultFormatter": "dprint.dprint"
+	},
+	"[typescript]": {
+		// Not sure why this is needed, but it is
+		"editor.defaultFormatter": "dprint.dprint",
+		"editor.autoClosingBrackets": "languageDefined"
+	},
 	"eslint.validate": [
 		"javascript",
 		"javascriptreact",
 		"typescript",
-		"typescriptreact"
+		"typescriptreact",
+		"jsonc"
 	],
 	"files.exclude": {
 		"node_modules/": true,
@@ -48,38 +80,32 @@
 		"(!test)/cache": true
 	},
 	"files.associations": {
-		"**/config/**/*.json": "jsonc"
+		"**/config/**/*.json": "jsonc",
+		"api-extractor-*.json": "jsonc",
+		"api-extractor.json": "jsonc",
+		"turbo.json": "jsonc"
 	},
 	"editor.rulers": [72, 80, 120],
 	"files.participants.timeout": 10000,
 	"typescript.preferences.importModuleSpecifier": "project-relative",
-	"[jsonc]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
 	"standard.enable": false,
 	"json.schemas": [
 		{
-			"fileMatch": ["/packages/config/config/devices/*/*.json"],
+			"fileMatch": [
+				"/packages/config/config/devices/*/*.json",
+				"!/packages/config/config/devices/templates/*.json"
+			],
 			"url": "/maintenance/schemas/device-config.json"
 		},
 		{
 			"fileMatch": ["/packages/config/config/deviceClasses.json"],
 			"url": "/maintenance/schemas/deviceClasses.json"
-		},
-		{
-			"fileMatch": ["renovate.json"],
-			"url": "https://docs.renovatebot.com/renovate-schema.json"
 		}
 	],
 	"debug.javascript.unmapMissingSources": true,
-	"jest.jestCommandLine": "yarn jest",
 	"search.exclude": {
-		"**/.yarn": true,
-		"**/.pnp.*": true
+		"**/.yarn": true
 	},
-	"eslint.nodePath": ".yarn/sdks",
-	"prettier.prettierPath": ".yarn/sdks/prettier/index.js",
-	"[typescript]": {
-		"editor.autoClosingBrackets": "languageDefined"
-	}
+	"git.ignoredRepositories": ["specs", "vscode-config-editor"],
+	"search.followSymlinks": false
 }

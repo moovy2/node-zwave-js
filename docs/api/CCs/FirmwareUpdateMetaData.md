@@ -7,21 +7,29 @@
 ### `getMetaData`
 
 ```ts
-async getMetaData(): Promise<Pick<FirmwareUpdateMetaDataCCMetaDataReport, "manufacturerId" | "firmwareId" | "checksum" | "firmwareUpgradable" | "maxFragmentSize" | "additionalFirmwareIDs" | "hardwareVersion" | "continuesToFunction" | "supportsActivation"> | undefined>;
+async getMetaData(): Promise<MaybeNotKnown<FirmwareUpdateMetaData>>;
 ```
 
 Requests information about the current firmware on the device.
+
+### `reportMetaData`
+
+```ts
+async reportMetaData(
+	options: FirmwareUpdateMetaDataCCMetaDataReportOptions,
+): Promise<void>;
+```
 
 ### `requestUpdate`
 
 ```ts
 async requestUpdate(
 	options: FirmwareUpdateMetaDataCCRequestGetOptions,
-): Promise<FirmwareUpdateRequestStatus>;
+): Promise<void>;
 ```
 
 Requests the device to start the firmware update process.
-WARNING: This method may wait up to 60 seconds for a reply.
+This does not wait for the reply - that is up to the caller of this method.
 
 ### `sendFirmwareFragment`
 
@@ -29,7 +37,7 @@ WARNING: This method may wait up to 60 seconds for a reply.
 async sendFirmwareFragment(
 	fragmentNumber: number,
 	isLastFragment: boolean,
-	data: Buffer,
+	data: Uint8Array,
 ): Promise<void>;
 ```
 
@@ -40,7 +48,7 @@ Sends a fragment of the new firmware to the device.
 ```ts
 async activateFirmware(
 	options: FirmwareUpdateMetaDataCCActivationSetOptions,
-): Promise<FirmwareUpdateActivationStatus | undefined>;
+): Promise<MaybeNotKnown<FirmwareUpdateActivationStatus>>;
 ```
 
 Activates a previously transferred firmware image.

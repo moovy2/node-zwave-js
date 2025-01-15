@@ -1,88 +1,118 @@
-import fsExtra from "fs-extra";
-import { ConfigManager } from "./ConfigManager";
+/* eslint-disable no-restricted-globals */
+import { pathExists } from "@zwave-js/shared";
+import { readFile } from "node:fs/promises";
+import { test, vi } from "vitest";
+import { ConfigManager } from "./ConfigManager.js";
 
-jest.mock("fs-extra");
-const readFileMock = fsExtra.readFile as jest.Mock;
-const pathExistsMock = fsExtra.pathExists as jest.Mock;
+vi.mock("node:fs/promises");
+vi.mock("@zwave-js/shared", async () => {
+	const original = await vi.importActual("@zwave-js/shared");
+	return {
+		...original,
+		pathExists: vi.fn(),
+	};
+});
 
-describe("lib/config/Manufacturers", () => {
-	describe("lookupManufacturer (with missing file)", () => {
-		let configManager: ConfigManager;
+const readFileStub = vi.mocked(readFile);
+const pathExistsStub = vi.mocked(pathExists);
 
-		beforeAll(async () => {
-			pathExistsMock.mockClear();
-			readFileMock.mockClear();
-			pathExistsMock.mockResolvedValue(false);
-			readFileMock.mockRejectedValue(new Error("File does not exist"));
+{
+	async function prepareTest(): Promise<ConfigManager> {
+		pathExistsStub.mockClear();
+		readFileStub.mockClear();
+		pathExistsStub.mockResolvedValue(false);
+		readFileStub.mockRejectedValue(new Error("File does not exist"));
 
-			// Loading configuration may take a while on CI
-			if (process.env.CI) jest.setTimeout(30000);
+		const configManager = new ConfigManager();
+		await configManager.loadManufacturers();
+		return configManager;
+	}
 
-			configManager = new ConfigManager();
-			await configManager.loadManufacturers();
-		});
+	test.sequential(
+		"lookupManufacturer (with missing file) does not throw",
+		async (t) => {
+			const configManager = await prepareTest();
+			t.expect(() => configManager.lookupManufacturer(0)).not.toThrow();
+		},
+		// Loading configuration may take a while on CI
+		30000,
+	);
 
-		it("does not throw", () => {
-			expect(() => configManager.lookupManufacturer(0)).not.toThrow();
-		});
+	test.sequential(
+		"lookupManufacturer (with missing file) returns undefined",
+		async (t) => {
+			const configManager = await prepareTest();
+			t.expect(configManager.lookupManufacturer(0x0e)).toBeUndefined();
+			t.expect(configManager.lookupManufacturer(0xff)).toBeUndefined();
+		},
+		// Loading configuration may take a while on CI
+		30000,
+	);
+}
 
-		it("returns undefined", async () => {
-			expect(configManager.lookupManufacturer(0x0e)).toBeUndefined();
-			expect(configManager.lookupManufacturer(0xff)).toBeUndefined();
-		});
-	});
+{
+	async function prepareTest(): Promise<ConfigManager> {
+		pathExistsStub.mockClear();
+		readFileStub.mockClear();
+		pathExistsStub.mockResolvedValue(true);
+		readFileStub.mockResolvedValue(
+			Buffer.from(`{"0x000e": `, "utf8"),
+		);
 
-	describe("lookupManufacturer (with invalid file)", () => {
-		let configManager: ConfigManager;
+		const configManager = new ConfigManager();
+		await configManager.loadManufacturers();
+		return configManager;
+	}
 
-		beforeAll(async () => {
-			pathExistsMock.mockClear();
-			readFileMock.mockClear();
-			pathExistsMock.mockResolvedValue(true);
-			readFileMock.mockResolvedValue(`{"0x000e": `);
+	test.sequential(
+		"lookupManufacturer (with invalid file) does not throw",
+		async (t) => {
+			const configManager = await prepareTest();
+			t.expect(() => configManager.lookupManufacturer(0x0e)).not
+				.toThrow();
+		},
+		// Loading configuration may take a while on CI
+		30000,
+	);
 
-			// Loading configuration may take a while on CI
-			if (process.env.CI) jest.setTimeout(30000);
+	test.sequential(
+		"lookupManufacturer (with invalid file) returns undefined",
+		async (t) => {
+			const configManager = await prepareTest();
+			t.expect(configManager.lookupManufacturer(0x0e)).toBeUndefined();
+		},
+		// Loading configuration may take a while on CI
+		30000,
+	);
+}
 
-			configManager = new ConfigManager();
-			await configManager.loadManufacturers();
-		});
-
-		it("does not throw", () => {
-			expect(() => configManager.lookupManufacturer(0x0e)).not.toThrow();
-		});
-
-		it("returns undefined", () => {
-			expect(configManager.lookupManufacturer(0x0e)).toBeUndefined();
-		});
-	});
-
-	describe("lookupManufacturer()", () => {
-		let configManager: ConfigManager;
-
-		beforeAll(async () => {
-			pathExistsMock.mockResolvedValue(true);
-			readFileMock.mockResolvedValue(
+{
+	async function prepareTest(): Promise<ConfigManager> {
+		readFileStub.mockClear();
+		pathExistsStub.mockClear();
+		pathExistsStub.mockResolvedValue(true);
+		readFileStub.mockResolvedValue(
+			Buffer.from(
 				JSON.stringify({
 					"0x000e": "Test",
 				}),
-			);
+				"utf8",
+			),
+		);
 
-			// Loading configuration may take a while on CI
-			if (process.env.CI) jest.setTimeout(30000);
+		const configManager = new ConfigManager();
+		await configManager.loadManufacturers();
+		return configManager;
+	}
 
-			configManager = new ConfigManager();
-			await configManager.loadManufacturers();
-		});
-
-		beforeEach(() => {
-			readFileMock.mockClear();
-			pathExistsMock.mockClear();
-		});
-
-		it("returns the name belonging to the manufacturer ID if it is defined", () => {
-			expect(configManager.lookupManufacturer(0x0e)).toBe("Test");
-			expect(configManager.lookupManufacturer(0xff)).toBeUndefined();
-		});
-	});
-});
+	test.sequential(
+		"lookupManufacturer() returns the name belonging to the manufacturer ID if it is defined",
+		async (t) => {
+			const configManager = await prepareTest();
+			t.expect(configManager.lookupManufacturer(0x0e)).toBe("Test");
+			t.expect(configManager.lookupManufacturer(0xff)).toBeUndefined();
+		},
+		// Loading configuration may take a while on CI
+		30000,
+	);
+}

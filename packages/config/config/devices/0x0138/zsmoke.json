@@ -24,24 +24,75 @@
 	"paramInformation": [
 		{
 			"#": "1",
-			"label": "Send double alarms",
+			"label": "Send Double Alarms",
 			"description": "Causes the device to send double alarm messages",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
-			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Single Alarm",
+					"label": "Single alarm",
 					"value": 0
 				},
 				{
-					"label": "Double Alarm",
+					"label": "Double alarm",
 					"value": 1
 				}
 			]
 		}
-	]
+	],
+	"compat": {
+		"alarmMapping": [
+			{
+				"from": {
+					"alarmType": 1,
+					"alarmLevel": 255
+				},
+				"to": {
+					"notificationType": 1,
+					"notificationEvent": 2
+				}
+			},
+			{
+				"from": {
+					"alarmType": 1,
+					"alarmLevel": 0
+				},
+				"to": {
+					"notificationType": 1,
+					"notificationEvent": 0
+				}
+			},
+			{
+				"from": {
+					"alarmType": 12,
+					"alarmLevel": 255
+				},
+				"to": {
+					"notificationType": 1,
+					"notificationEvent": 3
+				}
+			},
+			{
+				"from": {
+					"alarmType": 12,
+					"alarmLevel": 0
+				},
+				"to": {
+					"notificationType": 1,
+					"notificationEvent": 0
+				}
+			},
+			{
+				"from": {
+					"alarmType": 13,
+					"alarmLevel": 255
+				},
+				"to": {
+					"notificationType": 1,
+					"notificationEvent": 0
+				}
+			}
+		]
+	}
 }

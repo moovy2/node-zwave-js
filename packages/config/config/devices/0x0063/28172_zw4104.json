@@ -1,18 +1,13 @@
 {
-	"manufacturer": "GE/Jasco",
+	"manufacturer": "Jasco",
 	"manufacturerId": "0x0063",
-	"label": "28172 / 28713 / ZW4104",
-	"description": "Plug-in Smart Switch (Dual Plug)",
+	"label": "28172 / ZW4104",
+	"description": "Plug-In 2-Outlet Switch, 1 Controlled, 500S",
 	"devices": [
 		{
 			"productType": "0x5052",
 			"productId": "0x3039",
 			"zwaveAllianceId": [1270, 1925, 2973]
-		},
-		{
-			"productType": "0x5052",
-			"productId": "0x3130",
-			"zwaveAllianceId": [1436, 2125, 2561]
 		}
 	],
 	"firmwareVersion": {
@@ -38,32 +33,11 @@
 	"paramInformation": [
 		{
 			"#": "3",
-			"label": "LED Light",
-			"description": "LED status when device on or off.",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
-			"defaultValue": 0,
-			"unsigned": true,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "LED ON when load is OFF",
-					"value": 0
-				},
-				{
-					"label": "LED On when light is turned On",
-					"value": 1
-				},
-				{
-					"label": "LED always OFF",
-					"value": 2
-				}
-			]
+			"$import": "~/templates/master_template.json#led_indicator_three_options"
 		}
 	],
 	"compat": {
-		"treatBasicSetAsEvent": true
+		"mapBasicSet": "event"
 	},
 	"metadata": {
 		"inclusion": "1. Follow the instructions for your Z-wave certified controller to include the device to the Z-wave network.\n2. Once the controller is ready to include your smart switch, single press and release the manual/program button on the smart switch to include it in the network.\n3. Once your controller has confirmed that the smart switch has been included, refresh the Z-wave network to optimize performance",

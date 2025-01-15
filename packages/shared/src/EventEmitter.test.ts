@@ -1,14 +1,15 @@
-import { EventEmitter } from "events";
-import { TypedEventEmitter } from "./EventEmitter";
-import { AllOf, Mixin } from "./inheritance";
-import type { Constructor } from "./types";
+import { EventEmitter } from "node:events";
+import { test } from "vitest";
+import { TypedEventEmitter } from "./EventEmitter.js";
+import { AllOf, Mixin } from "./inheritance.js";
+import type { Constructor } from "./types.js";
 
 interface TestEvents {
 	test1: (arg1: number) => void;
 	test2: () => void;
 }
 
-describe("Type-Safe EventEmitter (as Mixin)", () => {
+{
 	class Base {
 		get baseProp() {
 			return "base";
@@ -16,7 +17,7 @@ describe("Type-Safe EventEmitter (as Mixin)", () => {
 		baseProp2 = "base";
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-empty-interface
+	// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 	interface Test extends TypedEventEmitter<TestEvents> {}
 
 	@Mixin([EventEmitter])
@@ -25,35 +26,41 @@ describe("Type-Safe EventEmitter (as Mixin)", () => {
 			this.emit("test1", 1);
 		}
 	}
-	it("works", (done) => {
-		const t = new Test();
-		expect(t.baseProp).toBe("base");
-		expect(t.baseProp2).toBe("base");
-		t.on("test1", (arg1) => {
-			expect(arg1).toBe(1);
-			done();
-		});
-		t.emit1();
-	});
-});
 
-describe("Type-Safe EventEmitter (standalone)", () => {
+	test("Type-Safe EventEmitter as Mixin works", (t) => {
+		return new Promise<void>((resolve) => {
+			const testClass = new Test();
+			t.expect(testClass.baseProp).toBe("base");
+			t.expect(testClass.baseProp2).toBe("base");
+			testClass.on("test1", (arg1) => {
+				t.expect(arg1).toBe(1);
+				resolve();
+			});
+			testClass.emit1();
+		});
+	});
+}
+
+{
 	class Test extends TypedEventEmitter<TestEvents> {
 		emit1() {
 			this.emit("test1", 1);
 		}
 	}
-	it("works", (done) => {
-		const t = new Test();
-		t.on("test1", (arg1) => {
-			expect(arg1).toBe(1);
-			done();
-		});
-		t.emit1();
-	});
-});
 
-describe("Type-Safe EventEmitter (with multi-inheritance)", () => {
+	test("Type-Safe EventEmitter standalone works", (t) => {
+		return new Promise<void>((resolve) => {
+			const testClass = new Test();
+			testClass.on("test1", (arg1) => {
+				t.expect(arg1).toBe(1);
+				resolve();
+			});
+			testClass.emit1();
+		});
+	});
+}
+
+{
 	class Base {
 		get baseProp() {
 			return "base";
@@ -69,14 +76,17 @@ describe("Type-Safe EventEmitter (with multi-inheritance)", () => {
 			this.emit("test1", 1);
 		}
 	}
-	it("works", (done) => {
-		const t = new Test();
-		expect(t.baseProp).toBe("base");
-		expect(t.baseProp2).toBe("base");
-		t.on("test1", (arg1) => {
-			expect(arg1).toBe(1);
-			done();
+
+	test("Type-Safe EventEmitter (with multi-inheritance) works", async (t) => {
+		const testClass = new Test();
+		t.expect(testClass.baseProp).toBe("base");
+		t.expect(testClass.baseProp2).toBe("base");
+		return new Promise<void>((resolve) => {
+			testClass.on("test1", (arg1) => {
+				t.expect(arg1).toBe(1);
+				resolve();
+			});
+			testClass.emit1();
 		});
-		t.emit1();
 	});
-});
+}

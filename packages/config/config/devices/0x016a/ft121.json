@@ -20,38 +20,17 @@
 	"paramInformation": [
 		{
 			"#": "20",
-			"label": "LED Strip state at Power ON",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
-			"defaultValue": 0,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Last State",
-					"value": 0
-				},
-				{
-					"label": "Always On",
-					"value": 1
-				},
-				{
-					"label": "Always Off",
-					"value": 2
-				}
-			]
+			"$import": "~/templates/master_template.json#state_after_power_failure_prev_on_off"
 		},
 		{
 			"#": "32",
-			"label": "Enable/Disable Report on color change.",
+			"label": "Enable/Disable Report On Color Change",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Disable (default)",
+					"label": "Disable",
 					"value": 0
 				},
 				{
@@ -62,34 +41,18 @@
 		},
 		{
 			"#": "34",
-			"label": "Brightness Level Control",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 0,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Disable (default)",
-					"value": 0
-				},
-				{
-					"label": "Enable",
-					"value": 1
-				}
-			]
+			"$import": "~/templates/master_template.json#base_enable_disable",
+			"label": "Brightness Level Control"
 		},
 		{
 			"#": "35",
-			"label": "Display mode of Cold/warm white",
+			"label": "Display Mode of Cold/warm White",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Arbitrary combination (default)",
+					"label": "Arbitrary combination",
 					"value": 0
 				},
 				{
@@ -100,10 +63,8 @@
 		},
 		{
 			"#": "40",
-			"label": "Colorful mode configuration",
+			"label": "Colorful Mode Configuration",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 5,
 			"defaultValue": 0,
 			"writeOnly": true,
 			"allowManualEntry": false,
@@ -136,10 +97,8 @@
 		},
 		{
 			"#": "80",
-			"label": "Notification (Group 1) when state changes",
+			"label": "Notification (Group 1) When State Changes",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 1,
 			"allowManualEntry": false,
 			"options": [
@@ -148,21 +107,19 @@
 					"value": 0
 				},
 				{
-					"label": "Hail CC (default)",
+					"label": "Hail CC",
 					"value": 1
 				},
 				{
-					"label": "Basic CC report",
+					"label": "Basic CC Report",
 					"value": 2
 				}
 			]
 		},
 		{
 			"#": "112",
-			"label": "Dimmer mode",
+			"label": "Dimmer Mode",
 			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 3,
 			"defaultValue": 2,
 			"allowManualEntry": false,
 			"options": [
@@ -175,7 +132,8 @@
 					"value": 1
 				},
 				{
-					"label": "(Parabolic * Index)/2",
+					// eslint-disable-next-line @zwave-js/consistent-config-string-case
+					"label": "(Parabolic * index)/2",
 					"value": 2
 				},
 				{
@@ -186,26 +144,12 @@
 		},
 		{
 			"#": "252",
-			"label": "Configuration lock",
-			"valueSize": 1,
-			"minValue": 0,
-			"maxValue": 1,
-			"defaultValue": 0,
-			"allowManualEntry": false,
-			"options": [
-				{
-					"label": "Configuration allowed (default)",
-					"value": 0
-				},
-				{
-					"label": "Configuration locked",
-					"value": 1
-				}
-			]
+			"$import": "~/templates/master_template.json#base_enable_disable",
+			"label": "Lock Configuration"
 		},
 		{
 			"#": "255",
-			"label": "Reset to defaults",
+			"label": "Reset to Defaults",
 			"valueSize": 1,
 			"minValue": 0,
 			"maxValue": 255,
@@ -220,9 +164,10 @@
 			"minValue": 0,
 			"maxValue": 30,
 			"defaultValue": 0,
+			"unsigned": true,
 			"options": [
 				{
-					"label": "Constant Speed",
+					"label": "Constant speed",
 					"value": 0
 				}
 			]
@@ -232,9 +177,8 @@
 			"label": "Time Base of Color Change Speed",
 			"description": "Applies only when the Color Transition Style is set to Fade Out/In",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -258,7 +202,8 @@
 			"valueSize": 4,
 			"minValue": 0,
 			"maxValue": 254,
-			"defaultValue": 0
+			"defaultValue": 0,
+			"unsigned": true
 		},
 		{
 			"#": "37[0xff0000]",
@@ -274,13 +219,12 @@
 			"label": "Color Display Cycle",
 			"description": "Defines the mode for determining colors used in color transitions",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 4,
 			"defaultValue": 1,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
-					"label": "Inactive (keep the current configuration value)",
+					"label": "Inactive (Keep the current configuration value)",
 					"value": 0
 				},
 				{
@@ -306,9 +250,8 @@
 			"label": "Color Change Speed Option",
 			"description": "Applies only when the Color Transition Style is set to Fade Out/In",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 2,
 			"defaultValue": 0,
+			"unsigned": true,
 			"allowManualEntry": false,
 			"options": [
 				{
@@ -330,8 +273,6 @@
 			"label": "Color Transition Style",
 			"description": "Defines how the strip transitions between colors",
 			"valueSize": 4,
-			"minValue": 0,
-			"maxValue": 1,
 			"defaultValue": 0,
 			"allowManualEntry": false,
 			"options": [

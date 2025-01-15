@@ -3,7 +3,9 @@
 	"extends": "./tsconfig.json",
 	"compilerOptions": {
 		"rootDir": "src",
-		"outDir": "build"
+		"outDir": "build/esm",
+		// Do not use the @@dev export for compiling
+		"customConditions": []
 	},
 	"references": [
 		{
@@ -11,6 +13,9 @@
 		},
 		{
 			"path": "../shared/tsconfig.build.json"
+		},
+		{
+			"path": "../maintenance/tsconfig.build.json"
 		}
 	],
 	"include": ["src/**/*.ts"],
