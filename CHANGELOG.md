@@ -4,6 +4,16 @@
 <!--
 	Add placeholder for next release with `wip` snippet
 -->
+## __WORK IN PROGRESS__
+### Bugfixes
+* Fixed a race condition in the web serial binding that could cause an error when destroying the driver (#8644)
+* Fix serialization of name and location in `NodeNamingAndLocationCC` (#8624)
+
+### Changes under the hood
+* Automatically handle Supervision in mocks (#8628)
+* Extend Window Covering mocks, support transitioning (#8627)
+* Support `NodeNamingAndLocationCC` in mocks, respond to `VersionCCCapabilitiesGet` (#8639)
+
 ## 15.21.0 (2026-02-16)
 ### Features
 * Support gaps in value range of arbitrary CC values (#8607)
