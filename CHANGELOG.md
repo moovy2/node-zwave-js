@@ -4,7 +4,7 @@
 <!--
 	Add placeholder for next release with `wip` snippet
 -->
-## __WORK IN PROGRESS__
+## 15.21.1 (2026-02-27)
 ### Bugfixes
 * Fixed a race condition in the web serial binding that could cause an error when destroying the driver (#8644)
 * Fix serialization of name and location in `NodeNamingAndLocationCC` (#8624)
