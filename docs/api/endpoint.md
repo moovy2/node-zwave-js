@@ -304,6 +304,13 @@ if (endpoint.accessControl) {
 ```
 
 > [!NOTE] For nodes using the **User Code CC**, only a subset of the functionality is available. Each user maps to a single credential of the device's unified credential type, and the unified credential slot matches the user slot. User names and credential rules are not supported, and credential learning is unavailable.
+>
+> As a result, several of the below APIs have side effects on these devices:
+>
+> - Adding a credential implicitly creates a user.
+> - Deleting one or more credentials implicitly deletes the owning users (and vice versa). Methods that delete users or credentials therefore emit both a `"credential deleted"` and a `"user deleted"` event.
+> - `deleteCredentials` rejects when called with a `credentialType` the node does not support.
+> - When `deleteCredential` is called without a `userId`, the `slot` is interpreted as the user identifier.
 
 ### Querying capabilities
 
@@ -592,15 +599,50 @@ Creates or updates a credential for the given user. Whether a credential is crea
 
 ```ts
 deleteCredential(
-	userId: number,
 	type: UserCredentialType,
 	slot: number,
-): Promise<SupervisionResult | undefined>
+): Promise<SetCredentialResult>;
+deleteCredential(
+	userId: number | undefined,
+	type: UserCredentialType,
+	slot: number,
+): Promise<SetCredentialResult>;
 ```
 
-Deletes the given credential. Throws if the credential slot is out of range.
+Deletes the given credential. Throws if the credential slot is out of range. When a `userId` is given, the credential is only deleted if it belongs to that user.
 
-> [!NOTE] For nodes using the **User Code CC**, deleting a credential also deletes the associated user, because User Code CC does not distinguish between users and their credentials.
+#### `deleteCredentials`
+
+```ts
+deleteCredentials(options?: DeleteCredentialsOptions): Promise<SetCredentialResult>
+```
+
+Deletes credentials matching the given filters:
+
+<!-- #import DeleteCredentialsOptions from "zwave-js" without comments -->
+
+```ts
+interface DeleteCredentialsOptions {
+	/**
+	 * Only delete credentials owned by this user. When omitted or `0`, the
+	 * filter is treated as a wildcard and credentials for all users are
+	 * deleted.
+	 */
+	userId?: number;
+	/**
+	 * Only delete credentials of this type. When omitted or
+	 * {@link UserCredentialType.None}, the filter is treated as a wildcard and
+	 * credentials of all types are deleted.
+	 */
+	credentialType?: UserCredentialType;
+}
+```
+
+- When `userId` is omitted or `0`, credentials for all users are deleted.
+- When `credentialType` is omitted or `UserCredentialType.None`, credentials of all types are deleted.
+- Calling without any filters deletes every credential on the node.
+
+A single [`"credential deleted"`](#quotcredential-deletedquot) event is emitted whose payload echoes the request: omitted filters are reported as `0`.
 
 #### `assignCredential`
 

@@ -28,6 +28,7 @@ export {
 export type {
 	CredentialCapabilities,
 	CredentialData,
+	DeleteCredentialsOptions,
 	SetUserOptions,
 	UserCapabilities,
 	UserData,
