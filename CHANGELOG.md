@@ -4,6 +4,13 @@
 <!--
 	Add placeholder for next release with `wip` snippet
 -->
+## __WORK IN PROGRESS__
+### Features
+* Implement bulk-delete APIs for credentials (#8793)
+
+### Config file changes
+* Map Basic Set to Binary Sensor for Fibaro FGMS001 (#8765)
+
 ## 15.23.5 (2026-04-27)
 ### Bugfixes
 * Fixed an issue where the response after setting a duplicate PIN would not be properly matched to the controlling command, causing a timeout (#8761)
