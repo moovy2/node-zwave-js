@@ -4,7 +4,7 @@
 <!--
 	Add placeholder for next release with `wip` snippet
 -->
-## __WORK IN PROGRESS__
+## 15.24.0 (2026-05-12)
 ### Features
 * Implement bulk-delete APIs for credentials (#8793)
 
